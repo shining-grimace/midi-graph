@@ -12,5 +12,5 @@
 
 - (If needed) `cargo install wasm-pack`
 - (If needed) `npm install -g live-server`
-- `wasm-pack build wasm`
+- `wasm-pack build wasm --target web`
 - `live-server wasm`
