@@ -1,17 +1,11 @@
 
-// Test suite for the Web and headless browsers.
-#[cfg(test)]
-#[cfg(target_arch = "wasm32")]
-mod wasm_tests;
 
-// Test suite for non-wasm configs
 #[cfg(test)]
-#[cfg(not(target_arch = "wasm32"))]
 mod tests;
 
 use midly::Smf;
 
-enum Error {
+pub enum Error {
     Io(std::io::Error),
     Midly(midly::Error)
 }
@@ -28,7 +22,7 @@ impl From<midly::Error> for Error {
     }
 }
 
-struct MidiProcessor {
+pub struct MidiProcessor {
     smf: Smf<'static>
 }
 
