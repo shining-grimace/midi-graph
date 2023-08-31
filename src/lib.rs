@@ -1,5 +1,12 @@
 
+// Test suite for the Web and headless browsers.
 #[cfg(test)]
+#[cfg(target_arch = "wasm32")]
+mod wasm_tests;
+
+// Test suite for non-wasm configs
+#[cfg(test)]
+#[cfg(not(target_arch = "wasm32"))]
 mod tests;
 
 use midly::Smf;
@@ -26,8 +33,13 @@ struct MidiProcessor {
 }
 
 impl MidiProcessor {
-    pub fn new(file_name: &str) -> Result<MidiProcessor, Error> {
+
+    pub fn from_file(file_name: &str) -> Result<MidiProcessor, Error> {
         let bytes = std::fs::read(file_name)?;
+        Self::from_bytes(&bytes)
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> Result<MidiProcessor, Error> {
         let smf = Smf::parse(&bytes)?.to_static();
         Ok(MidiProcessor {
             smf
