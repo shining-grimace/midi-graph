@@ -6,7 +6,7 @@ use wasm_bindgen_test::*;
 
 wasm_bindgen_test_configure!(run_in_browser);
 
-const TEST_FILE: &[u8] = include_bytes!("../../resources/MIDI_sample.mid");
+const TEST_FILE: &[u8] = include_bytes!("../resources/MIDI_sample.mid");
 
 #[wasm_bindgen_test]
 fn pass() {

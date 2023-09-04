@@ -1,7 +1,14 @@
 
+#[cfg(target_arch = "wasm32")]
+#[cfg(test)]
+mod wasm_tests;
 
+#[cfg(not(target_arch = "wasm32"))]
 #[cfg(test)]
 mod tests;
+
+#[cfg(target_arch = "wasm32")]
+mod wasm_demo;
 
 use midly::Smf;
 
