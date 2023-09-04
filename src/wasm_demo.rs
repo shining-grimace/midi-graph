@@ -1,8 +1,4 @@
 
-// Test suite for the Web and headless browsers.
-#[cfg(test)]
-mod tests;
-
 use wasm_bindgen::prelude::*;
 
 // Define our number of samples we handle at once
