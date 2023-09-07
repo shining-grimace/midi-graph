@@ -1,14 +1,14 @@
 
-use crate::{MidiProcessor, SquareAudio};
+extern crate midi_graph;
+
+use midi_graph::{MidiProcessor, SquareAudio};
 use std::time::Duration;
 use cpal::traits::StreamTrait;
-use wasm_bindgen::prelude::*;
 
-const MIDI_FILE: &'static [u8] = include_bytes!("../resources/MIDI_sample.mid");
+const MIDI_FILE: &'static str = "resources/MIDI_sample.mid";
 
-#[wasm_bindgen]
-pub fn play_stream() {
-    let smf = MidiProcessor::from_bytes(MIDI_FILE).unwrap();
+fn main() {
+    let smf = MidiProcessor::from_file(MIDI_FILE).unwrap();
     let streamer = SquareAudio::default();
     let stream = smf.open_stream(streamer).expect("Could not open stream");
     stream.play().expect("Could not play the stream");

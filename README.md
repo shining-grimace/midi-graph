@@ -12,5 +12,5 @@
 
 - (If needed) `cargo install wasm-pack`
 - (If needed) `npm install -g parcel`
-- `wasm-pack build wasm --target web`
+- `wasm-pack build --target web`
 - `parcel serve index.html`
