@@ -1,5 +1,5 @@
 
-use crate::{MidiProcessor, SquareAudio};
+use crate::{MidiProcessor, SquareAudio, util::smf_from_file};
 use std::time::Duration;
 use cpal::traits::StreamTrait;
 
@@ -7,16 +7,17 @@ const MIDI_FILE: &'static str = "resources/MIDI_sample.mid";
 
 #[test]
 fn can_decode_midi_file() {
-    let smf = MidiProcessor::from_file(MIDI_FILE);
+    let smf = smf_from_file(MIDI_FILE);
     assert!(smf.is_ok());
 }
 
 #[test]
 fn can_play_stream() {
 
-    let smf = MidiProcessor::from_file(MIDI_FILE).unwrap();
+    let smf = smf_from_file(MIDI_FILE).unwrap();
+    let midi = MidiProcessor::from_file(smf);
     let streamer = SquareAudio::default();
-    let stream = smf.open_stream(streamer);
+    let stream = midi.open_stream(streamer);
     assert!(stream.is_ok());
 
     let stream = stream.unwrap();

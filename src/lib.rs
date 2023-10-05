@@ -12,11 +12,17 @@ mod tests;
 mod wasm_demo;
 
 mod error;
+mod file;
+mod mix;
 mod source;
 
 pub use error::Error;
+pub use mix::midi::MidiProcessor;
 pub use source::{
     AudioStreamer,
-    midi::MidiProcessor,
     square::SquareAudio
 };
+
+pub mod util {
+    pub use crate::file::midi::{smf_from_file, smf_from_bytes};
+}

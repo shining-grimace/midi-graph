@@ -10,16 +10,8 @@ pub struct MidiProcessor {
 
 impl MidiProcessor {
 
-    pub fn from_file(file_name: &str) -> Result<MidiProcessor, Error> {
-        let bytes = std::fs::read(file_name)?;
-        Self::from_bytes(&bytes)
-    }
-
-    pub fn from_bytes(bytes: &[u8]) -> Result<MidiProcessor, Error> {
-        let smf = Smf::parse(&bytes)?.to_static();
-        Ok(MidiProcessor {
-            smf
-        })
+    pub fn from_file(smf: Smf<'static>) -> MidiProcessor {
+        Self { smf }
     }
 
     pub fn open_stream<S>(self, mut streamer: S) -> Result<Stream, Error> where S: AudioStreamer + Send + 'static {
