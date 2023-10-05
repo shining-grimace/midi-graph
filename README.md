@@ -6,7 +6,7 @@
 ### Test WebAssembly
 
 - Run `cargo install wasm-pack` if needed
-- `wasm-pack test [--node | --chrome | --firefox | --safari] wasm`
+- `wasm-pack test [--node | --chrome | --firefox | --safari]`
 
 ### Run WebAssembly
 

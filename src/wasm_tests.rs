@@ -1,7 +1,7 @@
 
 extern crate wasm_bindgen_test;
 
-use midi_graph::MidiProcessor;
+use crate::MidiProcessor;
 use wasm_bindgen_test::*;
 
 wasm_bindgen_test_configure!(run_in_browser);
