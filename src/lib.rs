@@ -20,7 +20,8 @@ pub use error::Error;
 pub use mix::midi::MidiProcessor;
 pub use source::{
     AudioStreamer,
-    square::SquareAudio
+    square::SquareAudio,
+    wav::WavAudio
 };
 
 pub mod util {

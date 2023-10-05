@@ -14,9 +14,14 @@ impl Default for SquareAudio {
 }
 
 impl AudioStreamer for SquareAudio {
+
+    fn is_completed(&self) -> bool {
+        false
+    }
+
     fn fill_buffer(&mut self, buffer: &mut [f32]) {
-        let length = buffer.len();
-        for i in 0..length {
+        let size = buffer.len();
+        for i in 0..size {
             self.period_time += 1;
             if self.period_time >= 32 { // Like 400 Hz at 48 kHz and 2 channels
                 self.is_high = !self.is_high;
