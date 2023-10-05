@@ -1,14 +1,21 @@
 
-use crate::{MidiProcessor, SquareAudio, util::smf_from_file};
+use crate::{MidiProcessor, SquareAudio, util::smf_from_file, util::wav_from_file};
 use std::time::Duration;
 use cpal::traits::StreamTrait;
 
 const MIDI_FILE: &'static str = "resources/MIDI_sample.mid";
+const WAV_FILE: &'static str = "resources/snare.wav";
 
 #[test]
 fn can_decode_midi_file() {
     let smf = smf_from_file(MIDI_FILE);
     assert!(smf.is_ok());
+}
+
+#[test]
+fn can_decode_wav_file() {
+    let wav = wav_from_file(WAV_FILE);
+    assert!(wav.is_ok());
 }
 
 #[test]

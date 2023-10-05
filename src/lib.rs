@@ -25,4 +25,5 @@ pub use source::{
 
 pub mod util {
     pub use crate::file::midi::{smf_from_file, smf_from_bytes};
+    pub use crate::file::wav::{wav_from_file, wav_from_bytes};
 }
