@@ -1,0 +1,5 @@
+
+tasks:
+  - init: cargo install wasm-pack && npm install -g parcel && cargo build
+
+
