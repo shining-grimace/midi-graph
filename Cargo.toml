@@ -8,7 +8,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 midly = "0.5.3"
-wav = "1.0.0"
+hound = "3.5.1"
 cpal = { version = "0.15.3", features = ["wasm-bindgen"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
