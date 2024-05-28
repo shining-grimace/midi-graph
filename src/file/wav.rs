@@ -1,5 +1,5 @@
 use crate::{Error, WavAudio};
-use hound::{Sample, WavReader};
+use hound::WavReader;
 use std::io::Cursor;
 
 pub fn wav_from_file(file_name: &str) -> Result<WavAudio, Error> {
@@ -9,7 +9,7 @@ pub fn wav_from_file(file_name: &str) -> Result<WavAudio, Error> {
     WavAudio::new_from_data(spec, samples)
 }
 
-pub fn wav_from_bytes<S: Sample>(bytes: &'static [u8]) -> Result<WavAudio, Error> {
+pub fn wav_from_bytes(bytes: &'static [u8]) -> Result<WavAudio, Error> {
     let cursor = Cursor::new(bytes);
     let wav = WavReader::new(cursor)?;
     let spec = wav.spec();
