@@ -1,4 +1,4 @@
-use crate::AudioStreamer;
+use crate::{AudioStreamer, Error};
 use hound::{SampleFormat, WavSpec};
 
 pub struct WavAudio {
@@ -8,17 +8,42 @@ pub struct WavAudio {
 }
 
 impl WavAudio {
-    pub fn new_from_data(header: WavSpec, data: Vec<f32>) -> Self {
-        match header.sample_format {
-            SampleFormat::Float => (),
-            _ => panic!("Non-f32 samples not currently supported"),
-        };
+    pub fn new_from_data(spec: WavSpec, data: Vec<f32>) -> Result<Self, Error> {
+        Self::validate_spec(&spec)?;
         let length = data.len();
-        Self {
+        Ok(Self {
             position: 0,
             length,
             data,
+        })
+    }
+
+    fn validate_spec(spec: &WavSpec) -> Result<(), Error> {
+        if spec.channels != 1 {
+            return Err(Error::User(format!(
+                "{} channels is not supported",
+                spec.channels
+            )));
         }
+        if spec.sample_rate != 48000 {
+            return Err(Error::User(format!(
+                "{} samples per second is not supported",
+                spec.sample_rate
+            )));
+        }
+        if spec.sample_format != SampleFormat::Float {
+            return Err(Error::User(format!(
+                "Sample format {:?} is not supported",
+                spec.sample_format
+            )));
+        }
+        if spec.bits_per_sample != 32 {
+            return Err(Error::User(format!(
+                "{} bits per sample is not supported",
+                spec.bits_per_sample
+            )));
+        }
+        Ok(())
     }
 }
 
