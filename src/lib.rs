@@ -1,4 +1,3 @@
-
 // Test suite for the Web and headless browsers.
 #[cfg(target_arch = "wasm32")]
 #[cfg(test)]
@@ -17,14 +16,10 @@ mod mix;
 mod source;
 
 pub use error::Error;
-pub use mix::midi::MidiProcessor;
-pub use source::{
-    AudioStreamer,
-    square::SquareAudio,
-    wav::WavAudio
-};
+pub use mix::base::BaseMixer;
+pub use source::{square::SquareAudio, wav::WavAudio, AudioStreamer};
 
 pub mod util {
-    pub use crate::file::midi::{smf_from_file, smf_from_bytes};
-    pub use crate::file::wav::{wav_from_file, wav_from_bytes};
+    pub use crate::file::midi::{smf_from_bytes, smf_from_file};
+    pub use crate::file::wav::{wav_from_bytes, wav_from_file};
 }
