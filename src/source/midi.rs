@@ -1,18 +1,18 @@
-use crate::AudioStreamer;
+use crate::AudioSource;
 use midly::Smf;
 
-pub struct MidiPlayer<'a> {
+pub struct MidiSource<'a> {
     smf: Smf<'a>,
-    source: Box<dyn AudioStreamer + Send + 'static>,
+    source: Box<dyn AudioSource + Send + 'static>,
 }
 
-impl<'a> MidiPlayer<'a> {
-    pub fn new(smf: Smf<'a>, source: Box<dyn AudioStreamer + Send + 'static>) -> Self {
+impl<'a> MidiSource<'a> {
+    pub fn new(smf: Smf<'a>, source: Box<dyn AudioSource + Send + 'static>) -> Self {
         Self { smf, source }
     }
 }
 
-impl<'a> AudioStreamer for MidiPlayer<'a> {
+impl<'a> AudioSource for MidiSource<'a> {
     fn is_completed(&self) -> bool {
         false
     }

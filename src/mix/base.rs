@@ -1,13 +1,13 @@
-use crate::{AudioStreamer, Error};
+use crate::{AudioSource, Error};
 use cpal::traits::{DeviceTrait, HostTrait};
 use cpal::{Stream, StreamConfig};
 
 pub struct BaseMixer {
-    source: Box<dyn AudioStreamer + Send + 'static>,
+    source: Box<dyn AudioSource + Send + 'static>,
 }
 
 impl BaseMixer {
-    pub fn from_source(source: Box<dyn AudioStreamer + Send + 'static>) -> Self {
+    pub fn from_source(source: Box<dyn AudioSource + Send + 'static>) -> Self {
         Self { source }
     }
 

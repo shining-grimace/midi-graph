@@ -1,13 +1,13 @@
-use crate::{AudioStreamer, Error};
+use crate::{AudioSource, Error};
 use hound::{SampleFormat, WavSpec};
 
-pub struct WavAudio {
+pub struct WavSource {
     position: usize,
     length: usize,
     data: Vec<f32>,
 }
 
-impl WavAudio {
+impl WavSource {
     pub fn new_from_data(spec: WavSpec, data: Vec<f32>) -> Result<Self, Error> {
         Self::validate_spec(&spec)?;
         let length = data.len();
@@ -47,7 +47,7 @@ impl WavAudio {
     }
 }
 
-impl AudioStreamer for WavAudio {
+impl AudioSource for WavSource {
     fn is_completed(&self) -> bool {
         self.position >= self.length
     }

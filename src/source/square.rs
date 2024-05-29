@@ -1,20 +1,21 @@
-
-use crate::AudioStreamer;
+use crate::AudioSource;
 use cpal::Sample;
 
-pub struct SquareAudio {
+pub struct SquareWaveSource {
     period_time: usize,
-    is_high: bool
+    is_high: bool,
 }
 
-impl Default for SquareAudio {
+impl Default for SquareWaveSource {
     fn default() -> Self {
-        Self { period_time: 0, is_high: false }
+        Self {
+            period_time: 0,
+            is_high: false,
+        }
     }
 }
 
-impl AudioStreamer for SquareAudio {
-
+impl AudioSource for SquareWaveSource {
     fn is_completed(&self) -> bool {
         false
     }
@@ -23,12 +24,13 @@ impl AudioStreamer for SquareAudio {
         let size = buffer.len();
         for i in 0..size {
             self.period_time += 1;
-            if self.period_time >= 32 { // Like 400 Hz at 48 kHz and 2 channels
+            if self.period_time >= 32 {
+                // Like 400 Hz at 48 kHz and 2 channels
                 self.is_high = !self.is_high;
             }
             buffer[i] = match self.is_high {
                 true => Sample::from_sample(0.5),
-                false => Sample::from_sample(-0.5)
+                false => Sample::from_sample(-0.5),
             };
         }
     }
