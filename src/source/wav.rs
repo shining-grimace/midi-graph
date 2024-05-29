@@ -49,7 +49,7 @@ impl WavAudio {
 
 impl AudioStreamer for WavAudio {
     fn is_completed(&self) -> bool {
-        false
+        self.position >= self.length
     }
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) {
@@ -61,5 +61,6 @@ impl AudioStreamer for WavAudio {
         } else {
             buffer.copy_from_slice(&self.data[self.position..(self.position + size)]);
         }
+        self.position = (self.position + size).min(self.length);
     }
 }
