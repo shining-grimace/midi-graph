@@ -1,6 +1,6 @@
 use crate::{
     util::{smf_from_file, wav_from_file},
-    BaseMixer, SquareAudio,
+    BaseMixer, MidiPlayer, SquareAudio,
 };
 use cpal::traits::StreamTrait;
 use std::time::Duration;
@@ -23,9 +23,9 @@ fn can_decode_wav_file() {
 #[test]
 fn can_play_square_stream() {
     let smf = smf_from_file(MIDI_FILE).unwrap();
-    let mixer = BaseMixer::from_file(smf);
-    let streamer = SquareAudio::default();
-    let stream = mixer.open_stream(streamer);
+    let midi = MidiPlayer::new(smf, Box::new(SquareAudio::default()));
+    let mixer = BaseMixer::from_source(Box::new(midi));
+    let stream = mixer.open_stream();
     assert!(stream.is_ok());
 
     let stream = stream.unwrap();
@@ -40,9 +40,10 @@ fn can_play_square_stream() {
 #[test]
 fn can_play_wav_stream() {
     let smf = smf_from_file(MIDI_FILE).unwrap();
-    let mixer = BaseMixer::from_file(smf);
-    let streamer = wav_from_file(WAV_FILE).unwrap();
-    let stream = mixer.open_stream(streamer);
+    let sample = wav_from_file(WAV_FILE).unwrap();
+    let midi = MidiPlayer::new(smf, Box::new(sample));
+    let mixer = BaseMixer::from_source(Box::new(midi));
+    let stream = mixer.open_stream();
     assert!(stream.is_ok());
 
     let stream = stream.unwrap();

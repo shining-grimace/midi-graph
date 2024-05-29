@@ -1,4 +1,4 @@
-
+pub mod midi;
 pub mod square;
 pub mod wav;
 
