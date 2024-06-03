@@ -1,4 +1,6 @@
-use crate::AudioSource;
+mod util;
+
+use crate::{AudioSource, Error};
 use midly::Smf;
 
 #[cfg(debug_assertions)]
@@ -8,18 +10,22 @@ pub struct MidiSource<'a> {
     smf: Smf<'a>,
     source: Box<dyn AudioSource + Send + 'static>,
     has_finished: bool,
+    samples_per_tick: f64,
 }
 
 impl<'a> MidiSource<'a> {
-    pub fn new(smf: Smf<'a>, source: Box<dyn AudioSource + Send + 'static>) -> Self {
+    pub fn new(smf: Smf<'a>, source: Box<dyn AudioSource + Send + 'static>) -> Result<Self, Error> {
         #[cfg(debug_assertions)]
         log::log_loaded_midi(&smf);
 
-        Self {
+        let samples_per_tick = util::get_samples_per_tick(&smf)?;
+
+        Ok(Self {
             smf,
             source,
             has_finished: false,
-        }
+            samples_per_tick,
+        })
     }
 }
 

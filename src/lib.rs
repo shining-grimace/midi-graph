@@ -23,3 +23,7 @@ pub mod util {
     pub use crate::file::midi::{smf_from_bytes, smf_from_file};
     pub use crate::file::wav::{wav_from_bytes, wav_from_file};
 }
+
+pub mod constants {
+    pub const PLAYBACK_SAMPLE_RATE: usize = 48000;
+}
