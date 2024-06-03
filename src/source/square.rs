@@ -20,6 +20,8 @@ impl AudioSource for SquareWaveSource {
         false
     }
 
+    fn rewind(&mut self) {}
+
     fn fill_buffer(&mut self, buffer: &mut [f32]) {
         let size = buffer.len();
         for i in 0..size {

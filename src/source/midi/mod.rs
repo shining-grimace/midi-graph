@@ -10,6 +10,7 @@ pub struct MidiSource<'a> {
     smf: Smf<'a>,
     source: Box<dyn AudioSource + Send + 'static>,
     has_finished: bool,
+    event_index: usize,
     samples_per_tick: f64,
 }
 
@@ -24,6 +25,7 @@ impl<'a> MidiSource<'a> {
             smf,
             source,
             has_finished: false,
+            event_index: 0,
             samples_per_tick,
         })
     }
@@ -34,7 +36,13 @@ impl<'a> AudioSource for MidiSource<'a> {
         self.has_finished
     }
 
+    fn rewind(&mut self) {
+        self.has_finished = false;
+        self.event_index = 0;
+        self.source.rewind();
+    }
+
     fn fill_buffer(&mut self, buffer: &mut [f32]) {
-        buffer.fill(0.0);
+        self.source.fill_buffer(buffer);
     }
 }

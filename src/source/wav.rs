@@ -52,6 +52,10 @@ impl AudioSource for WavSource {
         self.position >= self.length
     }
 
+    fn rewind(&mut self) {
+        self.position = 0;
+    }
+
     fn fill_buffer(&mut self, buffer: &mut [f32]) {
         let size = buffer.len();
         let samples_remaining = self.length - self.position;
