@@ -1,6 +1,7 @@
-use midly::{MetaMessage, MidiMessage, Smf, TrackEvent, TrackEventKind};
+use midly::{num::u24, Fps, MetaMessage, MidiMessage, Smf, Timing, TrackEvent, TrackEventKind};
 
-pub fn log_loaded_midi(smf: &Smf) {
+pub fn log_loaded_midi(smf: &Smf, playback_track: usize) {
+    println!("{}", get_log_for_header(smf));
     for track_events in smf.tracks.iter() {
         for event in track_events.iter() {
             if let Some(message) = get_log_for_event(event) {
@@ -9,6 +10,31 @@ pub fn log_loaded_midi(smf: &Smf) {
         }
     }
     println!("MIDI file loaded.");
+    println!("The file has {} tracks.", smf.tracks.len());
+    if smf.tracks.len() > playback_track {
+        println!(
+            "Track {} has {} events.",
+            playback_track,
+            smf.tracks[playback_track].len()
+        );
+    } else {
+        println!("There is no track to play.");
+    }
+}
+
+fn get_log_for_header(smf: &Smf) -> String {
+    let timing = smf.header.timing;
+    match timing {
+        Timing::Metrical(ticks_per_beat) => {
+            format!("Metrical timing: {} ticks/beat", ticks_per_beat)
+        }
+        Timing::Timecode(fps, tpf) => match fps {
+            Fps::Fps24 => format!("Timecode timing, 24 fps with {} ticks/frame", tpf),
+            Fps::Fps25 => format!("Timecode timing, 25 fps with {} ticks/frame", tpf),
+            Fps::Fps29 => format!("Timecode timing, 29 fps with {} ticks/frame", tpf),
+            Fps::Fps30 => format!("Timecode timing, 30 fps with {} ticks/frame", tpf),
+        },
+    }
 }
 
 fn get_log_for_event(event: &TrackEvent) -> Option<String> {
@@ -44,7 +70,7 @@ fn get_log_for_event(event: &TrackEvent) -> Option<String> {
             MetaMessage::MidiChannel(_) => None,
             MetaMessage::MidiPort(_) => None,
             MetaMessage::EndOfTrack => None,
-            MetaMessage::Tempo(_) => None,
+            MetaMessage::Tempo(micros_per_beat) => Some(log_tempo(micros_per_beat)),
             MetaMessage::SmpteOffset(_) => None,
             MetaMessage::TimeSignature(_, _, _, _) => None,
             MetaMessage::KeySignature(sharps, major) => Some(log_key(sharps, major)),
@@ -63,4 +89,9 @@ fn log_key(sharps: i8, major: bool) -> String {
         true => format!("Key: {} flats ({})", -sharps, key_type),
         false => format!("Key: {} sharps ({})", sharps, key_type),
     }
+}
+
+fn log_tempo(micros_per_beat: u24) -> String {
+    let bpm = 60000000.0 / (u32::from(micros_per_beat) as f64);
+    format!("Tempo: {} BPM", bpm)
 }

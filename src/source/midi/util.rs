@@ -14,7 +14,7 @@ pub fn get_samples_per_tick(smf: &Smf) -> Result<f64, Error> {
             match found_micros_per_beat {
                 Some(micros_per_beat) => {
                     let samples_per_micro = (PLAYBACK_SAMPLE_RATE as f64) / 1000000.0;
-                    let samples_per_beat = samples_per_micro * (micros_per_beat as f64);
+                    let samples_per_beat = samples_per_micro * micros_per_beat;
                     let samples_per_tick = samples_per_beat / (u16::from(ticks_per_beat) as f64);
                     Ok(samples_per_tick)
                 }

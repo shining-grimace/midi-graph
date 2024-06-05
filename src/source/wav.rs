@@ -3,19 +3,13 @@ use hound::{SampleFormat, WavSpec};
 
 pub struct WavSource {
     position: usize,
-    length: usize,
     data: Vec<f32>,
 }
 
 impl WavSource {
     pub fn new_from_data(spec: WavSpec, data: Vec<f32>) -> Result<Self, Error> {
         Self::validate_spec(&spec)?;
-        let length = data.len();
-        Ok(Self {
-            position: 0,
-            length,
-            data,
-        })
+        Ok(Self { position: 0, data })
     }
 
     fn validate_spec(spec: &WavSpec) -> Result<(), Error> {
@@ -49,7 +43,7 @@ impl WavSource {
 
 impl AudioSource for WavSource {
     fn is_completed(&self) -> bool {
-        self.position >= self.length
+        self.position >= self.data.len()
     }
 
     fn rewind(&mut self) {
@@ -58,13 +52,16 @@ impl AudioSource for WavSource {
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) {
         let size = buffer.len();
-        let samples_remaining = self.length - self.position;
-        if samples_remaining < size {
-            buffer.copy_from_slice(&self.data[self.position..(self.position + samples_remaining)]);
+        let samples_remaining = self.data.len() - self.position;
+        if samples_remaining == 0 {
+            buffer.fill(0.0);
+        } else if samples_remaining < size {
+            let source = &self.data[self.position..(self.position + samples_remaining)];
+            &buffer[0..samples_remaining].copy_from_slice(source);
             &buffer[samples_remaining..size].fill(0.0);
         } else {
             buffer.copy_from_slice(&self.data[self.position..(self.position + size)]);
         }
-        self.position = (self.position + size).min(self.length);
+        self.position = (self.position + size).min(self.data.len());
     }
 }
