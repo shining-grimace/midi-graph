@@ -50,7 +50,7 @@ impl AudioSource for WavSource {
         self.position = 0;
     }
 
-    fn fill_buffer(&mut self, buffer: &mut [f32]) {
+    fn fill_buffer(&mut self, relative_pitch: f32, buffer: &mut [f32]) {
         let size = buffer.len();
         let samples_remaining = self.data.len() - self.position;
         if samples_remaining == 0 {
