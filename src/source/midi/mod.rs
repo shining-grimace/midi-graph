@@ -14,7 +14,7 @@ pub struct MidiSource<'a> {
     has_finished: bool,
     next_event_index: usize,
     samples_per_tick: f64,
-    event_samples_progress: f64,
+    event_ticks_progress: isize,
     current_relative_pitch: f32,
 }
 
@@ -31,7 +31,7 @@ impl<'a> MidiSource<'a> {
             has_finished: false,
             next_event_index: 0,
             samples_per_tick,
-            event_samples_progress: 0.0,
+            event_ticks_progress: 0,
             current_relative_pitch: 0.0,
         })
     }
@@ -54,19 +54,21 @@ impl<'a> AudioSource for MidiSource<'a> {
             return;
         }
         let next_event = &self.smf.tracks[PLAYBACK_TRACK][self.next_event_index];
-        let event_delta_samples = (u32::from(next_event.delta) as f64) * self.samples_per_tick;
-        let samples_until_event = (event_delta_samples - self.event_samples_progress).round();
-        let samples_to_play_now = (samples_until_event as usize).min(buffer.len());
-        if samples_to_play_now > 0 {
+        let event_ticks_delta = u32::from(next_event.delta) as isize;
+        let ticks_until_event = event_ticks_delta - self.event_ticks_progress;
+        let samples_until_event = (ticks_until_event as f64 * self.samples_per_tick) as usize;
+        let samples_to_play_now = samples_until_event.min(buffer.len());
+        if ticks_until_event > 0 {
+            let ticks_available = ((buffer.len() as f64) / self.samples_per_tick) as isize;
+            self.event_ticks_progress += ticks_until_event.min(ticks_available);
             self.source.fill_buffer(
                 self.current_relative_pitch,
                 &mut buffer[0..samples_to_play_now],
             );
         }
-        self.event_samples_progress += samples_to_play_now as f64;
-        if self.event_samples_progress >= event_delta_samples {
+        if self.event_ticks_progress >= event_ticks_delta {
             self.next_event_index += 1;
-            self.event_samples_progress = 0.0;
+            self.event_ticks_progress = 0;
             let remaining_buffer = &mut buffer[samples_to_play_now..];
             if self.next_event_index >= self.smf.tracks[PLAYBACK_TRACK].len() {
                 self.has_finished = true;
