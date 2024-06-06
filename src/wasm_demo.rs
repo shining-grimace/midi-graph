@@ -3,7 +3,7 @@ use cpal::traits::StreamTrait;
 use std::time::Duration;
 use wasm_bindgen::prelude::*;
 
-const MIDI_FILE: &'static [u8] = include_bytes!("../resources/MIDI_sample.mid");
+const MIDI_FILE: &'static [u8] = include_bytes!("../resources/dansenapolitaine.mid");
 
 #[wasm_bindgen]
 pub fn play_stream() {

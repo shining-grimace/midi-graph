@@ -4,7 +4,7 @@ use cpal::traits::StreamTrait;
 use midi_graph::{util::smf_from_file, util::wav_from_file, BaseMixer, MidiSource};
 use std::time::Duration;
 
-const MIDI_FILE: &'static str = "resources/MIDI_sample.mid";
+const MIDI_FILE: &'static str = "resources/dansenapolitaine.mid";
 const WAV_FILE: &'static str = "resources/kick.wav";
 
 fn main() {

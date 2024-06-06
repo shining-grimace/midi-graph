@@ -5,7 +5,7 @@ use crate::{
 use cpal::traits::StreamTrait;
 use std::time::Duration;
 
-const MIDI_FILE: &'static str = "resources/MIDI_sample.mid";
+const MIDI_FILE: &'static str = "resources/dansenapolitaine.mid";
 const WAV_FILE: &'static str = "resources/snare.wav";
 
 #[test]

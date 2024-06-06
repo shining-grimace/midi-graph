@@ -4,7 +4,7 @@ use cpal::traits::StreamTrait;
 use midi_graph::{util::smf_from_file, BaseMixer, MidiSource, SquareWaveSource};
 use std::time::Duration;
 
-const MIDI_FILE: &'static str = "resources/MIDI_sample.mid";
+const MIDI_FILE: &'static str = "resources/dansenapolitaine.mid";
 
 fn main() {
     let smf = smf_from_file(MIDI_FILE).unwrap();

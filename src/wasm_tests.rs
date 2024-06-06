@@ -5,7 +5,7 @@ use wasm_bindgen_test::*;
 
 wasm_bindgen_test_configure!(run_in_browser);
 
-const MIDI_FILE: &[u8] = include_bytes!("../resources/MIDI_sample.mid");
+const MIDI_FILE: &[u8] = include_bytes!("../resources/dansenapolitaine.mid");
 const WAV_FILE: &[u8] = include_bytes!("../resources/snare.wav");
 
 #[wasm_bindgen_test]

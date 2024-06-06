@@ -55,7 +55,7 @@ impl<'a> AudioSource for MidiSource<'a> {
         }
         let next_event = &self.smf.tracks[PLAYBACK_TRACK][self.next_event_index];
         let event_delta_samples = (u32::from(next_event.delta) as f64) * self.samples_per_tick;
-        let samples_until_event = event_delta_samples - self.event_samples_progress;
+        let samples_until_event = (event_delta_samples - self.event_samples_progress).round();
         let samples_to_play_now = (samples_until_event as usize).min(buffer.len());
         if samples_to_play_now > 0 {
             self.source.fill_buffer(
