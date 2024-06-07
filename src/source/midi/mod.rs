@@ -35,9 +35,7 @@ impl<'a> MidiSource<'a> {
             current_note: None,
         })
     }
-}
 
-impl<'a> MidiSource<'a> {
     // Get pitch of a MIDI note in terms of semitones relative to A440
     fn relative_pitch_of(key: u8) -> f32 {
         u8::from(key) as f32 - 69.0
