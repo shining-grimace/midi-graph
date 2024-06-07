@@ -1,7 +1,7 @@
 mod util;
 
 use crate::{AudioSource, Error};
-use midly::{MidiMessage, Smf, TrackEventKind};
+use midly::{MidiMessage, Smf, TrackEvent, TrackEventKind};
 
 #[cfg(debug_assertions)]
 use crate::source::log;
@@ -15,7 +15,7 @@ pub struct MidiSource<'a> {
     next_event_index: usize,
     samples_per_tick: f64,
     event_ticks_progress: isize,
-    current_relative_pitch: f32,
+    current_note: Option<u8>,
 }
 
 impl<'a> MidiSource<'a> {
@@ -32,8 +32,39 @@ impl<'a> MidiSource<'a> {
             next_event_index: 0,
             samples_per_tick,
             event_ticks_progress: 0,
-            current_relative_pitch: 0.0,
+            current_note: None,
         })
+    }
+}
+
+impl<'a> MidiSource<'a> {
+    // Get pitch of a MIDI note in terms of semitones relative to A440
+    fn relative_pitch_of(key: u8) -> f32 {
+        u8::from(key) as f32 - 69.0
+    }
+
+    // Update self when a new event was reached
+    fn update_on_event(&mut self, event: TrackEvent) {
+        if let TrackEventKind::Midi {
+            channel: _,
+            message: MidiMessage::NoteOn { key, vel: _ },
+        } = event.kind
+        {
+            self.current_note = Some(u8::from(key));
+            self.source.rewind();
+        }
+        if let TrackEventKind::Midi {
+            channel: _,
+            message: MidiMessage::NoteOff { key, vel: _ },
+        } = event.kind
+        {
+            if let Some(note) = self.current_note {
+                if note == key {
+                    self.current_note = None;
+                    self.source.rewind();
+                }
+            }
+        }
     }
 }
 
@@ -61,12 +92,19 @@ impl<'a> AudioSource for MidiSource<'a> {
         if ticks_until_event > 0 {
             let ticks_available = ((buffer.len() as f64) / self.samples_per_tick) as isize;
             self.event_ticks_progress += ticks_until_event.min(ticks_available);
-            self.source.fill_buffer(
-                self.current_relative_pitch,
-                &mut buffer[0..samples_to_play_now],
-            );
+            match self.current_note {
+                Some(note) => {
+                    let relative_pitch = Self::relative_pitch_of(note);
+                    self.source
+                        .fill_buffer(relative_pitch, &mut buffer[0..samples_to_play_now]);
+                }
+                None => {
+                    &buffer[0..samples_to_play_now].fill(0.0);
+                }
+            };
         }
         if self.event_ticks_progress >= event_ticks_delta {
+            self.update_on_event(*next_event);
             self.next_event_index += 1;
             self.event_ticks_progress = 0;
             let remaining_buffer = &mut buffer[samples_to_play_now..];
@@ -75,17 +113,7 @@ impl<'a> AudioSource for MidiSource<'a> {
                 remaining_buffer.fill(0.0);
                 return;
             }
-            let new_event = &self.smf.tracks[PLAYBACK_TRACK][self.next_event_index];
-            if let TrackEventKind::Midi {
-                channel: _,
-                message: MidiMessage::NoteOn { key, vel: _ },
-            } = new_event.kind
-            {
-                let note_relative_to_a440 = u8::from(key) as f32 - 69.0;
-                self.source.rewind();
-                self.current_relative_pitch = note_relative_to_a440;
-            }
-            self.fill_buffer(self.current_relative_pitch, remaining_buffer);
+            self.fill_buffer(relative_pitch, remaining_buffer);
         }
     }
 }
