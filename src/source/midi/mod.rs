@@ -36,11 +36,6 @@ impl<'a> MidiSource<'a> {
         })
     }
 
-    // Get pitch of a MIDI note in terms of semitones relative to A440
-    fn relative_pitch_of(key: u8) -> f32 {
-        u8::from(key) as f32 - 69.0
-    }
-
     // Update self when a new event was reached
     fn update_on_event(&mut self, event: TrackEvent) {
         if let TrackEventKind::Midi {
@@ -78,7 +73,7 @@ impl<'a> AudioSource for MidiSource<'a> {
         self.has_finished = true;
     }
 
-    fn fill_buffer(&mut self, relative_pitch: f32, buffer: &mut [f32]) {
+    fn fill_buffer(&mut self, key: u8, buffer: &mut [f32]) {
         if self.has_finished {
             buffer.fill(0.0);
             return;
@@ -93,9 +88,8 @@ impl<'a> AudioSource for MidiSource<'a> {
             self.event_ticks_progress += ticks_until_event.min(ticks_available);
             match self.current_note {
                 Some(note) => {
-                    let relative_pitch = Self::relative_pitch_of(note);
                     self.source
-                        .fill_buffer(relative_pitch, &mut buffer[0..samples_to_play_now]);
+                        .fill_buffer(note, &mut buffer[0..samples_to_play_now]);
                 }
                 None => {
                     &buffer[0..samples_to_play_now].fill(0.0);
@@ -112,7 +106,7 @@ impl<'a> AudioSource for MidiSource<'a> {
                 remaining_buffer.fill(0.0);
                 return;
             }
-            self.fill_buffer(relative_pitch, remaining_buffer);
+            self.fill_buffer(key, remaining_buffer);
         }
     }
 }

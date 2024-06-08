@@ -20,8 +20,9 @@ pub use mix::base::BaseMixer;
 pub use source::{midi::MidiSource, square::SquareWaveSource, wav::WavSource, AudioSource};
 
 pub mod util {
-    pub use crate::file::midi::{smf_from_bytes, smf_from_file};
-    pub use crate::file::wav::{wav_from_bytes, wav_from_file};
+    pub use crate::file::midi::*;
+    pub use crate::file::wav::*;
+    pub use crate::source::util::*;
 }
 
 pub mod constants {

@@ -27,7 +27,8 @@ impl AudioSource for SquareWaveSource {
         self.is_on = false;
     }
 
-    fn fill_buffer(&mut self, relative_pitch: f32, buffer: &mut [f32]) {
+    fn fill_buffer(&mut self, key: u8, buffer: &mut [f32]) {
+        let relative_pitch = crate::util::relative_pitch_of(key);
         if !self.is_on {
             buffer.fill(0.0);
             return;

@@ -50,7 +50,8 @@ impl AudioSource for WavSource {
         self.position = self.data.len();
     }
 
-    fn fill_buffer(&mut self, relative_pitch: f32, buffer: &mut [f32]) {
+    fn fill_buffer(&mut self, key: u8, buffer: &mut [f32]) {
+        let relative_pitch = crate::util::relative_pitch_of(key);
         let size = buffer.len();
         let samples_remaining = self.data.len() - self.position;
         if samples_remaining == 0 {
