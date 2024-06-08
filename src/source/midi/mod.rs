@@ -48,8 +48,9 @@ impl<'a> MidiSource<'a> {
             message: MidiMessage::NoteOn { key, vel: _ },
         } = event.kind
         {
-            self.current_note = Some(u8::from(key));
-            self.source.rewind();
+            let note = u8::from(key);
+            self.current_note = Some(note);
+            self.source.on_note_on(note);
         }
         if let TrackEventKind::Midi {
             channel: _,
@@ -59,7 +60,7 @@ impl<'a> MidiSource<'a> {
             if let Some(note) = self.current_note {
                 if note == key {
                     self.current_note = None;
-                    self.source.rewind();
+                    self.source.on_note_off(note);
                 }
             }
         }
@@ -67,14 +68,14 @@ impl<'a> MidiSource<'a> {
 }
 
 impl<'a> AudioSource for MidiSource<'a> {
-    fn is_completed(&self) -> bool {
-        self.has_finished
-    }
-
-    fn rewind(&mut self) {
+    fn on_note_on(&mut self, key: u8) {
         self.has_finished = false;
         self.next_event_index = 0;
-        self.source.rewind();
+        self.event_ticks_progress = 0;
+    }
+
+    fn on_note_off(&mut self, key: u8) {
+        self.has_finished = true;
     }
 
     fn fill_buffer(&mut self, relative_pitch: f32, buffer: &mut [f32]) {
