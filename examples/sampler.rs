@@ -9,8 +9,7 @@ const WAV_FILE: &'static str = "resources/kick.wav";
 
 fn main() {
     let smf = smf_from_file(MIDI_FILE).unwrap();
-    let wav = wav_from_file(WAV_FILE).unwrap();
-    let midi = MidiSource::new(smf, Box::new(wav)).unwrap();
+    let midi = MidiSource::new(smf, || Box::new(wav_from_file(WAV_FILE).unwrap())).unwrap();
     let mixer = BaseMixer::from_source(Box::new(midi));
     let stream = mixer.open_stream().expect("Could not open stream");
     stream.play().expect("Could not play the stream");

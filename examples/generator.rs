@@ -8,8 +8,7 @@ const MIDI_FILE: &'static str = "resources/dansenapolitaine.mid";
 
 fn main() {
     let smf = smf_from_file(MIDI_FILE).unwrap();
-    let generator = SquareWaveSource::default();
-    let midi = MidiSource::new(smf, Box::new(generator)).unwrap();
+    let midi = MidiSource::new(smf, || Box::new(SquareWaveSource::default())).unwrap();
     let mixer = BaseMixer::from_source(Box::new(midi));
     let stream = mixer.open_stream().expect("Could not open stream");
     stream.play().expect("Could not play the stream");

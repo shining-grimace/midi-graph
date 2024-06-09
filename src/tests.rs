@@ -23,7 +23,7 @@ fn can_decode_wav_file() {
 #[test]
 fn can_play_square_stream() {
     let smf = smf_from_file(MIDI_FILE).unwrap();
-    let midi = MidiSource::new(smf, Box::new(SquareWaveSource::default())).unwrap();
+    let midi = MidiSource::new(smf, || Box::new(SquareWaveSource::default())).unwrap();
     let mixer = BaseMixer::from_source(Box::new(midi));
     let stream = mixer.open_stream();
     assert!(stream.is_ok());
@@ -40,8 +40,7 @@ fn can_play_square_stream() {
 #[test]
 fn can_play_wav_stream() {
     let smf = smf_from_file(MIDI_FILE).unwrap();
-    let sample = wav_from_file(WAV_FILE).unwrap();
-    let midi = MidiSource::new(smf, Box::new(sample)).unwrap();
+    let midi = MidiSource::new(smf, || Box::new(wav_from_file(WAV_FILE).unwrap())).unwrap();
     let mixer = BaseMixer::from_source(Box::new(midi));
     let stream = mixer.open_stream();
     assert!(stream.is_ok());

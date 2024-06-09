@@ -17,7 +17,10 @@ mod source;
 
 pub use error::Error;
 pub use mix::base::BaseMixer;
-pub use source::{midi::MidiSource, square::SquareWaveSource, wav::WavSource, AudioSource};
+pub use source::{
+    dynamic_mixer::DynamicMixerSource, midi::MidiSource, square::SquareWaveSource, wav::WavSource,
+    AudioSource,
+};
 
 pub mod util {
     pub use crate::file::midi::*;

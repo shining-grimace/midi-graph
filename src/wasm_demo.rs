@@ -8,7 +8,7 @@ const MIDI_FILE: &'static [u8] = include_bytes!("../resources/dansenapolitaine.m
 #[wasm_bindgen]
 pub fn play_stream() {
     let smf = smf_from_bytes(MIDI_FILE).unwrap();
-    let midi = MidiSource::new(smf, Box::new(SquareWaveSource::default()));
+    let midi = MidiSource::new(smf, || Box::new(SquareWaveSource::default()));
     let mixer = BaseMixer::from_source(midi);
     let stream = mixer.open_stream().expect("Could not open stream");
     stream.play().expect("Could not play the stream");

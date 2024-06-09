@@ -1,6 +1,6 @@
 mod util;
 
-use crate::{AudioSource, Error};
+use crate::{AudioSource, DynamicMixerSource, Error};
 use midly::{MidiMessage, Smf, TrackEvent, TrackEventKind};
 
 #[cfg(debug_assertions)]
@@ -10,29 +10,31 @@ const PLAYBACK_TRACK: usize = 1;
 
 pub struct MidiSource<'a> {
     smf: Smf<'a>,
-    source: Box<dyn AudioSource + Send + 'static>,
+    source: Box<DynamicMixerSource>,
     has_finished: bool,
     next_event_index: usize,
     samples_per_tick: f64,
     event_ticks_progress: isize,
-    current_note: Option<u8>,
 }
 
 impl<'a> MidiSource<'a> {
-    pub fn new(smf: Smf<'a>, source: Box<dyn AudioSource + Send + 'static>) -> Result<Self, Error> {
+    pub fn new(
+        smf: Smf<'a>,
+        source_spawner: fn() -> Box<dyn AudioSource + Send + 'static>,
+    ) -> Result<Self, Error> {
         #[cfg(debug_assertions)]
         log::log_loaded_midi(&smf, PLAYBACK_TRACK);
 
         let samples_per_tick = util::get_samples_per_tick(&smf)?;
+        let source = DynamicMixerSource::new(source_spawner);
 
         Ok(Self {
             smf,
-            source,
+            source: Box::new(source),
             has_finished: false,
             next_event_index: 0,
             samples_per_tick,
             event_ticks_progress: 0,
-            current_note: None,
         })
     }
 
@@ -44,7 +46,6 @@ impl<'a> MidiSource<'a> {
         } = event.kind
         {
             let note = u8::from(key);
-            self.current_note = Some(note);
             self.source.on_note_on(note);
         }
         if let TrackEventKind::Midi {
@@ -52,12 +53,8 @@ impl<'a> MidiSource<'a> {
             message: MidiMessage::NoteOff { key, vel: _ },
         } = event.kind
         {
-            if let Some(note) = self.current_note {
-                if note == key {
-                    self.current_note = None;
-                    self.source.on_note_off(note);
-                }
-            }
+            let note = u8::from(key);
+            self.source.on_note_off(note);
         }
     }
 }
@@ -85,13 +82,8 @@ impl<'a> AudioSource for MidiSource<'a> {
         if ticks_until_event > 0 {
             let ticks_available = ((buffer.len() as f64) / self.samples_per_tick) as isize;
             self.event_ticks_progress += ticks_until_event.min(ticks_available);
-            match self.current_note {
-                Some(note) => {
-                    self.source
-                        .fill_buffer(note, &mut buffer[0..samples_to_play_now]);
-                }
-                None => {}
-            };
+            self.source
+                .fill_buffer(0, &mut buffer[0..samples_to_play_now]);
         }
         if self.event_ticks_progress >= event_ticks_delta {
             self.update_on_event(*next_event);
