@@ -1,7 +1,9 @@
+mod track;
 mod util;
 
-use crate::{AudioSource, DynamicMixerSource, Error};
+use crate::{AudioSource, Error};
 use midly::{MidiMessage, Smf, TrackEvent, TrackEventKind};
+use track::MidiTrackSource;
 
 #[cfg(debug_assertions)]
 use crate::source::log;
@@ -10,7 +12,7 @@ const PLAYBACK_TRACK: usize = 1;
 
 pub struct MidiSource<'a> {
     smf: Smf<'a>,
-    source: Box<DynamicMixerSource>,
+    source: Box<MidiTrackSource>,
     has_finished: bool,
     next_event_index: usize,
     samples_per_tick: f64,
@@ -26,7 +28,7 @@ impl<'a> MidiSource<'a> {
         log::log_loaded_midi(&smf, PLAYBACK_TRACK);
 
         let samples_per_tick = util::get_samples_per_tick(&smf)?;
-        let source = DynamicMixerSource::new(source_spawner);
+        let source = MidiTrackSource::new(source_spawner);
 
         Ok(Self {
             smf,

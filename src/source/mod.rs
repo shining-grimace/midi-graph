@@ -1,4 +1,3 @@
-pub mod dynamic_mixer;
 pub mod midi;
 pub mod square;
 pub mod util;

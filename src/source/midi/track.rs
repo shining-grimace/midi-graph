@@ -2,12 +2,12 @@ use crate::AudioSource;
 
 const SOURCE_CAPACITY: usize = 8;
 
-pub struct DynamicMixerSource {
+pub struct MidiTrackSource {
     active_count: usize,
     sources: Vec<(u8, Box<dyn AudioSource + Send + 'static>)>,
 }
 
-impl DynamicMixerSource {
+impl MidiTrackSource {
     pub fn new(source_spawner: fn() -> Box<dyn AudioSource + Send + 'static>) -> Self {
         let mut sources = Vec::new();
         for _ in 0..SOURCE_CAPACITY {
@@ -20,7 +20,7 @@ impl DynamicMixerSource {
     }
 }
 
-impl AudioSource for DynamicMixerSource {
+impl AudioSource for MidiTrackSource {
     fn on_note_on(&mut self, key: u8) {
         let same_notes = self.sources[0..self.active_count]
             .iter()
