@@ -23,6 +23,7 @@ impl BaseMixer {
         let stream = device.build_output_stream(
             &required_config,
             move |data: &mut [f32], _: &cpal::OutputCallbackInfo| {
+                data.fill(0.0);
                 source.fill_buffer(0, data);
             },
             move |err| {

@@ -55,13 +55,16 @@ impl AudioSource for WavSource {
         let size = buffer.len();
         let samples_remaining = self.data.len() - self.position;
         if samples_remaining == 0 {
-            buffer.fill(0.0);
         } else if samples_remaining < size {
             let source = &self.data[self.position..(self.position + samples_remaining)];
-            &buffer[0..samples_remaining].copy_from_slice(source);
-            &buffer[samples_remaining..size].fill(0.0);
+            for i in 0..samples_remaining {
+                buffer[i] += source[i];
+            }
         } else {
-            buffer.copy_from_slice(&self.data[self.position..(self.position + size)]);
+            let source = &self.data[self.position..(self.position + size)];
+            for i in 0..size {
+                buffer[i] += source[i];
+            }
         }
         self.position = (self.position + size).min(self.data.len());
     }

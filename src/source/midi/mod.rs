@@ -75,7 +75,6 @@ impl<'a> AudioSource for MidiSource<'a> {
 
     fn fill_buffer(&mut self, key: u8, buffer: &mut [f32]) {
         if self.has_finished {
-            buffer.fill(0.0);
             return;
         }
         let next_event = &self.smf.tracks[PLAYBACK_TRACK][self.next_event_index];
@@ -91,9 +90,7 @@ impl<'a> AudioSource for MidiSource<'a> {
                     self.source
                         .fill_buffer(note, &mut buffer[0..samples_to_play_now]);
                 }
-                None => {
-                    &buffer[0..samples_to_play_now].fill(0.0);
-                }
+                None => {}
             };
         }
         if self.event_ticks_progress >= event_ticks_delta {
@@ -103,7 +100,6 @@ impl<'a> AudioSource for MidiSource<'a> {
             let remaining_buffer = &mut buffer[samples_to_play_now..];
             if self.next_event_index >= self.smf.tracks[PLAYBACK_TRACK].len() {
                 self.has_finished = true;
-                remaining_buffer.fill(0.0);
                 return;
             }
             self.fill_buffer(key, remaining_buffer);

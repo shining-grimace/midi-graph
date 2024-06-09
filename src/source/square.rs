@@ -30,7 +30,6 @@ impl AudioSource for SquareWaveSource {
     fn fill_buffer(&mut self, key: u8, buffer: &mut [f32]) {
         let relative_pitch = crate::util::relative_pitch_of(key);
         if !self.is_on {
-            buffer.fill(0.0);
             return;
         }
         let size = buffer.len();
@@ -45,7 +44,7 @@ impl AudioSource for SquareWaveSource {
                 stretched_progress -= pitch_period_samples;
             }
             let duty = stretched_progress / pitch_period_samples;
-            buffer[i] = match duty > self.duty_cycle {
+            buffer[i] += match duty > self.duty_cycle {
                 true => 1.0,
                 false => -1.0,
             };
