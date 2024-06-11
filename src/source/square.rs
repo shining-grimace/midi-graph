@@ -1,4 +1,4 @@
-use crate::{constants::PLAYBACK_SAMPLE_RATE, AudioSource};
+use crate::{config::PLAYBACK_SAMPLE_RATE, AudioSource};
 
 pub struct SquareWaveSource {
     is_on: bool,

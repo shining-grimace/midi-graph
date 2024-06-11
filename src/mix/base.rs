@@ -1,4 +1,4 @@
-use crate::{AudioSource, Error};
+use crate::{config, AudioSource, Error};
 use cpal::traits::{DeviceTrait, HostTrait};
 use cpal::{Stream, StreamConfig};
 
@@ -15,9 +15,9 @@ impl BaseMixer {
         let host = cpal::default_host();
         let device = host.default_output_device().ok_or(Error::NoDevice)?;
         let required_config = StreamConfig {
-            buffer_size: cpal::BufferSize::Fixed(2048),
-            channels: 2,
-            sample_rate: cpal::SampleRate(48000),
+            buffer_size: cpal::BufferSize::Fixed(config::BUFFER_SIZE as u32),
+            channels: config::CHANNEL_COUNT as u16,
+            sample_rate: cpal::SampleRate(config::PLAYBACK_SAMPLE_RATE as u32),
         };
         let mut source = self.source;
         let stream = device.build_output_stream(
