@@ -24,7 +24,7 @@ impl BaseMixer {
             &required_config,
             move |data: &mut [f32], _: &cpal::OutputCallbackInfo| {
                 data.fill(0.0);
-                source.fill_buffer(0, data);
+                source.fill_buffer(data);
             },
             move |err| {
                 println!("Stream error: {:?}", err);

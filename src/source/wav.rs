@@ -3,13 +3,18 @@ use hound::{SampleFormat, WavSpec};
 
 pub struct WavSource {
     position: usize,
+    current_note: u8,
     data: Vec<f32>,
 }
 
 impl WavSource {
     pub fn new_from_data(spec: WavSpec, data: Vec<f32>) -> Result<Self, Error> {
         Self::validate_spec(&spec)?;
-        Ok(Self { position: 0, data })
+        Ok(Self {
+            position: 0,
+            current_note: 0,
+            data,
+        })
     }
 
     fn validate_spec(spec: &WavSpec) -> Result<(), Error> {
@@ -44,14 +49,18 @@ impl WavSource {
 impl AudioSource for WavSource {
     fn on_note_on(&mut self, key: u8) {
         self.position = 0;
+        self.current_note = key;
     }
 
     fn on_note_off(&mut self, key: u8) {
+        if self.current_note != key {
+            return;
+        }
         self.position = self.data.len();
     }
 
-    fn fill_buffer(&mut self, key: u8, buffer: &mut [f32]) {
-        let relative_pitch = crate::util::relative_pitch_of(key);
+    fn fill_buffer(&mut self, buffer: &mut [f32]) {
+        let relative_pitch = crate::util::relative_pitch_of(self.current_note);
         let size = buffer.len();
         let samples_remaining = self.data.len() - self.position;
         if samples_remaining == 0 {

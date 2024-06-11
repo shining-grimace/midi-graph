@@ -3,7 +3,6 @@ use midly::Smf;
 use std::sync::Arc;
 
 pub struct MidiChunkSource<'a> {
-    smf: Arc<Smf<'a>>,
     tracks: Vec<Box<MidiTrackSource<'a>>>,
 }
 
@@ -25,21 +24,18 @@ impl<'a> MidiChunkSource<'a> {
             );
             tracks.push(Box::new(source));
         }
-        Ok(Self {
-            smf: smf_arc,
-            tracks,
-        })
+        Ok(Self { tracks })
     }
 }
 
 impl<'a> AudioSource for MidiChunkSource<'a> {
-    fn on_note_on(&mut self, key: u8) {}
+    fn on_note_on(&mut self, _key: u8) {}
 
-    fn on_note_off(&mut self, key: u8) {}
+    fn on_note_off(&mut self, _key: u8) {}
 
-    fn fill_buffer(&mut self, key: u8, buffer: &mut [f32]) {
+    fn fill_buffer(&mut self, buffer: &mut [f32]) {
         for track in self.tracks.iter_mut() {
-            track.fill_buffer(key, buffer);
+            track.fill_buffer(buffer);
         }
     }
 }

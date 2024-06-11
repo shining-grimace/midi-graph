@@ -28,8 +28,6 @@ impl<'a> MidiSource<'a> {
             has_finished: false,
         })
     }
-
-    fn load_source(&mut self) {}
 }
 
 impl<'a> AudioSource for MidiSource<'a> {
@@ -41,7 +39,7 @@ impl<'a> AudioSource for MidiSource<'a> {
         self.has_finished = true;
     }
 
-    fn fill_buffer(&mut self, key: u8, buffer: &mut [f32]) {
-        self.source.fill_buffer(key, buffer);
+    fn fill_buffer(&mut self, buffer: &mut [f32]) {
+        self.source.fill_buffer(buffer);
     }
 }

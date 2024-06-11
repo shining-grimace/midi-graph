@@ -60,8 +60,7 @@ impl<'a> MidiTrackSource<'a> {
 
     fn write_buffer(&mut self, buffer: &mut [f32]) {
         for i in 0..self.active_count {
-            let note = self.sources[i].0;
-            self.sources[i].1.fill_buffer(note, buffer);
+            self.sources[i].1.fill_buffer(buffer);
         }
     }
 }
@@ -109,7 +108,7 @@ impl<'a> AudioSource for MidiTrackSource<'a> {
         self.active_count -= 1;
     }
 
-    fn fill_buffer(&mut self, key: u8, buffer: &mut [f32]) {
+    fn fill_buffer(&mut self, buffer: &mut [f32]) {
         let smf = Arc::clone(&self.smf);
         let track_data = &smf.tracks[self.track_no];
         if self.has_finished {
