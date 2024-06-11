@@ -45,8 +45,8 @@ impl AudioSource for SquareWaveSource {
             }
             let duty = stretched_progress / pitch_period_samples;
             buffer[i] += match duty > self.duty_cycle {
-                true => 1.0,
-                false => -1.0,
+                true => 0.25,
+                false => -0.25,
             };
         }
 
