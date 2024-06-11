@@ -66,6 +66,10 @@ impl AudioSource for WavSource {
         #[cfg(debug_assertions)]
         assert_eq!(size % config::CHANNEL_COUNT, 0);
 
+        // Currently only-supported channel configuration
+        #[cfg(debug_assertions)]
+        assert_eq!(config::CHANNEL_COUNT, 2);
+
         let samples_can_play = size / config::CHANNEL_COUNT;
         let samples_remaining = self.data.len() - self.position;
         let samples_will_play = samples_can_play.min(samples_remaining);

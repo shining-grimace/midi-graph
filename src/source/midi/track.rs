@@ -124,6 +124,10 @@ impl<'a> AudioSource for MidiTrackSource<'a> {
         #[cfg(debug_assertions)]
         assert_eq!(buffer.len() % config::CHANNEL_COUNT, 0);
 
+        // Currently only-supported channel configuration
+        #[cfg(debug_assertions)]
+        assert_eq!(config::CHANNEL_COUNT, 2);
+
         if ticks_until_event > 0 {
             let ticks_available =
                 ((samples_available_per_channel as f64) / self.samples_per_tick) as isize;

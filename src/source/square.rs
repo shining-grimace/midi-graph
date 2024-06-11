@@ -47,6 +47,10 @@ impl AudioSource for SquareWaveSource {
         #[cfg(debug_assertions)]
         assert_eq!(size % config::CHANNEL_COUNT, 0);
 
+        // Currently only-supported channel configuration
+        #[cfg(debug_assertions)]
+        assert_eq!(config::CHANNEL_COUNT, 2);
+
         for i in (0..size).step_by(config::CHANNEL_COUNT) {
             stretched_progress = stretched_progress + 1.0;
             if stretched_progress >= pitch_period_samples {
