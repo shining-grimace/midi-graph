@@ -1,26 +1,72 @@
 use crate::AudioSource;
+use midly::{MidiMessage, Smf, TrackEvent, TrackEventKind};
+use std::sync::Arc;
 
 const SOURCE_CAPACITY: usize = 8;
 
-pub struct MidiTrackSource {
+pub struct MidiTrackSource<'a> {
+    smf: Arc<Smf<'a>>,
+    track_no: usize,
+    samples_per_tick: f64,
+    has_finished: bool,
     active_count: usize,
+    next_event_index: usize,
+    event_ticks_progress: isize,
     sources: Vec<(u8, Box<dyn AudioSource + Send + 'static>)>,
 }
 
-impl MidiTrackSource {
-    pub fn new(source_spawner: fn() -> Box<dyn AudioSource + Send + 'static>) -> Self {
+impl<'a> MidiTrackSource<'a> {
+    pub fn new(
+        smf: Arc<Smf<'a>>,
+        track_no: usize,
+        samples_per_tick: f64,
+        source_spawner: fn() -> Box<dyn AudioSource + Send + 'static>,
+    ) -> Self {
         let mut sources = Vec::new();
         for _ in 0..SOURCE_CAPACITY {
             sources.push((0, source_spawner()));
         }
         Self {
+            smf,
+            track_no,
+            samples_per_tick,
+            has_finished: false,
             active_count: 0,
+            next_event_index: 0,
+            event_ticks_progress: 0,
             sources,
+        }
+    }
+
+    // Update self when a new event was reached
+    fn update_on_event(&mut self, event: &TrackEvent) {
+        if let TrackEventKind::Midi {
+            channel: _,
+            message: MidiMessage::NoteOn { key, vel: _ },
+        } = event.kind
+        {
+            let note = u8::from(key);
+            self.on_note_on(note);
+        }
+        if let TrackEventKind::Midi {
+            channel: _,
+            message: MidiMessage::NoteOff { key, vel: _ },
+        } = event.kind
+        {
+            let note = u8::from(key);
+            self.on_note_off(note);
+        }
+    }
+
+    fn write_buffer(&mut self, buffer: &mut [f32]) {
+        for i in 0..self.active_count {
+            let note = self.sources[i].0;
+            self.sources[i].1.fill_buffer(note, buffer);
         }
     }
 }
 
-impl AudioSource for MidiTrackSource {
+impl<'a> AudioSource for MidiTrackSource<'a> {
     fn on_note_on(&mut self, key: u8) {
         let same_notes = self.sources[0..self.active_count]
             .iter()
@@ -64,9 +110,31 @@ impl AudioSource for MidiTrackSource {
     }
 
     fn fill_buffer(&mut self, key: u8, buffer: &mut [f32]) {
-        for i in 0..self.active_count {
-            let note = self.sources[i].0;
-            self.sources[i].1.fill_buffer(note, buffer);
+        let smf = Arc::clone(&self.smf);
+        let track_data = &smf.tracks[self.track_no];
+        if self.has_finished {
+            return;
+        }
+        let next_event = &track_data[self.next_event_index];
+        let event_ticks_delta = u32::from(next_event.delta) as isize;
+        let ticks_until_event = event_ticks_delta - self.event_ticks_progress;
+        let samples_until_event = (ticks_until_event as f64 * self.samples_per_tick) as usize;
+        let samples_to_play_now = samples_until_event.min(buffer.len());
+        if ticks_until_event > 0 {
+            let ticks_available = ((buffer.len() as f64) / self.samples_per_tick) as isize;
+            self.event_ticks_progress += ticks_until_event.min(ticks_available);
+            self.write_buffer(&mut buffer[0..samples_to_play_now]);
+        }
+        if self.event_ticks_progress >= event_ticks_delta {
+            self.update_on_event(next_event);
+            self.next_event_index += 1;
+            self.event_ticks_progress = 0;
+            let remaining_buffer = &mut buffer[samples_to_play_now..];
+            if self.next_event_index >= track_data.len() {
+                self.has_finished = true;
+                return;
+            }
+            self.write_buffer(remaining_buffer);
         }
     }
 }

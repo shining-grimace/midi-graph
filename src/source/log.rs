@@ -1,6 +1,6 @@
 use midly::{num::u24, Fps, MetaMessage, MidiMessage, Smf, Timing, TrackEvent, TrackEventKind};
 
-pub fn log_loaded_midi(smf: &Smf, playback_track: usize) {
+pub fn log_loaded_midi(smf: &Smf) {
     println!("{}", get_log_for_header(smf));
     for track_events in smf.tracks.iter() {
         for event in track_events.iter() {
@@ -11,14 +11,12 @@ pub fn log_loaded_midi(smf: &Smf, playback_track: usize) {
     }
     println!("MIDI file loaded.");
     println!("The file has {} tracks.", smf.tracks.len());
-    if smf.tracks.len() > playback_track {
-        println!(
-            "Track {} has {} events.",
-            playback_track,
-            smf.tracks[playback_track].len()
-        );
+    if smf.tracks.is_empty() {
+        println!("There are no tracks to play.");
     } else {
-        println!("There is no track to play.");
+        for (index, track) in smf.tracks.iter().enumerate() {
+            println!("Track {} has {} events.", index, track.len());
+        }
     }
 }
 
