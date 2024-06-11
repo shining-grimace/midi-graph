@@ -1,4 +1,4 @@
-use crate::{AudioSource, Error};
+use crate::{config, AudioSource, Error};
 use hound::{SampleFormat, WavSpec};
 
 pub struct WavSource {
@@ -62,18 +62,21 @@ impl AudioSource for WavSource {
     fn fill_buffer(&mut self, buffer: &mut [f32]) {
         let relative_pitch = crate::util::relative_pitch_of(self.current_note);
         let size = buffer.len();
+
+        #[cfg(debug_assertions)]
+        assert_eq!(size % config::CHANNEL_COUNT, 0);
+
+        let samples_can_play = size / config::CHANNEL_COUNT;
         let samples_remaining = self.data.len() - self.position;
-        if samples_remaining == 0 {
-        } else if samples_remaining < size {
-            let source = &self.data[self.position..(self.position + samples_remaining)];
-            for i in 0..samples_remaining {
-                buffer[i] += source[i];
-            }
-        } else {
-            let source = &self.data[self.position..(self.position + size)];
-            for i in 0..size {
-                buffer[i] += source[i];
-            }
+        let samples_will_play = samples_can_play.min(samples_remaining);
+        let buffer_length_to_write = samples_will_play * config::CHANNEL_COUNT;
+        let source = &self.data[self.position..(self.position + samples_will_play)];
+        let mut source_index = 0;
+        for i in (0..buffer_length_to_write).step_by(config::CHANNEL_COUNT) {
+            let sample = source[source_index];
+            buffer[i] += sample;
+            buffer[i + 1] += sample;
+            source_index += 1;
         }
         self.position = (self.position + size).min(self.data.len());
     }

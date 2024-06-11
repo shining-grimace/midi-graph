@@ -1,4 +1,4 @@
-use crate::AudioSource;
+use crate::{config, AudioSource};
 use midly::{MidiMessage, Smf, TrackEvent, TrackEventKind};
 use std::sync::Arc;
 
@@ -118,17 +118,23 @@ impl<'a> AudioSource for MidiTrackSource<'a> {
         let event_ticks_delta = u32::from(next_event.delta) as isize;
         let ticks_until_event = event_ticks_delta - self.event_ticks_progress;
         let samples_until_event = (ticks_until_event as f64 * self.samples_per_tick) as usize;
-        let samples_to_play_now = samples_until_event.min(buffer.len());
+        let samples_available_per_channel = buffer.len() / config::CHANNEL_COUNT;
+        let samples_to_play_now = samples_until_event.min(samples_available_per_channel);
+
+        #[cfg(debug_assertions)]
+        assert_eq!(buffer.len() % config::CHANNEL_COUNT, 0);
+
         if ticks_until_event > 0 {
-            let ticks_available = ((buffer.len() as f64) / self.samples_per_tick) as isize;
+            let ticks_available =
+                ((samples_available_per_channel as f64) / self.samples_per_tick) as isize;
             self.event_ticks_progress += ticks_until_event.min(ticks_available);
-            self.write_buffer(&mut buffer[0..samples_to_play_now]);
+            self.write_buffer(&mut buffer[0..(samples_to_play_now * config::CHANNEL_COUNT)]);
         }
         if self.event_ticks_progress >= event_ticks_delta {
             self.update_on_event(next_event);
             self.next_event_index += 1;
             self.event_ticks_progress = 0;
-            let remaining_buffer = &mut buffer[samples_to_play_now..];
+            let remaining_buffer = &mut buffer[(samples_to_play_now * config::CHANNEL_COUNT)..];
             if self.next_event_index >= track_data.len() {
                 self.has_finished = true;
                 return;

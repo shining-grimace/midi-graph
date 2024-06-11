@@ -1,4 +1,4 @@
-use crate::{config::PLAYBACK_SAMPLE_RATE, AudioSource};
+use crate::{config, AudioSource};
 
 pub struct SquareWaveSource {
     is_on: bool,
@@ -14,7 +14,7 @@ impl Default for SquareWaveSource {
             is_on: false,
             current_note: 0,
             cycle_progress_samples: 0.0,
-            period_samples_a440: PLAYBACK_SAMPLE_RATE as f32 / 440.0,
+            period_samples_a440: config::PLAYBACK_SAMPLE_RATE as f32 / 440.0,
             duty_cycle: 0.75,
         }
     }
@@ -40,20 +40,25 @@ impl AudioSource for SquareWaveSource {
         }
         let size = buffer.len();
         let note_frequency = 440.0 * 2.0f32.powf(relative_pitch / 12.0);
-        let pitch_period_samples = PLAYBACK_SAMPLE_RATE as f32 / note_frequency;
+        let pitch_period_samples = config::PLAYBACK_SAMPLE_RATE as f32 / note_frequency;
         let mut stretched_progress =
             self.cycle_progress_samples * pitch_period_samples / self.period_samples_a440;
 
-        for i in 0..size {
+        #[cfg(debug_assertions)]
+        assert_eq!(size % config::CHANNEL_COUNT, 0);
+
+        for i in (0..size).step_by(config::CHANNEL_COUNT) {
             stretched_progress = stretched_progress + 1.0;
             if stretched_progress >= pitch_period_samples {
                 stretched_progress -= pitch_period_samples;
             }
             let duty = stretched_progress / pitch_period_samples;
-            buffer[i] += match duty > self.duty_cycle {
+            let amplitude = match duty > self.duty_cycle {
                 true => 0.25,
                 false => -0.25,
             };
+            buffer[i] += amplitude;
+            buffer[i + 1] += amplitude;
         }
 
         self.cycle_progress_samples =
