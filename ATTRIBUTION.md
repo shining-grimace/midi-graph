@@ -1,8 +1,10 @@
 
 ### Test Resources
 
-`MIDI_sample.mid` taken from Wikipedia.
-https://en.wikipedia.org/wiki/File:MIDI_sample.mid
+`dansenapolitaine.mid`
+Tchaikovsky's Neapolitan Dance
+Public Domain
+https://www.mutopiaproject.org/ftp/TchaikovskyPI/dansenapolitaine/dansenapolitaine.mid
 
 `kick.wav` by Hard3eat taken from freesound.
 Licensed under the Creative Commons 0 License.
