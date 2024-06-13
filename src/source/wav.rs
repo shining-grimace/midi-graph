@@ -82,6 +82,6 @@ impl AudioSource for WavSource {
             buffer[i + 1] += sample;
             source_index += 1;
         }
-        self.position = (self.position + size).min(self.data.len());
+        self.position = (self.position + samples_will_play).min(self.data.len());
     }
 }
