@@ -16,6 +16,9 @@ Licensed under the Creative Commons 0 License.
 https://freesound.org/people/ojirio/sounds/106951/
 https://creativecommons.org/publicdomain/zero/1.0/
 
+'piano-note-1-a440.wav' adapted from original Piano Note 1.
+Piano Note 1 by Aiwha -- https://freesound.org/s/196101/ -- License: Attribution 4.0
+
 ### Helpful Reading
 
 Sample code to play audio from WebAssembly
