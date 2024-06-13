@@ -1,10 +1,10 @@
-use crate::{config, AudioSource, Error};
+use crate::{config, util, AudioSource, Error};
 use hound::{SampleFormat, WavSpec};
 
 pub struct WavSource {
     position: usize,
     current_note: u8,
-    data: Vec<f32>,
+    source_data: Vec<f32>,
 }
 
 impl WavSource {
@@ -13,7 +13,7 @@ impl WavSource {
         Ok(Self {
             position: 0,
             current_note: 0,
-            data,
+            source_data: data,
         })
     }
 
@@ -50,17 +50,18 @@ impl AudioSource for WavSource {
     fn on_note_on(&mut self, key: u8) {
         self.position = 0;
         self.current_note = key;
+
+        let relative_pitch = util::relative_pitch_of(key) as f64;
     }
 
     fn on_note_off(&mut self, key: u8) {
         if self.current_note != key {
             return;
         }
-        self.position = self.data.len();
+        self.position = self.source_data.len();
     }
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) {
-        let relative_pitch = crate::util::relative_pitch_of(self.current_note);
         let size = buffer.len();
 
         #[cfg(debug_assertions)]
@@ -71,10 +72,10 @@ impl AudioSource for WavSource {
         assert_eq!(config::CHANNEL_COUNT, 2);
 
         let samples_can_play = size / config::CHANNEL_COUNT;
-        let samples_remaining = self.data.len() - self.position;
+        let samples_remaining = self.source_data.len() - self.position;
         let samples_will_play = samples_can_play.min(samples_remaining);
         let buffer_length_to_write = samples_will_play * config::CHANNEL_COUNT;
-        let source = &self.data[self.position..(self.position + samples_will_play)];
+        let source = &self.source_data[self.position..(self.position + samples_will_play)];
         let mut source_index = 0;
         for i in (0..buffer_length_to_write).step_by(config::CHANNEL_COUNT) {
             let sample = source[source_index];
@@ -82,6 +83,6 @@ impl AudioSource for WavSource {
             buffer[i + 1] += sample;
             source_index += 1;
         }
-        self.position = (self.position + samples_will_play).min(self.data.len());
+        self.position = (self.position + samples_will_play).min(self.source_data.len());
     }
 }

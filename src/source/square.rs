@@ -1,4 +1,4 @@
-use crate::{config, AudioSource};
+use crate::{config, util, AudioSource};
 
 pub struct SquareWaveSource {
     is_on: bool,
@@ -34,12 +34,11 @@ impl AudioSource for SquareWaveSource {
     }
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) {
-        let relative_pitch = crate::util::relative_pitch_of(self.current_note);
         if !self.is_on {
             return;
         }
         let size = buffer.len();
-        let note_frequency = 440.0 * 2.0f32.powf(relative_pitch / 12.0);
+        let note_frequency = util::frequency_of(self.current_note);
         let pitch_period_samples = config::PLAYBACK_SAMPLE_RATE as f32 / note_frequency;
         let mut stretched_progress =
             self.cycle_progress_samples * pitch_period_samples / self.period_samples_a440;
