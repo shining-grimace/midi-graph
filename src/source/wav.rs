@@ -67,33 +67,42 @@ impl AudioSource for WavSource {
         #[cfg(debug_assertions)]
         assert_eq!(config::CHANNEL_COUNT, 2);
 
+        // Scaling
+        let relative_pitch = util::relative_pitch_ratio_of(self.current_note) as f64;
+        let source_frames_per_output_frame = 1.0 / relative_pitch;
+
         // Output properties
         let samples_can_write = buffer.len();
         let frames_can_write = samples_can_write / config::CHANNEL_COUNT;
 
         // Input properties
-        let relative_pitch = util::relative_pitch_ratio_of(self.current_note) as f64;
         let source_samples_remaining = self.source_data.len() - self.position;
         let source_frames_remaining = source_samples_remaining / config::CHANNEL_COUNT;
 
         // Transfer alignment
-        let source_frames_per_output_frame = 1.0 / relative_pitch;
         let needed_source_frames = {
             let unrounded = (frames_can_write as f64 * source_frames_per_output_frame) as usize;
             unrounded - (unrounded % config::CHANNEL_COUNT)
         };
-        let frames_will_take = needed_source_frames.min(source_frames_remaining);
         let enough_frames_in_source = needed_source_frames <= source_frames_remaining;
         let frames_will_write = match enough_frames_in_source {
-            true => {
-                let unrounded = (frames_will_take as f64 / source_frames_per_output_frame) as usize;
-                unrounded - (unrounded % config::CHANNEL_COUNT)
+            true => frames_can_write,
+            false => {
+                let unrounded =
+                    (source_frames_remaining as f64 / source_frames_per_output_frame) as usize;
+                unrounded - unrounded % config::CHANNEL_COUNT
             }
-            false => frames_can_write,
         };
 
-        let source = &self.source_data
-            [self.position..(self.position + frames_will_take * config::CHANNEL_COUNT)];
+        #[cfg(debug_assertions)]
+        {
+            let largest_index = ((frames_will_write - 1) as f64 * source_frames_per_output_frame)
+                as usize
+                * config::CHANNEL_COUNT;
+            assert!(largest_index < self.source_data.len());
+        }
+
+        let source = &self.source_data[self.position..];
         for i in 0..frames_will_write {
             let output_index = i * config::CHANNEL_COUNT;
             let source_index =
