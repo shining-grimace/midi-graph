@@ -50,8 +50,6 @@ impl AudioSource for WavSource {
     fn on_note_on(&mut self, key: u8) {
         self.position = 0;
         self.current_note = key;
-
-        let relative_pitch = util::relative_pitch_of(key) as f64;
     }
 
     fn on_note_off(&mut self, key: u8) {
@@ -62,27 +60,48 @@ impl AudioSource for WavSource {
     }
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) {
-        let size = buffer.len();
-
         #[cfg(debug_assertions)]
-        assert_eq!(size % config::CHANNEL_COUNT, 0);
+        assert_eq!(buffer.len() % config::CHANNEL_COUNT, 0);
 
         // Currently only-supported channel configuration
         #[cfg(debug_assertions)]
         assert_eq!(config::CHANNEL_COUNT, 2);
 
-        let samples_can_play = size / config::CHANNEL_COUNT;
-        let samples_remaining = self.source_data.len() - self.position;
-        let samples_will_play = samples_can_play.min(samples_remaining);
-        let buffer_length_to_write = samples_will_play * config::CHANNEL_COUNT;
-        let source = &self.source_data[self.position..(self.position + samples_will_play)];
-        let mut source_index = 0;
-        for i in (0..buffer_length_to_write).step_by(config::CHANNEL_COUNT) {
-            let sample = source[source_index];
-            buffer[i] += sample;
-            buffer[i + 1] += sample;
-            source_index += 1;
+        // Output properties
+        let samples_can_write = buffer.len();
+        let frames_can_write = samples_can_write / config::CHANNEL_COUNT;
+
+        // Input properties
+        let relative_pitch = util::relative_pitch_ratio_of(self.current_note) as f64;
+        let source_samples_remaining = self.source_data.len() - self.position;
+        let source_frames_remaining = source_samples_remaining / config::CHANNEL_COUNT;
+
+        // Transfer alignment
+        let source_frames_per_output_frame = 1.0 / relative_pitch;
+        let expected_source_frames = {
+            let unrounded = (frames_can_write as f64 * source_frames_per_output_frame) as usize;
+            (unrounded / config::CHANNEL_COUNT) * config::CHANNEL_COUNT
+        };
+        let frames_will_transfer = expected_source_frames.min(source_frames_remaining);
+        let frames_will_write = match frames_will_transfer < source_frames_remaining {
+            true => {
+                let unrounded =
+                    (frames_will_transfer as f64 / source_frames_per_output_frame) as usize;
+                (unrounded / config::CHANNEL_COUNT) * config::CHANNEL_COUNT
+            }
+            false => frames_can_write,
+        };
+
+        let source = &self.source_data
+            [self.position..(self.position + frames_will_transfer * config::CHANNEL_COUNT)];
+        for i in 0..frames_will_write {
+            let output_index = i * config::CHANNEL_COUNT;
+            let source_index =
+                (i as f64 * source_frames_per_output_frame) as usize * config::CHANNEL_COUNT;
+            buffer[output_index] += source[source_index];
+            buffer[output_index + 1] += source[source_index + 1];
         }
-        self.position = (self.position + samples_will_play).min(self.source_data.len());
+        self.position = (self.position + (frames_will_write * config::CHANNEL_COUNT))
+            .min(self.source_data.len());
     }
 }
