@@ -78,22 +78,22 @@ impl AudioSource for WavSource {
 
         // Transfer alignment
         let source_frames_per_output_frame = 1.0 / relative_pitch;
-        let expected_source_frames = {
+        let needed_source_frames = {
             let unrounded = (frames_can_write as f64 * source_frames_per_output_frame) as usize;
-            (unrounded / config::CHANNEL_COUNT) * config::CHANNEL_COUNT
+            unrounded - (unrounded % config::CHANNEL_COUNT)
         };
-        let frames_will_transfer = expected_source_frames.min(source_frames_remaining);
-        let frames_will_write = match frames_will_transfer < source_frames_remaining {
+        let frames_will_take = needed_source_frames.min(source_frames_remaining);
+        let enough_frames_in_source = needed_source_frames <= source_frames_remaining;
+        let frames_will_write = match enough_frames_in_source {
             true => {
-                let unrounded =
-                    (frames_will_transfer as f64 / source_frames_per_output_frame) as usize;
-                (unrounded / config::CHANNEL_COUNT) * config::CHANNEL_COUNT
+                let unrounded = (frames_will_take as f64 / source_frames_per_output_frame) as usize;
+                unrounded - (unrounded % config::CHANNEL_COUNT)
             }
             false => frames_can_write,
         };
 
         let source = &self.source_data
-            [self.position..(self.position + frames_will_transfer * config::CHANNEL_COUNT)];
+            [self.position..(self.position + frames_will_take * config::CHANNEL_COUNT)];
         for i in 0..frames_will_write {
             let output_index = i * config::CHANNEL_COUNT;
             let source_index =
