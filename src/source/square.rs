@@ -1,4 +1,4 @@
-use crate::{config, util, AudioSource};
+use crate::{config, util, BufferConsumer, NoteEvent};
 
 pub struct SquareWaveSource {
     is_on: bool,
@@ -20,17 +20,20 @@ impl Default for SquareWaveSource {
     }
 }
 
-impl AudioSource for SquareWaveSource {
-    fn on_note_on(&mut self, key: u8) {
-        self.is_on = true;
-        self.current_note = key;
-    }
-
-    fn on_note_off(&mut self, key: u8) {
-        if self.current_note != key {
-            return;
+impl BufferConsumer for SquareWaveSource {
+    fn set_note(&mut self, event: NoteEvent) {
+        match event {
+            NoteEvent::NoteOn(note) => {
+                self.is_on = true;
+                self.current_note = note;
+            }
+            NoteEvent::NoteOff(note) => {
+                if self.current_note != note {
+                    return;
+                }
+                self.is_on = false;
+            }
         }
-        self.is_on = false;
     }
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) {

@@ -1,4 +1,4 @@
-use crate::{config, util, AudioSource, Error};
+use crate::{config, util, BufferConsumer, Error, NoteEvent};
 use hound::{SampleFormat, WavSpec};
 
 pub struct WavSource {
@@ -46,17 +46,20 @@ impl WavSource {
     }
 }
 
-impl AudioSource for WavSource {
-    fn on_note_on(&mut self, key: u8) {
-        self.position = 0;
-        self.current_note = key;
-    }
-
-    fn on_note_off(&mut self, key: u8) {
-        if self.current_note != key {
-            return;
+impl BufferConsumer for WavSource {
+    fn set_note(&mut self, event: NoteEvent) {
+        match event {
+            NoteEvent::NoteOn(note) => {
+                self.position = 0;
+                self.current_note = note;
+            }
+            NoteEvent::NoteOff(note) => {
+                if self.current_note != note {
+                    return;
+                }
+                self.position = self.source_data.len();
+            }
         }
-        self.position = self.source_data.len();
     }
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) {
@@ -96,10 +99,12 @@ impl AudioSource for WavSource {
 
         #[cfg(debug_assertions)]
         {
-            let largest_index = ((frames_will_write - 1) as f64 * source_frames_per_output_frame)
-                as usize
-                * config::CHANNEL_COUNT;
-            assert!(largest_index < self.source_data.len());
+            if frames_will_write > 0 {
+                let largest_index = ((frames_will_write - 1) as f64
+                    * source_frames_per_output_frame) as usize
+                    * config::CHANNEL_COUNT;
+                assert!(largest_index < self.source_data.len());
+            }
         }
 
         let source = &self.source_data[self.position..];

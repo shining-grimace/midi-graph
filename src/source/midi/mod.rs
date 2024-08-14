@@ -2,7 +2,7 @@ pub mod chunk;
 pub mod track;
 pub mod util;
 
-use crate::{AudioSource, Error, MidiChunkSource};
+use crate::{BufferConsumer, Error, MidiChunkSource, NoteConsumer, NoteEvent};
 use midly::Smf;
 
 #[cfg(debug_assertions)]
@@ -16,12 +16,12 @@ pub struct MidiSource<'a> {
 impl<'a> MidiSource<'a> {
     pub fn new(
         smf: Smf<'a>,
-        note_source_spawner: fn() -> Box<dyn AudioSource + Send + 'static>,
+        note_consumer_spawner: fn() -> Box<dyn NoteConsumer + Send + 'static>,
     ) -> Result<Self, Error> {
         #[cfg(debug_assertions)]
         log::log_loaded_midi(&smf);
 
-        let source = MidiChunkSource::new(smf, note_source_spawner)?;
+        let source = MidiChunkSource::new(smf, note_consumer_spawner)?;
 
         Ok(Self {
             source: Box::new(source),
@@ -30,13 +30,12 @@ impl<'a> MidiSource<'a> {
     }
 }
 
-impl<'a> AudioSource for MidiSource<'a> {
-    fn on_note_on(&mut self, _key: u8) {
-        self.has_finished = false;
-    }
-
-    fn on_note_off(&mut self, _key: u8) {
-        self.has_finished = true;
+impl<'a> BufferConsumer for MidiSource<'a> {
+    fn set_note(&mut self, event: NoteEvent) {
+        self.has_finished = match event {
+            NoteEvent::NoteOn(_) => true,
+            NoteEvent::NoteOff(_) => false,
+        };
     }
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) {
