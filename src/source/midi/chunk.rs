@@ -1,4 +1,4 @@
-use crate::{util, BufferConsumer, Error, MidiTrackSource, NoteConsumer, NoteEvent};
+use crate::{util, BufferConsumer, Error, MidiTrackSource, NoteEvent, SoundFont};
 use midly::Smf;
 use std::sync::Arc;
 
@@ -9,18 +9,19 @@ pub struct MidiChunkSource<'a> {
 impl<'a> MidiChunkSource<'a> {
     pub fn new(
         smf: Smf<'a>,
-        note_consumer_spawner: fn() -> Box<dyn NoteConsumer + Send + 'static>,
+        consumer_spawner: fn() -> Box<dyn BufferConsumer + Send + 'static>,
     ) -> Result<Self, Error> {
         let samples_per_tick = util::get_samples_per_tick(&smf)?;
         let mut tracks = Vec::new();
         let smf_arc = Arc::new(smf);
         let track_count = smf_arc.tracks.len();
         for track_no in 0..track_count {
+            let font = SoundFont::new(consumer_spawner);
             let source = MidiTrackSource::new(
                 Arc::clone(&smf_arc),
                 track_no,
                 samples_per_tick,
-                note_consumer_spawner,
+                Box::new(font),
             );
             tracks.push(Box::new(source));
         }

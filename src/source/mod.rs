@@ -13,7 +13,7 @@ pub trait BufferConsumer {
 }
 
 pub trait NoteConsumer {
-    fn restart_with_event(&mut self, event: NoteEvent);
+    fn restart_with_event(&mut self, event: &NoteEvent);
     fn fill_buffer(&mut self, buffer: &mut [f32]);
 }
 
