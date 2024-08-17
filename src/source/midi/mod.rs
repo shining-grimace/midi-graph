@@ -2,7 +2,7 @@ pub mod chunk;
 pub mod track;
 pub mod util;
 
-use crate::{BufferConsumer, Error, MidiChunkSource, NoteEvent};
+use crate::{BufferConsumer, Error, MidiChunkSource, NoteEvent, SoundFont};
 use midly::Smf;
 
 #[cfg(debug_assertions)]
@@ -14,14 +14,11 @@ pub struct MidiSource<'a> {
 }
 
 impl<'a> MidiSource<'a> {
-    pub fn new(
-        smf: Smf<'a>,
-        consumer_spawner: fn() -> Box<dyn BufferConsumer + Send + 'static>,
-    ) -> Result<Self, Error> {
+    pub fn new(smf: Smf<'a>, track_fonts: Vec<SoundFont>) -> Result<Self, Error> {
         #[cfg(debug_assertions)]
         log::log_loaded_midi(&smf);
 
-        let source = MidiChunkSource::new(smf, consumer_spawner)?;
+        let source = MidiChunkSource::new(smf, track_fonts)?;
 
         Ok(Self {
             source: Box::new(source),

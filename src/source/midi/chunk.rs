@@ -1,4 +1,4 @@
-use crate::{util, BufferConsumer, Error, MidiTrackSource, NoteEvent, NoteRange, SoundFontBuilder};
+use crate::{util, BufferConsumer, Error, MidiTrackSource, NoteEvent, SoundFont};
 use midly::Smf;
 use std::sync::Arc;
 
@@ -7,18 +7,17 @@ pub struct MidiChunkSource<'a> {
 }
 
 impl<'a> MidiChunkSource<'a> {
-    pub fn new(
-        smf: Smf<'a>,
-        consumer_spawner: fn() -> Box<dyn BufferConsumer + Send + 'static>,
-    ) -> Result<Self, Error> {
+    pub fn new(smf: Smf<'a>, track_fonts: Vec<SoundFont>) -> Result<Self, Error> {
         let samples_per_tick = util::get_samples_per_tick(&smf)?;
         let mut tracks = Vec::new();
         let smf_arc = Arc::new(smf);
         let track_count = smf_arc.tracks.len();
-        for track_no in 0..track_count {
-            let font = SoundFontBuilder::new()
-                .add_range(NoteRange::new(0, 255), consumer_spawner)
-                .build();
+        if track_fonts.len() != track_count {
+            return Err(Error::User(
+                "Number of track fonts does not match MIDI file track count".to_owned(),
+            ));
+        }
+        for (track_no, font) in track_fonts.into_iter().enumerate() {
             let source = MidiTrackSource::new(
                 Arc::clone(&smf_arc),
                 track_no,
