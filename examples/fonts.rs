@@ -2,20 +2,24 @@ extern crate midi_graph;
 
 use cpal::traits::StreamTrait;
 use midi_graph::{
-    util::smf_from_file, BaseMixer, MidiSource, NoteRange, SoundFontBuilder, SquareWaveSource,
+    util::smf_from_file, util::wav_from_file, BaseMixer, BufferConsumer, MidiSource, NoteRange,
+    SoundFontBuilder, SquareWaveSource,
 };
 use std::time::Duration;
 
 const MIDI_FILE: &'static str = "resources/dansenapolitaine.mid";
+const WAV_FILE: &'static str = "resources/piano-note-1-a440.wav";
 
 fn main() {
     let smf = smf_from_file(MIDI_FILE).unwrap();
     let fonts = (0..smf.tracks.len())
-        .map(|_| {
+        .map(|index| {
+            let spawner: fn() -> Box<dyn BufferConsumer + Send + 'static> = match index > 3 {
+                true => || Box::new(SquareWaveSource::default()),
+                false => || Box::new(wav_from_file(WAV_FILE).unwrap()),
+            };
             SoundFontBuilder::new()
-                .add_range(NoteRange::new(0, 255), || {
-                    Box::new(SquareWaveSource::default())
-                })
+                .add_range(NoteRange::new(0, 255), spawner)
                 .build()
         })
         .collect();
