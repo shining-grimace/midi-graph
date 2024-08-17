@@ -18,11 +18,11 @@ mod source;
 pub use error::Error;
 pub use mix::base::BaseMixer;
 pub use source::{
-    font::SoundFont,
+    font::{SoundFont, SoundFontBuilder},
     midi::{chunk::MidiChunkSource, track::MidiTrackSource, MidiSource},
     square::SquareWaveSource,
     wav::WavSource,
-    BufferConsumer, NoteConsumer, NoteEvent,
+    BufferConsumer, NoteConsumer, NoteEvent, NoteRange,
 };
 
 pub mod util {

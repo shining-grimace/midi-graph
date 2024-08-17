@@ -1,4 +1,4 @@
-use crate::{util, BufferConsumer, Error, MidiTrackSource, NoteEvent, SoundFont};
+use crate::{util, BufferConsumer, Error, MidiTrackSource, NoteEvent, NoteRange, SoundFontBuilder};
 use midly::Smf;
 use std::sync::Arc;
 
@@ -16,7 +16,9 @@ impl<'a> MidiChunkSource<'a> {
         let smf_arc = Arc::new(smf);
         let track_count = smf_arc.tracks.len();
         for track_no in 0..track_count {
-            let font = SoundFont::new(consumer_spawner);
+            let font = SoundFontBuilder::new()
+                .add_range(NoteRange::new(0, 255), consumer_spawner)
+                .build();
             let source = MidiTrackSource::new(
                 Arc::clone(&smf_arc),
                 track_no,
