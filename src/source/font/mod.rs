@@ -17,7 +17,7 @@ impl SoundFontBuilder {
     pub fn add_range(
         mut self,
         range: NoteRange,
-        consumer_spawner: fn() -> Box<dyn BufferConsumer + Send + 'static>,
+        consumer_spawner: impl Fn() -> Box<dyn BufferConsumer + Send + 'static>,
     ) -> Self {
         let mut consumers = Vec::new();
         for _ in 0..SOURCE_CAPACITY {

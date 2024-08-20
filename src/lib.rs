@@ -26,6 +26,7 @@ pub use source::{
 };
 
 pub mod util {
+    pub use crate::file::font::*;
     pub use crate::file::midi::*;
     pub use crate::file::wav::*;
     pub use crate::source::midi::util::*;

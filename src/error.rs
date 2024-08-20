@@ -4,6 +4,7 @@ pub enum Error {
     Io(std::io::Error),
     Midly(midly::Error),
     Hound(hound::Error),
+    Soundfont(soundfont::error::ParseError),
     Cpal(cpal::BuildStreamError),
     NoDevice,
 }
@@ -23,6 +24,12 @@ impl From<hound::Error> for Error {
 impl From<midly::Error> for Error {
     fn from(value: midly::Error) -> Self {
         Error::Midly(value)
+    }
+}
+
+impl From<soundfont::error::ParseError> for Error {
+    fn from(value: soundfont::error::ParseError) -> Self {
+        Error::Soundfont(value)
     }
 }
 

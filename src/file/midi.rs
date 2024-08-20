@@ -1,4 +1,3 @@
-
 use crate::Error;
 use midly::Smf;
 

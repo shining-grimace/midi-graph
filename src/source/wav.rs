@@ -1,5 +1,6 @@
 use crate::{config, util, BufferConsumer, Error, NoteEvent};
 use hound::{SampleFormat, WavSpec};
+use soundfont::data::{sample::SampleLink, SampleHeader};
 
 pub struct WavSource {
     source_note: u8,
@@ -11,6 +12,29 @@ pub struct WavSource {
 }
 
 impl WavSource {
+    pub fn new_from_raw_data(header: &SampleHeader, data: Vec<f32>) -> Result<Self, Error> {
+        Self::validate_header(header)?;
+        let playback_scale = config::PLAYBACK_SAMPLE_RATE as f64 / header.sample_rate as f64;
+        let source_channel_count = match header.sample_type {
+            SampleLink::MonoSample => 1,
+            SampleLink::LinkedSample => 2,
+            _ => {
+                return Err(Error::User(format!(
+                    "SF2: Unsupported sample type: {:?}",
+                    header.sample_type
+                )));
+            }
+        };
+        Ok(Self {
+            source_note: header.origpitch,
+            source_channel_count,
+            position: 0,
+            current_note: 0,
+            source_data: data,
+            playback_scale,
+        })
+    }
+
     /// Make a new WavSource holding the given sample data.
     /// Data in the spec will be checked for compatibility.
     /// The note is a MIDI key, where A440 is 69.
@@ -25,6 +49,17 @@ impl WavSource {
             source_data: data,
             playback_scale,
         })
+    }
+
+    fn validate_header(header: &SampleHeader) -> Result<(), Error> {
+        match header.sample_type {
+            SampleLink::MonoSample => Ok(()),
+            SampleLink::LinkedSample => Ok(()),
+            _ => Err(Error::User(format!(
+                "SF2: Unsupported sample type: {:?}",
+                header.sample_type
+            ))),
+        }
     }
 
     fn validate_spec(spec: &WavSpec) -> Result<(), Error> {
