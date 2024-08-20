@@ -8,15 +8,15 @@ use midi_graph::{
 use std::time::Duration;
 
 const MIDI_FILE: &'static str = "resources/dansenapolitaine.mid";
-const WAV_FILE: &'static str = "resources/piano-note-1-a440.wav";
+const WAV_FILE: &'static str = "resources/guitar-a2-48k-stereo.wav";
 
 fn main() {
     let smf = smf_from_file(MIDI_FILE).unwrap();
     let fonts = (0..smf.tracks.len())
         .map(|index| {
-            let spawner: fn() -> Box<dyn BufferConsumer + Send + 'static> = match index > 3 {
+            let spawner: fn() -> Box<dyn BufferConsumer + Send + 'static> = match index != 1 {
                 true => || Box::new(SquareWaveSource::default()),
-                false => || Box::new(wav_from_file(WAV_FILE).unwrap()),
+                false => || Box::new(wav_from_file(WAV_FILE, 45).unwrap()),
             };
             SoundFontBuilder::new()
                 .add_range(NoteRange::new(0, 255), spawner)

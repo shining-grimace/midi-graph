@@ -2,32 +2,34 @@ use crate::{config, util, BufferConsumer, Error, NoteEvent};
 use hound::{SampleFormat, WavSpec};
 
 pub struct WavSource {
+    source_note: u8,
     position: usize,
     current_note: u8,
     source_data: Vec<f32>,
+    playback_scale: f64,
 }
 
 impl WavSource {
-    pub fn new_from_data(spec: WavSpec, data: Vec<f32>) -> Result<Self, Error> {
+    /// Make a new WavSource holding the given sample data.
+    /// Data in the spec will be checked for compatibility.
+    /// The note is a MIDI key, where A440 is 69.
+    pub fn new_from_data(spec: WavSpec, source_note: u8, data: Vec<f32>) -> Result<Self, Error> {
         Self::validate_spec(&spec)?;
+        let playback_scale = config::PLAYBACK_SAMPLE_RATE as f64 / spec.sample_rate as f64;
         Ok(Self {
+            source_note,
             position: 0,
             current_note: 0,
             source_data: data,
+            playback_scale,
         })
     }
 
     fn validate_spec(spec: &WavSpec) -> Result<(), Error> {
-        if spec.channels != 1 {
+        if spec.channels != 2 {
             return Err(Error::User(format!(
                 "{} channels is not supported",
                 spec.channels
-            )));
-        }
-        if spec.sample_rate != 48000 {
-            return Err(Error::User(format!(
-                "{} samples per second is not supported",
-                spec.sample_rate
             )));
         }
         if spec.sample_format != SampleFormat::Float {
@@ -71,8 +73,9 @@ impl BufferConsumer for WavSource {
         assert_eq!(config::CHANNEL_COUNT, 2);
 
         // Scaling
-        let relative_pitch = util::relative_pitch_ratio_of(self.current_note) as f64;
-        let source_frames_per_output_frame = 1.0 / relative_pitch;
+        let relative_pitch =
+            util::relative_pitch_ratio_of(self.current_note, self.source_note) as f64;
+        let source_frames_per_output_frame = 1.0 / (relative_pitch * self.playback_scale);
 
         // Output properties
         let samples_can_write = buffer.len();
@@ -115,7 +118,9 @@ impl BufferConsumer for WavSource {
             buffer[output_index] += source[source_index];
             buffer[output_index + 1] += source[source_index + 1];
         }
-        self.position = (self.position + (frames_will_write * config::CHANNEL_COUNT))
-            .min(self.source_data.len());
+
+        let frames_did_read = needed_source_frames.min(source_frames_remaining);
+        self.position =
+            (self.position + (frames_did_read * config::CHANNEL_COUNT)).min(self.source_data.len());
     }
 }
