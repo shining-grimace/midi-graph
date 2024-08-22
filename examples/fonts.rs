@@ -19,7 +19,7 @@ fn main() {
                 false => || Box::new(wav_from_file(WAV_FILE, 45).unwrap()),
             };
             SoundFontBuilder::new()
-                .add_range(NoteRange::new(0, 255), spawner)
+                .add_range(NoteRange::new_inclusive_range(0, 255), spawner)
                 .build()
         })
         .collect();

@@ -19,19 +19,19 @@ pub trait NoteConsumer {
 
 pub struct NoteRange {
     lower_inclusive: u8,
-    upper_exclusive: u8,
+    upper_inclusive: u8,
 }
 
 impl NoteRange {
-    pub fn new(lower_inclusive: u8, upper_exclusive: u8) -> Self {
+    pub fn new_inclusive_range(lower: u8, upper: u8) -> Self {
         Self {
-            lower_inclusive,
-            upper_exclusive,
+            lower_inclusive: lower,
+            upper_inclusive: upper,
         }
     }
 
     pub fn contains(&self, note: u8) -> bool {
-        self.lower_inclusive <= note && self.upper_exclusive > note
+        self.lower_inclusive <= note && self.upper_inclusive >= note
     }
 }
 
