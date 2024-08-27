@@ -15,12 +15,12 @@ impl RangeData {
                 .count();
             if same_notes > 0 {
                 #[cfg(debug_assertions)]
-                println!("Note turning on, but was already on");
+                println!("WARNING: Soundfont: Note turning on, but was already on");
                 return;
             }
             if self.active_count >= self.consumers.len() {
                 #[cfg(debug_assertions)]
-                println!("Note turning on, but all consumers in use");
+                println!("WARNING: Soundfont: Note turning on, but all consumers in use");
                 return;
             }
             self.consumers[self.active_count].0 = note;
@@ -40,13 +40,13 @@ impl RangeData {
                 Some(index) => index,
                 None => {
                     #[cfg(debug_assertions)]
-                    println!("Note turning off, but was not on");
+                    println!("WARNING: Soundfont: Note turning off, but was not on");
                     return;
                 }
             };
             if source_index >= self.active_count {
                 #[cfg(debug_assertions)]
-                println!("Note turning off, but source not in use");
+                println!("WARNING: Soundfont: Note turning off, but source not in use");
             }
             let mut removed_source = self.consumers.remove(source_index);
             removed_source.1.set_note(NoteEvent::NoteOff(note));

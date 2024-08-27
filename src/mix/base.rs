@@ -27,7 +27,7 @@ impl BaseMixer {
                 source.fill_buffer(data);
             },
             move |err| {
-                println!("Stream error: {:?}", err);
+                println!("ERROR: Stream: {:?}", err);
             },
             None,
         )?;

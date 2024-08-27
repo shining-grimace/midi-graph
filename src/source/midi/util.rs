@@ -16,7 +16,7 @@ pub fn get_samples_per_tick(smf: &Smf) -> Result<f64, Error> {
                 None => {
                     // TODO - This is a fallback for Ardour not exporting
                     // tempo meta events. This is not ideal.
-                    println!("WARNING: Tempo meta event not found, assuming 120 BPM");
+                    println!("WARNING: MIDI: Tempo meta event not found, assuming 120 BPM");
                     1000000.0 / (120.0 / 60.0)
                 }
             };

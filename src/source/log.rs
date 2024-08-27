@@ -1,7 +1,7 @@
 use midly::{num::u24, Fps, MetaMessage, MidiMessage, Smf, Timing, TrackEvent, TrackEventKind};
 
 pub fn log_loaded_midi(smf: &Smf) {
-    println!("{}", get_log_for_header(smf));
+    println!("MIDI: {}", get_log_for_header(smf));
     for track_events in smf.tracks.iter() {
         for event in track_events.iter() {
             if let Some(message) = get_log_for_event(event) {
@@ -9,13 +9,12 @@ pub fn log_loaded_midi(smf: &Smf) {
             }
         }
     }
-    println!("MIDI file loaded.");
-    println!("The file has {} tracks.", smf.tracks.len());
+    println!("MIDI: File loaded.");
     if smf.tracks.is_empty() {
-        println!("There are no tracks to play.");
+        println!("WARNING: MIDI: There are no tracks to play.");
     } else {
         for (index, track) in smf.tracks.iter().enumerate() {
-            println!("Track {} has {} events.", index, track.len());
+            println!("MIDI: Track {} has {} events.", index, track.len());
         }
     }
 }
