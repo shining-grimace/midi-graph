@@ -73,7 +73,7 @@ impl BufferConsumer for WavSource {
         // Scaling
         let relative_pitch =
             util::relative_pitch_ratio_of(self.current_note, self.source_note) as f64;
-        let source_frames_per_output_frame = 1.0 / (relative_pitch * self.playback_scale);
+        let source_frames_per_output_frame = relative_pitch * self.playback_scale;
 
         // Output properties
         let samples_can_write = buffer.len();
