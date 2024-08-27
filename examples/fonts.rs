@@ -7,7 +7,7 @@ use midi_graph::{
 };
 use std::time::Duration;
 
-const MIDI_FILE: &'static str = "resources/dansenapolitaine.mid";
+const MIDI_FILE: &'static str = "resources/sample-in-c.mid";
 const WAV_FILE: &'static str = "resources/guitar-a2-48k-stereo.wav";
 
 fn main() {

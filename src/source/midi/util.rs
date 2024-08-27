@@ -11,15 +11,19 @@ pub fn get_samples_per_tick(smf: &Smf) -> Result<f64, Error> {
                     }
                     _ => None,
                 });
-            match found_micros_per_beat {
-                Some(micros_per_beat) => {
-                    let samples_per_micro = (PLAYBACK_SAMPLE_RATE as f64) / 1000000.0;
-                    let samples_per_beat = samples_per_micro * micros_per_beat;
-                    let samples_per_tick = samples_per_beat / (u16::from(ticks_per_beat) as f64);
-                    Ok(samples_per_tick)
+            let micros_per_beat: f64 = match found_micros_per_beat {
+                Some(micros) => micros,
+                None => {
+                    // TODO - This is a fallback for Ardour not exporting
+                    // tempo meta events. This is not ideal.
+                    println!("WARNING: Tempo meta event not found, assuming 120 BPM");
+                    1000000.0 / (120.0 / 60.0)
                 }
-                None => Err(Error::User("No tempo information found".to_owned())),
-            }
+            };
+            let samples_per_micro = (PLAYBACK_SAMPLE_RATE as f64) / 1000000.0;
+            let samples_per_beat = samples_per_micro * micros_per_beat;
+            let samples_per_tick = samples_per_beat / (u16::from(ticks_per_beat) as f64);
+            Ok(samples_per_tick)
         }
         Timing::Timecode(fps, sub) => {
             let samples_per_second: f64 = PLAYBACK_SAMPLE_RATE as f64;
