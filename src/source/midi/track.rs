@@ -1,10 +1,16 @@
-use crate::{config, BufferConsumer, NoteConsumer, NoteEvent};
+use crate::{config, NoteConsumer, NoteEvent, NoteKind};
 use midly::{MidiMessage, Smf, TrackEvent, TrackEventKind};
 use std::sync::Arc;
+
+struct NoteEventOnChannel {
+    channel: usize,
+    event: NoteEvent,
+}
 
 pub struct MidiTrackSource<'a> {
     smf: Arc<Smf<'a>>,
     track_no: usize,
+    channel_no: usize,
     samples_per_tick: f64,
     has_finished: bool,
     next_event_index: usize,
@@ -16,12 +22,14 @@ impl<'a> MidiTrackSource<'a> {
     pub fn new(
         smf: Arc<Smf<'a>>,
         track_no: usize,
+        channel_no: usize,
         samples_per_tick: f64,
         note_consumer: Box<dyn NoteConsumer + Send + 'static>,
     ) -> Self {
         Self {
             smf,
             track_no,
+            channel_no,
             samples_per_tick,
             has_finished: false,
             next_event_index: 0,
@@ -30,23 +38,38 @@ impl<'a> MidiTrackSource<'a> {
         }
     }
 
-    fn on_event_reached(&mut self, event: &Option<NoteEvent>) {
+    fn on_event_reached(&mut self, event: &Option<NoteEventOnChannel>) {
         match event {
             None => {}
-            Some(e) => self.source.restart_with_event(e),
+            Some(e) => {
+                if e.channel != self.channel_no {
+                    return;
+                }
+                self.source.restart_with_event(&e.event);
+            }
         }
     }
 
-    fn note_event_from_midi_event(event: &TrackEvent) -> Option<NoteEvent> {
+    fn note_event_from_midi_event(event: &TrackEvent) -> Option<NoteEventOnChannel> {
         match event.kind {
             TrackEventKind::Midi {
-                channel: _,
+                channel,
                 message: MidiMessage::NoteOn { key, vel: _ },
-            } => Some(NoteEvent::NoteOn(u8::from(key))),
+            } => Some(NoteEventOnChannel {
+                channel: u8::from(channel) as usize,
+                event: NoteEvent {
+                    kind: NoteKind::NoteOn(u8::from(key)),
+                },
+            }),
             TrackEventKind::Midi {
-                channel: _,
+                channel,
                 message: MidiMessage::NoteOff { key, vel: _ },
-            } => Some(NoteEvent::NoteOff(u8::from(key))),
+            } => Some(NoteEventOnChannel {
+                channel: u8::from(channel) as usize,
+                event: NoteEvent {
+                    kind: NoteKind::NoteOff(u8::from(key)),
+                },
+            }),
             _ => None,
         }
     }
@@ -54,12 +77,8 @@ impl<'a> MidiTrackSource<'a> {
     fn write_buffer(&mut self, buffer: &mut [f32]) {
         self.source.fill_buffer(buffer);
     }
-}
 
-impl<'a> BufferConsumer for MidiTrackSource<'a> {
-    fn set_note(&mut self, _event: NoteEvent) {}
-
-    fn fill_buffer(&mut self, buffer: &mut [f32]) {
+    pub fn fill_buffer(&mut self, buffer: &mut [f32]) {
         #[cfg(debug_assertions)]
         assert_eq!(buffer.len() % config::CHANNEL_COUNT, 0);
 

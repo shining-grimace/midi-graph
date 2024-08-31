@@ -1,4 +1,4 @@
-use crate::{config, util, BufferConsumer, NoteEvent};
+use crate::{config, util, BufferConsumer, NoteEvent, NoteKind};
 
 pub struct SquareWaveSource {
     is_on: bool,
@@ -22,12 +22,12 @@ impl Default for SquareWaveSource {
 
 impl BufferConsumer for SquareWaveSource {
     fn set_note(&mut self, event: NoteEvent) {
-        match event {
-            NoteEvent::NoteOn(note) => {
+        match event.kind {
+            NoteKind::NoteOn(note) => {
                 self.is_on = true;
                 self.current_note = note;
             }
-            NoteEvent::NoteOff(note) => {
+            NoteKind::NoteOff(note) => {
                 if self.current_note != note {
                     return;
                 }

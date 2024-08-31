@@ -1,5 +1,5 @@
 use crate::{config::PLAYBACK_SAMPLE_RATE, Error};
-use midly::{Fps, MetaMessage, Smf, Timing, TrackEventKind};
+use midly::{Fps, MetaMessage, MidiMessage, Smf, Timing, TrackEvent, TrackEventKind};
 
 pub fn get_samples_per_tick(smf: &Smf) -> Result<f64, Error> {
     match smf.header.timing {
@@ -49,4 +49,29 @@ fn scan_for_data<T>(smf: &Smf, extractor: fn(&TrackEventKind) -> Option<T>) -> O
         }
     }
     return None;
+}
+
+pub fn choose_track_index(smf: &Smf) -> Result<usize, Error> {
+    if smf.tracks.is_empty() {
+        return Err(Error::User("MIDI: No tracks in MIDI file".to_owned()));
+    }
+    for (i, track) in smf.tracks.iter().enumerate() {
+        let any_note_on_events = track.iter().any(|event| match event {
+            TrackEvent {
+                kind:
+                    TrackEventKind::Midi {
+                        message: MidiMessage::NoteOn { key: _, vel: _ },
+                        ..
+                    },
+                ..
+            } => true,
+            _ => false,
+        });
+        if any_note_on_events {
+            return Ok(i);
+        }
+    }
+    Err(Error::User(
+        "MIDI: No tracks found with key on events".to_owned(),
+    ))
 }

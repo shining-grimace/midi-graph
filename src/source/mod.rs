@@ -35,7 +35,12 @@ impl NoteRange {
     }
 }
 
-pub enum NoteEvent {
+pub struct NoteEvent {
+    kind: NoteKind,
+}
+
+#[derive(Eq, PartialEq, Copy, Clone)]
+pub enum NoteKind {
     NoteOn(u8),
     NoteOff(u8),
 }

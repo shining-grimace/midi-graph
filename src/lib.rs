@@ -19,10 +19,10 @@ pub use error::Error;
 pub use mix::base::BaseMixer;
 pub use source::{
     font::{SoundFont, SoundFontBuilder},
-    midi::{chunk::MidiChunkSource, track::MidiTrackSource, MidiSource},
+    midi::{chunk::MidiChunkSource, track::MidiTrackSource, MidiSource, MidiSourceBuilder},
     square::SquareWaveSource,
     wav::WavSource,
-    BufferConsumer, NoteConsumer, NoteEvent, NoteRange,
+    BufferConsumer, NoteConsumer, NoteEvent, NoteKind, NoteRange,
 };
 
 pub mod util {

@@ -1,6 +1,6 @@
 mod range;
 
-use crate::{BufferConsumer, NoteConsumer, NoteEvent, NoteRange};
+use crate::{BufferConsumer, NoteConsumer, NoteEvent, NoteKind, NoteRange};
 use range::RangeData;
 
 const SOURCE_CAPACITY: usize = 8;
@@ -48,13 +48,13 @@ impl SoundFont {
 
 impl NoteConsumer for SoundFont {
     fn restart_with_event(&mut self, event: &NoteEvent) {
-        let note: u8 = match event {
-            NoteEvent::NoteOn(note) => *note,
-            NoteEvent::NoteOff(note) => *note,
+        let note: u8 = match event.kind {
+            NoteKind::NoteOn(note) => note,
+            NoteKind::NoteOff(note) => note,
         };
-        let turning_on = match event {
-            NoteEvent::NoteOn(_) => true,
-            NoteEvent::NoteOff(_) => false,
+        let turning_on = match event.kind {
+            NoteKind::NoteOn(_) => true,
+            NoteKind::NoteOff(_) => false,
         };
         if turning_on {
             for range_data in self.ranges.iter_mut() {

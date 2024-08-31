@@ -1,4 +1,4 @@
-use crate::{BufferConsumer, NoteEvent, NoteRange};
+use crate::{BufferConsumer, NoteEvent, NoteKind, NoteRange};
 
 pub struct RangeData {
     pub range: NoteRange,
@@ -24,9 +24,9 @@ impl RangeData {
                 return;
             }
             self.consumers[self.active_count].0 = note;
-            self.consumers[self.active_count]
-                .1
-                .set_note(NoteEvent::NoteOn(note));
+            self.consumers[self.active_count].1.set_note(NoteEvent {
+                kind: NoteKind::NoteOn(note),
+            });
             self.active_count += 1;
         }
     }
@@ -49,7 +49,9 @@ impl RangeData {
                 println!("WARNING: Soundfont: Note turning off, but source not in use");
             }
             let mut removed_source = self.consumers.remove(source_index);
-            removed_source.1.set_note(NoteEvent::NoteOff(note));
+            removed_source.1.set_note(NoteEvent {
+                kind: NoteKind::NoteOff(note),
+            });
             self.consumers.push(removed_source);
             self.active_count -= 1;
         }

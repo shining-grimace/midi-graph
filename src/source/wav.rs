@@ -1,4 +1,4 @@
-use crate::{config, util, BufferConsumer, Error, NoteEvent};
+use crate::{config, util, BufferConsumer, Error, NoteEvent, NoteKind};
 use hound::{SampleFormat, WavSpec};
 use soundfont::data::{sample::SampleLink, SampleHeader};
 
@@ -87,12 +87,12 @@ impl WavSource {
 
 impl BufferConsumer for WavSource {
     fn set_note(&mut self, event: NoteEvent) {
-        match event {
-            NoteEvent::NoteOn(note) => {
+        match event.kind {
+            NoteKind::NoteOn(note) => {
                 self.position = 0;
                 self.current_note = note;
             }
-            NoteEvent::NoteOff(note) => {
+            NoteKind::NoteOff(note) => {
                 if self.current_note != note {
                     return;
                 }
