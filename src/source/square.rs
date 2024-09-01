@@ -1,4 +1,4 @@
-use crate::{config, util, BufferConsumer, NoteEvent, NoteKind};
+use crate::{consts, util, BufferConsumer, NoteEvent, NoteKind};
 
 pub struct SquareWaveSource {
     is_on: bool,
@@ -15,7 +15,7 @@ impl SquareWaveSource {
             is_on: false,
             current_note: 0,
             cycle_progress_samples: 0.0,
-            period_samples_a440: config::PLAYBACK_SAMPLE_RATE as f32 / 440.0,
+            period_samples_a440: consts::PLAYBACK_SAMPLE_RATE as f32 / 440.0,
             amplitude,
             duty_cycle,
         }
@@ -44,18 +44,18 @@ impl BufferConsumer for SquareWaveSource {
         }
         let size = buffer.len();
         let note_frequency = util::frequency_of(self.current_note);
-        let pitch_period_samples = config::PLAYBACK_SAMPLE_RATE as f32 / note_frequency;
+        let pitch_period_samples = consts::PLAYBACK_SAMPLE_RATE as f32 / note_frequency;
         let mut stretched_progress =
             self.cycle_progress_samples * pitch_period_samples / self.period_samples_a440;
 
         #[cfg(debug_assertions)]
-        assert_eq!(size % config::CHANNEL_COUNT, 0);
+        assert_eq!(size % consts::CHANNEL_COUNT, 0);
 
         // Currently only-supported channel configuration
         #[cfg(debug_assertions)]
-        assert_eq!(config::CHANNEL_COUNT, 2);
+        assert_eq!(consts::CHANNEL_COUNT, 2);
 
-        for i in (0..size).step_by(config::CHANNEL_COUNT) {
+        for i in (0..size).step_by(consts::CHANNEL_COUNT) {
             stretched_progress = stretched_progress + 1.0;
             if stretched_progress >= pitch_period_samples {
                 stretched_progress -= pitch_period_samples;

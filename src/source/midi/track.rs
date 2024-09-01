@@ -1,4 +1,4 @@
-use crate::{config, NoteConsumer, NoteEvent, NoteKind};
+use crate::{consts, NoteConsumer, NoteEvent, NoteKind};
 use midly::{MidiMessage, Smf, TrackEvent, TrackEventKind};
 use std::sync::Arc;
 
@@ -80,11 +80,11 @@ impl<'a> MidiTrackSource<'a> {
 
     pub fn fill_buffer(&mut self, buffer: &mut [f32]) {
         #[cfg(debug_assertions)]
-        assert_eq!(buffer.len() % config::CHANNEL_COUNT, 0);
+        assert_eq!(buffer.len() % consts::CHANNEL_COUNT, 0);
 
         // Currently only-supported channel configuration
         #[cfg(debug_assertions)]
-        assert_eq!(config::CHANNEL_COUNT, 2);
+        assert_eq!(consts::CHANNEL_COUNT, 2);
 
         let smf = Arc::clone(&self.smf);
         let track_data = &smf.tracks[self.track_no];
@@ -97,7 +97,7 @@ impl<'a> MidiTrackSource<'a> {
             let event_ticks_delta = u32::from(next_event.delta) as isize;
             let ticks_until_event = event_ticks_delta - self.event_ticks_progress;
             let samples_until_event = (ticks_until_event as f64 * self.samples_per_tick) as usize;
-            let samples_available_per_channel = buffer.len() / config::CHANNEL_COUNT;
+            let samples_available_per_channel = buffer.len() / consts::CHANNEL_COUNT;
             if samples_until_event > samples_available_per_channel {
                 self.write_buffer(buffer);
                 self.event_ticks_progress +=
@@ -105,7 +105,7 @@ impl<'a> MidiTrackSource<'a> {
                 return;
             }
 
-            let buffer_samples_to_fill = samples_until_event * config::CHANNEL_COUNT;
+            let buffer_samples_to_fill = samples_until_event * consts::CHANNEL_COUNT;
             self.write_buffer(&mut buffer[0..buffer_samples_to_fill]);
             self.event_ticks_progress = 0;
             self.next_event_index += 1;

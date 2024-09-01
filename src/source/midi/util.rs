@@ -1,4 +1,4 @@
-use crate::{config::PLAYBACK_SAMPLE_RATE, Error};
+use crate::{consts::PLAYBACK_SAMPLE_RATE, Error};
 use midly::{Fps, MetaMessage, MidiMessage, Smf, Timing, TrackEvent, TrackEventKind};
 
 pub fn get_samples_per_tick(smf: &Smf) -> Result<f64, Error> {

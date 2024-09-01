@@ -1,4 +1,4 @@
-use crate::{config, util, BufferConsumer, Error, NoteEvent, NoteKind};
+use crate::{consts, util, BufferConsumer, Error, NoteEvent, NoteKind};
 use hound::{SampleFormat, WavSpec};
 use soundfont::data::{sample::SampleLink, SampleHeader};
 
@@ -14,7 +14,7 @@ pub struct WavSource {
 impl WavSource {
     pub fn new_from_raw_data(header: &SampleHeader, data: Vec<f32>) -> Result<Self, Error> {
         Self::validate_header(header)?;
-        let playback_scale = config::PLAYBACK_SAMPLE_RATE as f64 / header.sample_rate as f64;
+        let playback_scale = consts::PLAYBACK_SAMPLE_RATE as f64 / header.sample_rate as f64;
         let source_channel_count = match header.sample_type {
             SampleLink::MonoSample => 1,
             SampleLink::LinkedSample => 2,
@@ -40,7 +40,7 @@ impl WavSource {
     /// The note is a MIDI key, where A440 is 69.
     pub fn new_from_data(spec: WavSpec, source_note: u8, data: Vec<f32>) -> Result<Self, Error> {
         Self::validate_spec(&spec)?;
-        let playback_scale = config::PLAYBACK_SAMPLE_RATE as f64 / spec.sample_rate as f64;
+        let playback_scale = consts::PLAYBACK_SAMPLE_RATE as f64 / spec.sample_rate as f64;
         Ok(Self {
             source_note,
             source_channel_count: spec.channels as usize,
@@ -103,7 +103,7 @@ impl BufferConsumer for WavSource {
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) {
         #[cfg(debug_assertions)]
-        assert_eq!(buffer.len() % config::CHANNEL_COUNT, 0);
+        assert_eq!(buffer.len() % consts::CHANNEL_COUNT, 0);
 
         // Scaling
         let relative_pitch =
@@ -112,7 +112,7 @@ impl BufferConsumer for WavSource {
 
         // Output properties
         let samples_can_write = buffer.len();
-        let frames_can_write = samples_can_write / config::CHANNEL_COUNT;
+        let frames_can_write = samples_can_write / consts::CHANNEL_COUNT;
 
         // Input properties
         let source_samples_remaining = self.source_data.len() - self.position;
@@ -129,7 +129,7 @@ impl BufferConsumer for WavSource {
             false => {
                 let unrounded =
                     (source_frames_remaining as f64 / source_frames_per_output_frame) as usize;
-                unrounded - unrounded % config::CHANNEL_COUNT
+                unrounded - unrounded % consts::CHANNEL_COUNT
             }
         };
 
@@ -145,7 +145,7 @@ impl BufferConsumer for WavSource {
 
         let source = &self.source_data[self.position..];
         for i in 0..frames_will_write {
-            let output_index = i * config::CHANNEL_COUNT;
+            let output_index = i * consts::CHANNEL_COUNT;
             match self.source_channel_count {
                 1 => {
                     let source_index = (i as f64 * source_frames_per_output_frame) as usize;

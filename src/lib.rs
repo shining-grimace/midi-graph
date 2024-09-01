@@ -34,7 +34,7 @@ pub mod util {
     pub use crate::source::util::*;
 }
 
-pub mod config {
+pub mod consts {
     pub const PLAYBACK_SAMPLE_RATE: usize = 48000;
     pub const CHANNEL_COUNT: usize = 2;
     pub const BUFFER_SIZE: usize = 2048;
