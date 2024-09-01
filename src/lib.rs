@@ -21,6 +21,7 @@ pub use source::{
     font::{SoundFont, SoundFontBuilder},
     midi::{chunk::MidiChunkSource, track::MidiTrackSource, MidiSource, MidiSourceBuilder},
     square::SquareWaveSource,
+    triangle::TriangleWaveSource,
     wav::WavSource,
     BufferConsumer, NoteConsumer, NoteEvent, NoteKind, NoteRange,
 };
