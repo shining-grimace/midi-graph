@@ -5,17 +5,19 @@ pub struct SquareWaveSource {
     current_note: u8,
     cycle_progress_samples: f32,
     period_samples_a440: f32,
+    amplitude: f32,
     duty_cycle: f32,
 }
 
-impl Default for SquareWaveSource {
-    fn default() -> Self {
+impl SquareWaveSource {
+    pub fn new(amplitude: f32, duty_cycle: f32) -> Self {
         Self {
             is_on: false,
             current_note: 0,
             cycle_progress_samples: 0.0,
             period_samples_a440: config::PLAYBACK_SAMPLE_RATE as f32 / 440.0,
-            duty_cycle: 0.75,
+            amplitude,
+            duty_cycle,
         }
     }
 }
@@ -60,8 +62,8 @@ impl BufferConsumer for SquareWaveSource {
             }
             let duty = stretched_progress / pitch_period_samples;
             let amplitude = match duty > self.duty_cycle {
-                true => 0.25,
-                false => -0.25,
+                true => self.amplitude,
+                false => -self.amplitude,
             };
             buffer[i] += amplitude;
             buffer[i + 1] += amplitude;
