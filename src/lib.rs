@@ -10,11 +10,13 @@ mod tests;
 #[cfg(target_arch = "wasm32")]
 mod wasm_demo;
 
+mod config;
 mod error;
 mod file;
 mod mix;
 mod source;
 
+pub use config::{Config, FontSource, MidiDataSource, SoundSource};
 pub use error::Error;
 pub use mix::base::BaseMixer;
 pub use source::{
@@ -27,6 +29,7 @@ pub use source::{
 };
 
 pub mod util {
+    pub use crate::file::config::*;
     pub use crate::file::font::*;
     pub use crate::file::midi::*;
     pub use crate::file::wav::*;

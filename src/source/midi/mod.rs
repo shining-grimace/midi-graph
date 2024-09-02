@@ -2,7 +2,12 @@ pub mod chunk;
 pub mod track;
 pub mod util;
 
-use crate::{BufferConsumer, Error, MidiChunkSource, NoteEvent, NoteKind, SoundFont};
+use crate::{
+    util::{smf_from_file, soundfont_from_file, wav_from_file},
+    BufferConsumer, Config, Error, FontSource, MidiChunkSource, MidiDataSource, NoteEvent,
+    NoteKind, NoteRange, SoundFont, SoundFontBuilder, SoundSource, SquareWaveSource,
+    TriangleWaveSource,
+};
 use midly::Smf;
 use std::collections::HashMap;
 
@@ -48,6 +53,47 @@ impl<'a> MidiSource<'a> {
             source: Box::new(source),
             has_finished: false,
         })
+    }
+
+    pub fn from_config(config: Config) -> Result<Self, Error> {
+        let smf = match config.midi {
+            MidiDataSource::FilePath(file) => smf_from_file(file.as_str())?,
+        };
+        let mut channel_sources = HashMap::new();
+        for (channel, font_source) in config.channels.iter() {
+            match font_source {
+                FontSource::Ranges(ranges) => {
+                    let mut font_builder = SoundFontBuilder::new();
+                    for range in ranges {
+                        let note_range = NoteRange::new_inclusive_range(range.lower, range.upper);
+                        match &range.source {
+                            SoundSource::SquareWave(amplitude, duty_cycle) => {
+                                font_builder = font_builder.add_range(note_range, || {
+                                    Box::new(SquareWaveSource::new(*amplitude, *duty_cycle))
+                                });
+                            }
+                            SoundSource::TriangleWave(amplitude) => {
+                                font_builder = font_builder.add_range(note_range, || {
+                                    Box::new(TriangleWaveSource::new(*amplitude))
+                                });
+                            }
+                            SoundSource::SampleFilePath(file_path, note) => {
+                                font_builder = font_builder.add_range(note_range, || {
+                                    Box::new(wav_from_file(file_path.as_str(), *note).unwrap())
+                                });
+                            }
+                        };
+                    }
+                    let font = font_builder.build();
+                    channel_sources.insert(*channel, font);
+                }
+                FontSource::Sf2FilePath(file_path, instrument) => {
+                    let soundfont = soundfont_from_file(file_path.as_str(), *instrument)?;
+                    channel_sources.insert(*channel, soundfont);
+                }
+            }
+        }
+        MidiSource::new(smf, channel_sources)
     }
 }
 

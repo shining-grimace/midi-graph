@@ -1,0 +1,12 @@
+(
+    midi: FilePath("resources/sample-in-c.mid"),
+    channels: {
+        0: Ranges([
+            ( lower: 0, upper: 50, source: SquareWave(0.125, 0.5)),
+            ( lower: 51, upper: 255, source: SquareWave(0.125, 0.875))
+        ]),
+        1: Ranges([
+            ( lower: 0, upper: 255, source: SampleFilePath("resources/guitar-a2-48k-stereo.wav", 45))
+        ])
+    }
+)

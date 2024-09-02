@@ -2,6 +2,7 @@
 pub enum Error {
     User(String),
     Io(std::io::Error),
+    Ron(ron::error::SpannedError),
     Midly(midly::Error),
     Hound(hound::Error),
     Soundfont(soundfont::error::ParseError),
@@ -12,6 +13,12 @@ pub enum Error {
 impl From<std::io::Error> for Error {
     fn from(value: std::io::Error) -> Self {
         Error::Io(value)
+    }
+}
+
+impl From<ron::error::SpannedError> for Error {
+    fn from(value: ron::error::SpannedError) -> Self {
+        Error::Ron(value)
     }
 }
 
