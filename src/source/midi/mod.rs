@@ -67,21 +67,24 @@ impl<'a> MidiSource<'a> {
                     for range in ranges {
                         let note_range = NoteRange::new_inclusive_range(range.lower, range.upper);
                         match &range.source {
-                            SoundSource::SquareWave(amplitude, duty_cycle) => {
+                            SoundSource::SquareWave {
+                                amplitude,
+                                duty_cycle,
+                            } => {
                                 font_builder = font_builder.add_range(note_range, || {
                                     Box::new(SquareWaveSource::new(*amplitude, *duty_cycle))
                                 });
                             }
-                            SoundSource::TriangleWave(amplitude) => {
+                            SoundSource::TriangleWave { amplitude } => {
                                 font_builder = font_builder.add_range(note_range, || {
                                     Box::new(TriangleWaveSource::new(*amplitude))
                                 });
                             }
-                            SoundSource::LfsrNoise(
+                            SoundSource::LfsrNoise {
                                 amplitude,
                                 inside_feedback,
                                 note_for_16_shifts,
-                            ) => {
+                            } => {
                                 font_builder = font_builder.add_range(note_range, || {
                                     Box::new(LfsrNoiseSource::new(
                                         *amplitude,
@@ -90,9 +93,9 @@ impl<'a> MidiSource<'a> {
                                     ))
                                 });
                             }
-                            SoundSource::SampleFilePath(file_path, note) => {
+                            SoundSource::SampleFilePath { path, base_note } => {
                                 font_builder = font_builder.add_range(note_range, || {
-                                    Box::new(wav_from_file(file_path.as_str(), *note).unwrap())
+                                    Box::new(wav_from_file(path.as_str(), *base_note).unwrap())
                                 });
                             }
                         };
@@ -100,8 +103,11 @@ impl<'a> MidiSource<'a> {
                     let font = font_builder.build();
                     channel_sources.insert(*channel, font);
                 }
-                FontSource::Sf2FilePath(file_path, instrument) => {
-                    let soundfont = soundfont_from_file(file_path.as_str(), *instrument)?;
+                FontSource::Sf2FilePath {
+                    path,
+                    instrument_index,
+                } => {
+                    let soundfont = soundfont_from_file(path.as_str(), *instrument_index)?;
                     channel_sources.insert(*channel, soundfont);
                 }
             }

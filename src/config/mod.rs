@@ -1,13 +1,6 @@
 use serde_derive::Deserialize;
 use std::collections::HashMap;
 
-pub type DutyCycle = f32;
-pub type Amplitude = f32;
-pub type BaseNote = u8;
-pub type InstrumentIndex = usize;
-pub type InsideFeedback = bool;
-pub type NoteFor16Shifts = u8;
-
 #[derive(Deserialize)]
 pub struct Config {
     pub midi: MidiDataSource,
@@ -22,7 +15,10 @@ pub enum MidiDataSource {
 #[derive(Deserialize)]
 pub enum FontSource {
     Ranges(Vec<RangeSource>),
-    Sf2FilePath(String, InstrumentIndex),
+    Sf2FilePath {
+        path: String,
+        instrument_index: usize,
+    },
 }
 
 #[derive(Deserialize)]
@@ -34,8 +30,20 @@ pub struct RangeSource {
 
 #[derive(Deserialize)]
 pub enum SoundSource {
-    SquareWave(Amplitude, DutyCycle),
-    TriangleWave(Amplitude),
-    LfsrNoise(Amplitude, InsideFeedback, NoteFor16Shifts),
-    SampleFilePath(String, BaseNote),
+    SquareWave {
+        amplitude: f32,
+        duty_cycle: f32,
+    },
+    TriangleWave {
+        amplitude: f32,
+    },
+    LfsrNoise {
+        amplitude: f32,
+        inside_feedback: bool,
+        note_for_16_shifts: u8,
+    },
+    SampleFilePath {
+        path: String,
+        base_note: u8,
+    },
 }
