@@ -1,4 +1,4 @@
-use crate::{consts, util, BufferConsumer, NoteEvent, NoteKind};
+use crate::{consts, util, BufferConsumer, NoteEvent, NoteKind, Status};
 
 pub struct TriangleWaveSource {
     is_on: bool,
@@ -36,9 +36,9 @@ impl BufferConsumer for TriangleWaveSource {
         }
     }
 
-    fn fill_buffer(&mut self, buffer: &mut [f32]) {
+    fn fill_buffer(&mut self, buffer: &mut [f32]) -> Status {
         if !self.is_on {
-            return;
+            return Status::Ended;
         }
         let size = buffer.len();
         let note_frequency = util::frequency_of(self.current_note);
@@ -69,5 +69,6 @@ impl BufferConsumer for TriangleWaveSource {
 
         self.cycle_progress_samples =
             stretched_progress * self.period_samples_a440 / pitch_period_samples;
+        Status::Ok
     }
 }

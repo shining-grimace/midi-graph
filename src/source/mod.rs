@@ -11,12 +11,12 @@ pub mod log;
 
 pub trait BufferConsumer {
     fn set_note(&mut self, event: NoteEvent);
-    fn fill_buffer(&mut self, buffer: &mut [f32]);
+    fn fill_buffer(&mut self, buffer: &mut [f32]) -> Status;
 }
 
 pub trait NoteConsumer {
     fn restart_with_event(&mut self, event: &NoteEvent);
-    fn fill_buffer(&mut self, buffer: &mut [f32]);
+    fn fill_buffer(&mut self, buffer: &mut [f32]) -> Status;
 }
 
 pub struct NoteRange {
@@ -35,6 +35,11 @@ impl NoteRange {
     pub fn contains(&self, note: u8) -> bool {
         self.lower_inclusive <= note && self.upper_inclusive >= note
     }
+}
+
+pub enum Status {
+    Ok,
+    Ended,
 }
 
 pub struct NoteEvent {

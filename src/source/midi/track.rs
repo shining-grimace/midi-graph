@@ -1,4 +1,4 @@
-use crate::{consts, NoteConsumer, NoteEvent, NoteKind};
+use crate::{consts, NoteConsumer, NoteEvent, NoteKind, Status};
 use midly::{MidiMessage, Smf, TrackEvent, TrackEventKind};
 use std::sync::Arc;
 
@@ -74,11 +74,11 @@ impl<'a> MidiTrackSource<'a> {
         }
     }
 
-    fn write_buffer(&mut self, buffer: &mut [f32]) {
-        self.source.fill_buffer(buffer);
+    fn write_buffer(&mut self, buffer: &mut [f32]) -> Status {
+        self.source.fill_buffer(buffer)
     }
 
-    pub fn fill_buffer(&mut self, buffer: &mut [f32]) {
+    pub fn fill_buffer(&mut self, buffer: &mut [f32]) -> Status {
         #[cfg(debug_assertions)]
         assert_eq!(buffer.len() % consts::CHANNEL_COUNT, 0);
 
@@ -89,7 +89,7 @@ impl<'a> MidiTrackSource<'a> {
         let smf = Arc::clone(&self.smf);
         let track_data = &smf.tracks[self.track_no];
         if self.has_finished {
-            return;
+            return Status::Ended;
         }
 
         loop {
@@ -102,7 +102,7 @@ impl<'a> MidiTrackSource<'a> {
                 self.write_buffer(buffer);
                 self.event_ticks_progress +=
                     (samples_available_per_channel as f64 / self.samples_per_tick) as isize;
-                return;
+                return Status::Ok;
             }
 
             let buffer_samples_to_fill = samples_until_event * consts::CHANNEL_COUNT;
@@ -111,7 +111,7 @@ impl<'a> MidiTrackSource<'a> {
             self.next_event_index += 1;
             if self.next_event_index >= track_data.len() {
                 self.has_finished = true;
-                return;
+                return Status::Ended;
             }
 
             let note_event = Self::note_event_from_midi_event(next_event);

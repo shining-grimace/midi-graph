@@ -1,4 +1,4 @@
-use crate::{util, BufferConsumer, Error, MidiTrackSource, NoteEvent, SoundFont};
+use crate::{util, BufferConsumer, Error, MidiTrackSource, NoteEvent, SoundFont, Status};
 use midly::Smf;
 use std::{collections::HashMap, sync::Arc};
 
@@ -40,9 +40,16 @@ impl<'a> MidiChunkSource<'a> {
 impl<'a> BufferConsumer for MidiChunkSource<'a> {
     fn set_note(&mut self, _: NoteEvent) {}
 
-    fn fill_buffer(&mut self, buffer: &mut [f32]) {
+    fn fill_buffer(&mut self, buffer: &mut [f32]) -> Status {
+        let mut status = Status::Ok;
         for (_, source) in self.channel_sources.iter_mut() {
-            source.fill_buffer(buffer);
+            match source.fill_buffer(buffer) {
+                Status::Ok => {}
+                Status::Ended => {
+                    status = Status::Ended;
+                }
+            };
         }
+        status
     }
 }

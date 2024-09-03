@@ -26,7 +26,7 @@ pub use source::{
     square::SquareWaveSource,
     triangle::TriangleWaveSource,
     wav::WavSource,
-    BufferConsumer, NoteConsumer, NoteEvent, NoteKind, NoteRange,
+    BufferConsumer, NoteConsumer, NoteEvent, NoteKind, NoteRange, Status,
 };
 
 pub mod util {

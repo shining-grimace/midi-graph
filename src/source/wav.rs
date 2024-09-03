@@ -1,4 +1,4 @@
-use crate::{consts, util, BufferConsumer, Error, NoteEvent, NoteKind};
+use crate::{consts, util, BufferConsumer, Error, NoteEvent, NoteKind, Status};
 use hound::{SampleFormat, WavSpec};
 use soundfont::data::{sample::SampleLink, SampleHeader};
 
@@ -101,7 +101,7 @@ impl BufferConsumer for WavSource {
         }
     }
 
-    fn fill_buffer(&mut self, buffer: &mut [f32]) {
+    fn fill_buffer(&mut self, buffer: &mut [f32]) -> Status {
         #[cfg(debug_assertions)]
         assert_eq!(buffer.len() % consts::CHANNEL_COUNT, 0);
 
@@ -164,5 +164,9 @@ impl BufferConsumer for WavSource {
         let frames_did_read = needed_source_frames.min(source_frames_remaining);
         self.position = (self.position + (frames_did_read * self.source_channel_count))
             .min(self.source_data.len());
+        match self.position >= self.source_data.len() {
+            true => Status::Ended,
+            false => Status::Ok,
+        }
     }
 }

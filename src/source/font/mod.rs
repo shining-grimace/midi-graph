@@ -1,6 +1,6 @@
 mod range;
 
-use crate::{BufferConsumer, NoteConsumer, NoteEvent, NoteKind, NoteRange};
+use crate::{BufferConsumer, NoteConsumer, NoteEvent, NoteKind, NoteRange, Status};
 use range::RangeData;
 
 const SOURCE_CAPACITY: usize = 8;
@@ -67,11 +67,12 @@ impl NoteConsumer for SoundFont {
         }
     }
 
-    fn fill_buffer(&mut self, buffer: &mut [f32]) {
+    fn fill_buffer(&mut self, buffer: &mut [f32]) -> Status {
         for range_data in self.ranges.iter_mut() {
             for i in 0..range_data.active_count {
                 range_data.consumers[i].1.fill_buffer(buffer);
             }
         }
+        Status::Ok
     }
 }

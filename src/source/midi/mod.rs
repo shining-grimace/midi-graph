@@ -6,7 +6,7 @@ use crate::{
     util::{smf_from_file, soundfont_from_file, wav_from_file},
     BufferConsumer, Config, Error, FontSource, LfsrNoiseSource, MidiChunkSource, MidiDataSource,
     NoteEvent, NoteKind, NoteRange, SoundFont, SoundFontBuilder, SoundSource, SquareWaveSource,
-    TriangleWaveSource,
+    Status, TriangleWaveSource,
 };
 use midly::Smf;
 use std::collections::HashMap;
@@ -124,7 +124,7 @@ impl<'a> BufferConsumer for MidiSource<'a> {
         };
     }
 
-    fn fill_buffer(&mut self, buffer: &mut [f32]) {
-        self.source.fill_buffer(buffer);
+    fn fill_buffer(&mut self, buffer: &mut [f32]) -> Status {
+        self.source.fill_buffer(buffer)
     }
 }
