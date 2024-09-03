@@ -1,5 +1,6 @@
 pub mod font;
 pub mod midi;
+pub mod noise;
 pub mod square;
 pub mod triangle;
 pub mod util;

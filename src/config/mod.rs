@@ -5,6 +5,8 @@ pub type DutyCycle = f32;
 pub type Amplitude = f32;
 pub type BaseNote = u8;
 pub type InstrumentIndex = usize;
+pub type InsideFeedback = bool;
+pub type NoteFor16Shifts = u8;
 
 #[derive(Deserialize)]
 pub struct Config {
@@ -34,5 +36,6 @@ pub struct RangeSource {
 pub enum SoundSource {
     SquareWave(Amplitude, DutyCycle),
     TriangleWave(Amplitude),
+    LfsrNoise(Amplitude, InsideFeedback, NoteFor16Shifts),
     SampleFilePath(String, BaseNote),
 }

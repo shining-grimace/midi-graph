@@ -22,6 +22,7 @@ pub use mix::base::BaseMixer;
 pub use source::{
     font::{SoundFont, SoundFontBuilder},
     midi::{chunk::MidiChunkSource, track::MidiTrackSource, MidiSource, MidiSourceBuilder},
+    noise::LfsrNoiseSource,
     square::SquareWaveSource,
     triangle::TriangleWaveSource,
     wav::WavSource,

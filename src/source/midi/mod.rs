@@ -4,8 +4,8 @@ pub mod util;
 
 use crate::{
     util::{smf_from_file, soundfont_from_file, wav_from_file},
-    BufferConsumer, Config, Error, FontSource, MidiChunkSource, MidiDataSource, NoteEvent,
-    NoteKind, NoteRange, SoundFont, SoundFontBuilder, SoundSource, SquareWaveSource,
+    BufferConsumer, Config, Error, FontSource, LfsrNoiseSource, MidiChunkSource, MidiDataSource,
+    NoteEvent, NoteKind, NoteRange, SoundFont, SoundFontBuilder, SoundSource, SquareWaveSource,
     TriangleWaveSource,
 };
 use midly::Smf;
@@ -75,6 +75,19 @@ impl<'a> MidiSource<'a> {
                             SoundSource::TriangleWave(amplitude) => {
                                 font_builder = font_builder.add_range(note_range, || {
                                     Box::new(TriangleWaveSource::new(*amplitude))
+                                });
+                            }
+                            SoundSource::LfsrNoise(
+                                amplitude,
+                                inside_feedback,
+                                note_for_16_shifts,
+                            ) => {
+                                font_builder = font_builder.add_range(note_range, || {
+                                    Box::new(LfsrNoiseSource::new(
+                                        *amplitude,
+                                        *inside_feedback,
+                                        *note_for_16_shifts,
+                                    ))
                                 });
                             }
                             SoundSource::SampleFilePath(file_path, note) => {
