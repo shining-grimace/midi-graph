@@ -19,7 +19,7 @@ fn main() {
     let sf2_font = soundfont_from_file(SF2_FILE, 0).unwrap();
     let wav_font = SoundFontBuilder::new()
         .add_range(
-            NoteRange::new_inclusive_range(0, 255),
+            NoteRange::new_full_range(),
             Box::new(wav_from_file(WAV_FILE, 45).unwrap()),
         )?
         .build();

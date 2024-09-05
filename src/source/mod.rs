@@ -9,7 +9,7 @@ pub mod wav;
 #[cfg(debug_assertions)]
 pub mod log;
 
-use crate::Error;
+use crate::{Error, RangeSource};
 
 pub trait BufferConsumer {
     fn duplicate(&self) -> Result<Box<dyn BufferConsumer + Send + 'static>, Error>;
@@ -32,6 +32,20 @@ impl NoteRange {
         Self {
             lower_inclusive: lower,
             upper_inclusive: upper,
+        }
+    }
+
+    pub fn new_full_range() -> Self {
+        Self {
+            lower_inclusive: 0,
+            upper_inclusive: 255,
+        }
+    }
+
+    pub fn from_config(config: &RangeSource) -> Self {
+        Self {
+            lower_inclusive: config.lower,
+            upper_inclusive: config.upper,
         }
     }
 

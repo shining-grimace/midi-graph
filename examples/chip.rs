@@ -17,7 +17,7 @@ fn main() {
     let smf = smf_from_file(MIDI_FILE).unwrap();
     let triangle_font = SoundFontBuilder::new()
         .add_range(
-            NoteRange::new_inclusive_range(0, 255),
+            NoteRange::new_full_range(),
             Box::new(TriangleWaveSource::new(1.0)),
         )?
         .build();
@@ -33,7 +33,7 @@ fn main() {
         .build();
     let noise_font = SoundFontBuilder::new()
         .add_range(
-            NoteRange::new_inclusive_range(0, 255),
+            NoteRange::new_full_range(),
             Box::new(LfsrNoiseSource::new(0.25, false, 50)),
         )?
         .build();

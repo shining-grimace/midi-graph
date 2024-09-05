@@ -3,10 +3,8 @@ pub mod track;
 pub mod util;
 
 use crate::{
-    util::{smf_from_file, soundfont_from_file, wav_from_file},
-    BufferConsumer, Config, Error, FontSource, LfsrNoiseSource, MidiChunkSource, MidiDataSource,
-    NoteEvent, NoteKind, NoteRange, SoundFont, SoundFontBuilder, SoundSource, SquareWaveSource,
-    Status, TriangleWaveSource,
+    util::smf_from_file, BufferConsumer, Config, Error, MidiChunkSource, MidiDataSource, NoteEvent,
+    NoteKind, SoundFont, Status,
 };
 use midly::Smf;
 use std::collections::HashMap;
@@ -43,7 +41,7 @@ pub struct MidiSource<'a> {
 }
 
 impl<'a> MidiSource<'a> {
-    pub fn new(smf: Smf<'a>, channel_fonts: HashMap<usize, SoundFont>) -> Result<Self, Error> {
+    fn new(smf: Smf<'a>, channel_fonts: HashMap<usize, SoundFont>) -> Result<Self, Error> {
         #[cfg(debug_assertions)]
         log::log_loaded_midi(&smf);
 
@@ -61,54 +59,10 @@ impl<'a> MidiSource<'a> {
         };
         let mut channel_sources = HashMap::new();
         for (channel, font_source) in config.channels.iter() {
-            match font_source {
-                FontSource::Ranges(ranges) => {
-                    let mut font_builder = SoundFontBuilder::new();
-                    for range in ranges {
-                        let note_range = NoteRange::new_inclusive_range(range.lower, range.upper);
-                        let source = Self::source_from_config(&range.source)?;
-                        font_builder = font_builder.add_range(note_range, source)?;
-                    }
-                    let font = font_builder.build();
-                    channel_sources.insert(*channel, font);
-                }
-                FontSource::Sf2FilePath {
-                    path,
-                    instrument_index,
-                } => {
-                    let soundfont = soundfont_from_file(path.as_str(), *instrument_index)?;
-                    channel_sources.insert(*channel, soundfont);
-                }
-            }
+            let soundfont = SoundFont::from_config(font_source)?;
+            channel_sources.insert(*channel, soundfont);
         }
         MidiSource::new(smf, channel_sources)
-    }
-
-    fn source_from_config(
-        config: &SoundSource,
-    ) -> Result<Box<dyn BufferConsumer + Send + 'static>, Error> {
-        let source: Box<dyn BufferConsumer + Send + 'static> = match config {
-            SoundSource::SquareWave {
-                amplitude,
-                duty_cycle,
-            } => Box::new(SquareWaveSource::new(*amplitude, *duty_cycle)),
-            SoundSource::TriangleWave { amplitude } => {
-                Box::new(TriangleWaveSource::new(*amplitude))
-            }
-            SoundSource::LfsrNoise {
-                amplitude,
-                inside_feedback,
-                note_for_16_shifts,
-            } => Box::new(LfsrNoiseSource::new(
-                *amplitude,
-                *inside_feedback,
-                *note_for_16_shifts,
-            )),
-            SoundSource::SampleFilePath { path, base_note } => {
-                Box::new(wav_from_file(path.as_str(), *base_note)?)
-            }
-        };
-        Ok(source)
     }
 }
 
