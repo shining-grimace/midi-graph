@@ -46,4 +46,11 @@ pub enum SoundSource {
         path: String,
         base_note: u8,
     },
+    Envelope {
+        attack_time: f32,
+        decay_time: f32,
+        sustain_multiplier: f32,
+        release_time: f32,
+        source: Box<SoundSource>,
+    },
 }

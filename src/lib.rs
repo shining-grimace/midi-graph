@@ -20,6 +20,7 @@ pub use config::{Config, FontSource, MidiDataSource, RangeSource, SoundSource};
 pub use error::Error;
 pub use mix::base::BaseMixer;
 pub use source::{
+    envelope::Envelope,
     font::{SoundFont, SoundFontBuilder},
     midi::{chunk::MidiChunkSource, track::MidiTrackSource, MidiSource, MidiSourceBuilder},
     noise::LfsrNoiseSource,

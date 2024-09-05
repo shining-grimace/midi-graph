@@ -1,3 +1,4 @@
+pub mod envelope;
 pub mod font;
 pub mod midi;
 pub mod noise;

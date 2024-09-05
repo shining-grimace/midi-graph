@@ -9,7 +9,13 @@
             ( lower: 0, upper: 255, source: SampleFilePath( path: "resources/guitar-a2-48k-stereo.wav", base_note: 45 ))
         ]),
         2: Ranges([
-            ( lower: 0, upper: 255, source: LfsrNoise( amplitude: 0.25, inside_feedback: false, note_for_16_shifts: 50 ))
+            ( lower: 0, upper: 255, source: Envelope(
+                attack_time: 0.125,
+                decay_time: 0.125,
+                sustain_multiplier: 0.5,
+                release_time: 0.125,
+                source: LfsrNoise( amplitude: 0.25, inside_feedback: false, note_for_16_shifts: 50 )
+            ))
         ])
     }
 )

@@ -2,8 +2,8 @@ mod range;
 
 use crate::{
     util::{soundfont_from_file, wav_from_file},
-    BufferConsumer, Error, FontSource, LfsrNoiseSource, NoteConsumer, NoteEvent, NoteKind,
-    NoteRange, SoundSource, SquareWaveSource, Status, TriangleWaveSource,
+    BufferConsumer, Envelope, Error, FontSource, LfsrNoiseSource, NoteConsumer, NoteEvent,
+    NoteKind, NoteRange, SoundSource, SquareWaveSource, Status, TriangleWaveSource,
 };
 use range::RangeData;
 
@@ -92,6 +92,23 @@ impl SoundFont {
             )),
             SoundSource::SampleFilePath { path, base_note } => {
                 Box::new(wav_from_file(path.as_str(), *base_note)?)
+            }
+
+            SoundSource::Envelope {
+                attack_time,
+                decay_time,
+                sustain_multiplier,
+                release_time,
+                source,
+            } => {
+                let source = Self::source_from_config(source)?;
+                Box::new(Envelope::from_adsr(
+                    *attack_time,
+                    *decay_time,
+                    *sustain_multiplier,
+                    *release_time,
+                    source,
+                ))
             }
         };
         Ok(source)
