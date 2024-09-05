@@ -18,9 +18,10 @@ fn main() {
     let smf = smf_from_file(MIDI_FILE).unwrap();
     let sf2_font = soundfont_from_file(SF2_FILE, 0).unwrap();
     let wav_font = SoundFontBuilder::new()
-        .add_range(NoteRange::new_inclusive_range(0, 255), || {
-            Box::new(wav_from_file(WAV_FILE, 45).unwrap())
-        })
+        .add_range(
+            NoteRange::new_inclusive_range(0, 255),
+            Box::new(wav_from_file(WAV_FILE, 45).unwrap()),
+        )?
         .build();
     let midi = MidiSourceBuilder::new(smf)
         .add_channel_font(SOUNDFONT_CHANNEL, sf2_font)

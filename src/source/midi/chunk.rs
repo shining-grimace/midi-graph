@@ -38,6 +38,12 @@ impl<'a> MidiChunkSource<'a> {
 }
 
 impl<'a> BufferConsumer for MidiChunkSource<'a> {
+    fn duplicate(&self) -> Result<Box<dyn BufferConsumer + Send + 'static>, Error> {
+        Err(Error::User(
+            "MIDI chunk source cannot be replicated".to_owned(),
+        ))
+    }
+
     fn set_note(&mut self, _: NoteEvent) {}
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) -> Status {

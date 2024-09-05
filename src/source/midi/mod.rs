@@ -66,39 +66,8 @@ impl<'a> MidiSource<'a> {
                     let mut font_builder = SoundFontBuilder::new();
                     for range in ranges {
                         let note_range = NoteRange::new_inclusive_range(range.lower, range.upper);
-                        match &range.source {
-                            SoundSource::SquareWave {
-                                amplitude,
-                                duty_cycle,
-                            } => {
-                                font_builder = font_builder.add_range(note_range, || {
-                                    Box::new(SquareWaveSource::new(*amplitude, *duty_cycle))
-                                });
-                            }
-                            SoundSource::TriangleWave { amplitude } => {
-                                font_builder = font_builder.add_range(note_range, || {
-                                    Box::new(TriangleWaveSource::new(*amplitude))
-                                });
-                            }
-                            SoundSource::LfsrNoise {
-                                amplitude,
-                                inside_feedback,
-                                note_for_16_shifts,
-                            } => {
-                                font_builder = font_builder.add_range(note_range, || {
-                                    Box::new(LfsrNoiseSource::new(
-                                        *amplitude,
-                                        *inside_feedback,
-                                        *note_for_16_shifts,
-                                    ))
-                                });
-                            }
-                            SoundSource::SampleFilePath { path, base_note } => {
-                                font_builder = font_builder.add_range(note_range, || {
-                                    Box::new(wav_from_file(path.as_str(), *base_note).unwrap())
-                                });
-                            }
-                        };
+                        let source = Self::source_from_config(&range.source)?;
+                        font_builder = font_builder.add_range(note_range, source)?;
                     }
                     let font = font_builder.build();
                     channel_sources.insert(*channel, font);
@@ -114,9 +83,40 @@ impl<'a> MidiSource<'a> {
         }
         MidiSource::new(smf, channel_sources)
     }
+
+    fn source_from_config(
+        config: &SoundSource,
+    ) -> Result<Box<dyn BufferConsumer + Send + 'static>, Error> {
+        let source: Box<dyn BufferConsumer + Send + 'static> = match config {
+            SoundSource::SquareWave {
+                amplitude,
+                duty_cycle,
+            } => Box::new(SquareWaveSource::new(*amplitude, *duty_cycle)),
+            SoundSource::TriangleWave { amplitude } => {
+                Box::new(TriangleWaveSource::new(*amplitude))
+            }
+            SoundSource::LfsrNoise {
+                amplitude,
+                inside_feedback,
+                note_for_16_shifts,
+            } => Box::new(LfsrNoiseSource::new(
+                *amplitude,
+                *inside_feedback,
+                *note_for_16_shifts,
+            )),
+            SoundSource::SampleFilePath { path, base_note } => {
+                Box::new(wav_from_file(path.as_str(), *base_note)?)
+            }
+        };
+        Ok(source)
+    }
 }
 
 impl<'a> BufferConsumer for MidiSource<'a> {
+    fn duplicate(&self) -> Result<Box<dyn BufferConsumer + Send + 'static>, Error> {
+        Err(Error::User("MidiSource cannot be duplicated".to_owned()))
+    }
+
     fn set_note(&mut self, event: NoteEvent) {
         self.has_finished = match event.kind {
             NoteKind::NoteOn(_) => true,

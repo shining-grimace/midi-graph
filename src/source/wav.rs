@@ -86,6 +86,31 @@ impl WavSource {
 }
 
 impl BufferConsumer for WavSource {
+    fn duplicate(&self) -> Result<Box<dyn BufferConsumer + Send + 'static>, Error> {
+        let sample_rate = (consts::PLAYBACK_SAMPLE_RATE as f64 / self.playback_scale) as u32;
+        let sample_type = match self.source_channel_count {
+            1 => SampleLink::MonoSample,
+            2 => SampleLink::LinkedSample,
+            _ => {
+                return Err(Error::User("Unexpected channel count".to_owned()));
+            }
+        };
+        let header = SampleHeader {
+            name: String::new(),
+            start: 0,
+            end: 0,
+            loop_start: 0,
+            loop_end: 0,
+            sample_rate,
+            origpitch: self.source_note,
+            pitchadj: 0,
+            sample_link: 0,
+            sample_type,
+        };
+        let source = Self::new_from_raw_data(&header, self.source_data.clone())?;
+        Ok(Box::new(source))
+    }
+
     fn set_note(&mut self, event: NoteEvent) {
         match event.kind {
             NoteKind::NoteOn(note) => {

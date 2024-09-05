@@ -1,7 +1,8 @@
-use crate::{consts, util, BufferConsumer, NoteEvent, NoteKind, Status};
+use crate::{consts, util, BufferConsumer, Error, NoteEvent, NoteKind, Status};
 
 pub struct LfsrNoiseSource {
     is_on: bool,
+    note_of_16_shifts: u8,
     current_note: u8,
     current_lfsr: u16,
     feedback_mask: u16,
@@ -25,6 +26,7 @@ impl LfsrNoiseSource {
             / (rotations_per_second_requested / rotations_per_second_a440);
         Self {
             is_on: false,
+            note_of_16_shifts,
             current_note: 0,
             current_lfsr: 0x0001,
             feedback_mask,
@@ -50,6 +52,18 @@ impl LfsrNoiseSource {
 }
 
 impl BufferConsumer for LfsrNoiseSource {
+    fn duplicate(&self) -> Result<Box<dyn BufferConsumer + Send + 'static>, Error> {
+        let inside_feedback = match self.feedback_mask {
+            0x4040 => true,
+            0x4000 => false,
+            _ => {
+                return Err(Error::User("Unexpected feedback mask".to_owned()));
+            }
+        };
+        let source = Self::new(self.amplitude, inside_feedback, self.note_of_16_shifts);
+        Ok(Box::new(source))
+    }
+
     fn set_note(&mut self, event: NoteEvent) {
         match event.kind {
             NoteKind::NoteOn(note) => {

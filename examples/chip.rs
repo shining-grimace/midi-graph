@@ -16,22 +16,26 @@ const NOISE_CHANNEL: usize = 2;
 fn main() {
     let smf = smf_from_file(MIDI_FILE).unwrap();
     let triangle_font = SoundFontBuilder::new()
-        .add_range(NoteRange::new_inclusive_range(0, 255), || {
-            Box::new(TriangleWaveSource::new(1.0))
-        })
+        .add_range(
+            NoteRange::new_inclusive_range(0, 255),
+            Box::new(TriangleWaveSource::new(1.0)),
+        )?
         .build();
     let square_font = SoundFontBuilder::new()
-        .add_range(NoteRange::new_inclusive_range(0, 50), || {
-            Box::new(SquareWaveSource::new(0.125, 0.5))
-        })
-        .add_range(NoteRange::new_inclusive_range(51, 255), || {
-            Box::new(SquareWaveSource::new(0.125, 0.875))
-        })
+        .add_range(
+            NoteRange::new_inclusive_range(0, 50),
+            Box::new(SquareWaveSource::new(0.125, 0.5)),
+        )?
+        .add_range(
+            NoteRange::new_inclusive_range(51, 255),
+            Box::new(SquareWaveSource::new(0.125, 0.875)),
+        )?
         .build();
     let noise_font = SoundFontBuilder::new()
-        .add_range(NoteRange::new_inclusive_range(0, 255), || {
-            Box::new(LfsrNoiseSource::new(0.25, false, 50))
-        })
+        .add_range(
+            NoteRange::new_inclusive_range(0, 255),
+            Box::new(LfsrNoiseSource::new(0.25, false, 50)),
+        )?
         .build();
     let midi = MidiSourceBuilder::new(smf)
         .add_channel_font(TRIANGLE_CHANNEL, triangle_font)

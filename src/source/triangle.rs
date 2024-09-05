@@ -1,4 +1,4 @@
-use crate::{consts, util, BufferConsumer, NoteEvent, NoteKind, Status};
+use crate::{consts, util, BufferConsumer, Error, NoteEvent, NoteKind, Status};
 
 pub struct TriangleWaveSource {
     is_on: bool,
@@ -21,6 +21,10 @@ impl TriangleWaveSource {
 }
 
 impl BufferConsumer for TriangleWaveSource {
+    fn duplicate(&self) -> Result<Box<dyn BufferConsumer + Send + 'static>, Error> {
+        Ok(Box::new(Self::new(self.amplitude)))
+    }
+
     fn set_note(&mut self, event: NoteEvent) {
         match event.kind {
             NoteKind::NoteOn(note) => {

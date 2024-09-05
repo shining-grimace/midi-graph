@@ -1,4 +1,4 @@
-use crate::{consts, util, BufferConsumer, NoteEvent, NoteKind, Status};
+use crate::{consts, util, BufferConsumer, Error, NoteEvent, NoteKind, Status};
 
 pub struct SquareWaveSource {
     is_on: bool,
@@ -23,6 +23,11 @@ impl SquareWaveSource {
 }
 
 impl BufferConsumer for SquareWaveSource {
+    fn duplicate(&self) -> Result<Box<dyn BufferConsumer + Send + 'static>, Error> {
+        let source = Self::new(self.amplitude, self.duty_cycle);
+        Ok(Box::new(source))
+    }
+
     fn set_note(&mut self, event: NoteEvent) {
         match event.kind {
             NoteKind::NoteOn(note) => {

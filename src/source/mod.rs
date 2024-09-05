@@ -9,7 +9,10 @@ pub mod wav;
 #[cfg(debug_assertions)]
 pub mod log;
 
+use crate::Error;
+
 pub trait BufferConsumer {
+    fn duplicate(&self) -> Result<Box<dyn BufferConsumer + Send + 'static>, Error>;
     fn set_note(&mut self, event: NoteEvent);
     fn fill_buffer(&mut self, buffer: &mut [f32]) -> Status;
 }

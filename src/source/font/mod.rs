@@ -1,6 +1,6 @@
 mod range;
 
-use crate::{BufferConsumer, NoteConsumer, NoteEvent, NoteKind, NoteRange, Status};
+use crate::{BufferConsumer, Error, NoteConsumer, NoteEvent, NoteKind, NoteRange, Status};
 use range::RangeData;
 
 const SOURCE_CAPACITY: usize = 8;
@@ -17,18 +17,18 @@ impl SoundFontBuilder {
     pub fn add_range(
         mut self,
         range: NoteRange,
-        consumer_spawner: impl Fn() -> Box<dyn BufferConsumer + Send + 'static>,
-    ) -> Self {
+        consumer: Box<dyn BufferConsumer + Send + 'static>,
+    ) -> Result<Self, Error> {
         let mut consumers = Vec::new();
         for _ in 0..SOURCE_CAPACITY {
-            consumers.push((0, consumer_spawner()));
+            consumers.push((0, consumer.duplicate()?));
         }
         self.ranges.push(RangeData {
             range,
             active_count: 0,
             consumers,
         });
-        self
+        Ok(self)
     }
 
     pub fn build(self) -> SoundFont {

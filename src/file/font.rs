@@ -49,10 +49,8 @@ pub fn soundfont_from_file(file_name: &str, instrument_index: usize) -> Result<S
         let sample_length = sample_header.end as u64 - sample_position;
         let sample_data = load_sample(&mut reader, sample_position, sample_length)?;
         let note_range = note_range_for_zone(&zone)?;
-        soundfont_builder = soundfont_builder.add_range(note_range, || {
-            let source = wav_from_i16_samples(&sample_header, &sample_data).unwrap();
-            Box::new(source)
-        });
+        let source = wav_from_i16_samples(&sample_header, &sample_data)?;
+        soundfont_builder = soundfont_builder.add_range(note_range, Box::new(source))?;
     }
     Ok(soundfont_builder.build())
 }
