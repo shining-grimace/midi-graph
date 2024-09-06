@@ -2,6 +2,7 @@ pub mod envelope;
 pub mod font;
 pub mod midi;
 pub mod noise;
+pub mod sawtooth;
 pub mod square;
 pub mod triangle;
 pub mod util;

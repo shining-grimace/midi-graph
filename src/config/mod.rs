@@ -37,6 +37,9 @@ pub enum SoundSource {
     TriangleWave {
         amplitude: f32,
     },
+    SawtoothWave {
+        amplitude: f32,
+    },
     LfsrNoise {
         amplitude: f32,
         inside_feedback: bool,

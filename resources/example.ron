@@ -2,7 +2,7 @@
     midi: FilePath("resources/sample-in-c.mid"),
     channels: {
         0: Ranges([
-            ( lower: 0, upper: 50, source: SquareWave( amplitude: 0.125, duty_cycle: 0.5 )),
+            ( lower: 0, upper: 50, source: SawtoothWave( amplitude: 0.125 )),
             ( lower: 51, upper: 255, source: SquareWave( amplitude: 0.125, duty_cycle: 0.875 ))
         ]),
         1: Ranges([

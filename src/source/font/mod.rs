@@ -3,7 +3,8 @@ mod range;
 use crate::{
     util::{soundfont_from_file, wav_from_file},
     BufferConsumer, Envelope, Error, FontSource, LfsrNoiseSource, NoteConsumer, NoteEvent,
-    NoteKind, NoteRange, SoundSource, SquareWaveSource, Status, TriangleWaveSource,
+    NoteKind, NoteRange, SawtoothWaveSource, SoundSource, SquareWaveSource, Status,
+    TriangleWaveSource,
 };
 use range::RangeData;
 
@@ -80,6 +81,9 @@ impl SoundFont {
             } => Box::new(SquareWaveSource::new(*amplitude, *duty_cycle)),
             SoundSource::TriangleWave { amplitude } => {
                 Box::new(TriangleWaveSource::new(*amplitude))
+            }
+            SoundSource::SawtoothWave { amplitude } => {
+                Box::new(SawtoothWaveSource::new(*amplitude))
             }
             SoundSource::LfsrNoise {
                 amplitude,

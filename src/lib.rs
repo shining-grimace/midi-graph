@@ -24,6 +24,7 @@ pub use source::{
     font::{SoundFont, SoundFontBuilder},
     midi::{chunk::MidiChunkSource, track::MidiTrackSource, MidiSource, MidiSourceBuilder},
     noise::LfsrNoiseSource,
+    sawtooth::SawtoothWaveSource,
     square::SquareWaveSource,
     triangle::TriangleWaveSource,
     wav::WavSource,
