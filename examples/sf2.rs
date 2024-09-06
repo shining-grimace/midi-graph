@@ -21,7 +21,8 @@ fn main() {
         .add_range(
             NoteRange::new_full_range(),
             Box::new(wav_from_file(WAV_FILE, 45).unwrap()),
-        )?
+        )
+        .unwrap()
         .build();
     let midi = MidiSourceBuilder::new(smf)
         .add_channel_font(SOUNDFONT_CHANNEL, sf2_font)
