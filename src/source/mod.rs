@@ -1,3 +1,4 @@
+pub mod async_receiver;
 pub mod envelope;
 pub mod font;
 pub mod midi;
@@ -62,7 +63,7 @@ pub enum Status {
 }
 
 pub struct NoteEvent {
-    kind: NoteKind,
+    pub kind: NoteKind,
 }
 
 #[derive(Eq, PartialEq, Copy, Clone)]
