@@ -1,6 +1,34 @@
 use serde_derive::Deserialize;
 use std::collections::HashMap;
 
+const fn default_amplitude() -> f32 {
+    0.5
+}
+
+const fn default_duty_cycle() -> f32 {
+    0.5
+}
+
+const fn default_note_for_16_shifts() -> u8 {
+    64
+}
+
+const fn default_attack() -> f32 {
+    0.125
+}
+
+const fn default_decay() -> f32 {
+    0.25
+}
+
+const fn default_sustain() -> f32 {
+    0.5
+}
+
+const fn default_release() -> f32 {
+    0.125
+}
+
 #[derive(Deserialize)]
 pub struct Config {
     pub midi: MidiDataSource,
@@ -31,18 +59,24 @@ pub struct RangeSource {
 #[derive(Deserialize)]
 pub enum SoundSource {
     SquareWave {
+        #[serde(default = "default_amplitude")]
         amplitude: f32,
+        #[serde(default = "default_duty_cycle")]
         duty_cycle: f32,
     },
     TriangleWave {
+        #[serde(default = "default_amplitude")]
         amplitude: f32,
     },
     SawtoothWave {
+        #[serde(default = "default_amplitude")]
         amplitude: f32,
     },
     LfsrNoise {
+        #[serde(default = "default_amplitude")]
         amplitude: f32,
         inside_feedback: bool,
+        #[serde(default = "default_note_for_16_shifts")]
         note_for_16_shifts: u8,
     },
     SampleFilePath {
@@ -50,9 +84,13 @@ pub enum SoundSource {
         base_note: u8,
     },
     Envelope {
+        #[serde(default = "default_attack")]
         attack_time: f32,
+        #[serde(default = "default_decay")]
         decay_time: f32,
+        #[serde(default = "default_sustain")]
         sustain_multiplier: f32,
+        #[serde(default = "default_release")]
         release_time: f32,
         source: Box<SoundSource>,
     },
