@@ -7,7 +7,7 @@ pub struct RangeData {
 }
 
 impl RangeData {
-    pub fn turn_note_on(&mut self, note: u8) {
+    pub fn turn_note_on(&mut self, note: u8, vel: f32) {
         if self.range.contains(note) {
             let same_notes = self.consumers[0..self.active_count]
                 .iter()
@@ -25,13 +25,13 @@ impl RangeData {
             }
             self.consumers[self.active_count].0 = note;
             self.consumers[self.active_count].1.set_note(NoteEvent {
-                kind: NoteKind::NoteOn(note),
+                kind: NoteKind::NoteOn { note, vel },
             });
             self.active_count += 1;
         }
     }
 
-    pub fn turn_note_off(&mut self, note: u8) {
+    pub fn turn_note_off(&mut self, note: u8, vel: f32) {
         if self.range.contains(note) {
             let maybe_index = self.consumers[0..self.active_count]
                 .iter()
@@ -50,7 +50,7 @@ impl RangeData {
             }
             let mut removed_source = self.consumers.remove(source_index);
             removed_source.1.set_note(NoteEvent {
-                kind: NoteKind::NoteOff(note),
+                kind: NoteKind::NoteOff { note, vel },
             });
             self.consumers.push(removed_source);
             self.active_count -= 1;

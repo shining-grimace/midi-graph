@@ -73,8 +73,8 @@ impl<'a> BufferConsumer for MidiSource<'a> {
 
     fn set_note(&mut self, event: NoteEvent) {
         self.has_finished = match event.kind {
-            NoteKind::NoteOn(_) => true,
-            NoteKind::NoteOff(_) => false,
+            NoteKind::NoteOn { .. } => true,
+            NoteKind::NoteOff { .. } => false,
         };
     }
 

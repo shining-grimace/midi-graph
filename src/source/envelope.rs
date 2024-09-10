@@ -65,11 +65,11 @@ impl BufferConsumer for Envelope {
 
     fn set_note(&mut self, event: NoteEvent) {
         match event.kind {
-            NoteKind::NoteOn(_) => {
+            NoteKind::NoteOn { .. } => {
                 self.mode = EnvelopeMode::Attack;
                 self.samples_progress_in_mode = 0;
             }
-            NoteKind::NoteOff(_) => {
+            NoteKind::NoteOff { .. } => {
                 self.samples_progress_in_mode = match self.mode {
                     EnvelopeMode::Attack => {
                         let current_multiplier =

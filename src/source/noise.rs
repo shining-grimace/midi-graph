@@ -4,11 +4,12 @@ pub struct LfsrNoiseSource {
     is_on: bool,
     note_of_16_shifts: u8,
     current_note: u8,
+    current_amplitude: f32,
     current_lfsr: u16,
     feedback_mask: u16,
     cycle_progress_samples: f32,
     cycle_samples_a440: f32,
-    amplitude: f32,
+    peak_amplitude: f32,
 }
 
 impl LfsrNoiseSource {
@@ -28,19 +29,20 @@ impl LfsrNoiseSource {
             is_on: false,
             note_of_16_shifts,
             current_note: 0,
+            current_amplitude: 0.0,
             current_lfsr: 0x0001,
             feedback_mask,
             cycle_progress_samples: 0.0,
             cycle_samples_a440,
-            amplitude,
+            peak_amplitude: amplitude,
         }
     }
 
     #[inline]
     fn value(&self) -> f32 {
         match self.current_lfsr & 0x0001 {
-            0x0001 => self.amplitude,
-            _ => -self.amplitude,
+            0x0001 => self.current_amplitude,
+            _ => -self.current_amplitude,
         }
     }
 
@@ -60,17 +62,18 @@ impl BufferConsumer for LfsrNoiseSource {
                 return Err(Error::User("Unexpected feedback mask".to_owned()));
             }
         };
-        let source = Self::new(self.amplitude, inside_feedback, self.note_of_16_shifts);
+        let source = Self::new(self.peak_amplitude, inside_feedback, self.note_of_16_shifts);
         Ok(Box::new(source))
     }
 
     fn set_note(&mut self, event: NoteEvent) {
         match event.kind {
-            NoteKind::NoteOn(note) => {
+            NoteKind::NoteOn { note, vel } => {
                 self.is_on = true;
                 self.current_note = note;
+                self.current_amplitude = self.peak_amplitude * vel;
             }
-            NoteKind::NoteOff(note) => {
+            NoteKind::NoteOff { note, vel: _ } => {
                 if self.current_note != note {
                     return;
                 }

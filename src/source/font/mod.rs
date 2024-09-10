@@ -121,21 +121,21 @@ impl SoundFont {
 
 impl NoteConsumer for SoundFont {
     fn restart_with_event(&mut self, event: &NoteEvent) {
-        let note: u8 = match event.kind {
-            NoteKind::NoteOn(note) => note,
-            NoteKind::NoteOff(note) => note,
+        let (note, vel) = match event.kind {
+            NoteKind::NoteOn { note, vel } => (note, vel),
+            NoteKind::NoteOff { note, vel } => (note, vel),
         };
         let turning_on = match event.kind {
-            NoteKind::NoteOn(_) => true,
-            NoteKind::NoteOff(_) => false,
+            NoteKind::NoteOn { .. } => true,
+            NoteKind::NoteOff { .. } => false,
         };
         if turning_on {
             for range_data in self.ranges.iter_mut() {
-                range_data.turn_note_on(note);
+                range_data.turn_note_on(note, vel);
             }
         } else {
             for range_data in self.ranges.iter_mut() {
-                range_data.turn_note_off(note);
+                range_data.turn_note_off(note, vel);
             }
         }
     }

@@ -66,8 +66,8 @@ pub struct NoteEvent {
     pub kind: NoteKind,
 }
 
-#[derive(Eq, PartialEq, Copy, Clone)]
+#[derive(PartialEq, Copy, Clone)]
 pub enum NoteKind {
-    NoteOn(u8),
-    NoteOff(u8),
+    NoteOn { note: u8, vel: f32 },
+    NoteOff { note: u8, vel: f32 },
 }

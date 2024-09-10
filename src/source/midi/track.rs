@@ -54,20 +54,26 @@ impl<'a> MidiTrackSource<'a> {
         match event.kind {
             TrackEventKind::Midi {
                 channel,
-                message: MidiMessage::NoteOn { key, vel: _ },
+                message: MidiMessage::NoteOn { key, vel },
             } => Some(NoteEventOnChannel {
                 channel: u8::from(channel) as usize,
                 event: NoteEvent {
-                    kind: NoteKind::NoteOn(u8::from(key)),
+                    kind: NoteKind::NoteOn {
+                        note: u8::from(key),
+                        vel: u8::from(vel) as f32 / 127.0,
+                    },
                 },
             }),
             TrackEventKind::Midi {
                 channel,
-                message: MidiMessage::NoteOff { key, vel: _ },
+                message: MidiMessage::NoteOff { key, vel },
             } => Some(NoteEventOnChannel {
                 channel: u8::from(channel) as usize,
                 event: NoteEvent {
-                    kind: NoteKind::NoteOff(u8::from(key)),
+                    kind: NoteKind::NoteOff {
+                        note: u8::from(key),
+                        vel: u8::from(vel) as f32 / 127.0,
+                    },
                 },
             }),
             _ => None,

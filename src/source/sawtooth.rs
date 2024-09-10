@@ -3,9 +3,10 @@ use crate::{consts, util, BufferConsumer, Error, NoteEvent, NoteKind, Status};
 pub struct SawtoothWaveSource {
     is_on: bool,
     current_note: u8,
+    current_amplitude: f32,
     cycle_progress_samples: f32,
     period_samples_a440: f32,
-    amplitude: f32,
+    peak_amplitude: f32,
 }
 
 impl SawtoothWaveSource {
@@ -13,25 +14,27 @@ impl SawtoothWaveSource {
         Self {
             is_on: false,
             current_note: 0,
+            current_amplitude: 0.0,
             cycle_progress_samples: 0.0,
             period_samples_a440: consts::PLAYBACK_SAMPLE_RATE as f32 / 440.0,
-            amplitude,
+            peak_amplitude: amplitude,
         }
     }
 }
 
 impl BufferConsumer for SawtoothWaveSource {
     fn duplicate(&self) -> Result<Box<dyn BufferConsumer + Send + 'static>, Error> {
-        Ok(Box::new(Self::new(self.amplitude)))
+        Ok(Box::new(Self::new(self.peak_amplitude)))
     }
 
     fn set_note(&mut self, event: NoteEvent) {
         match event.kind {
-            NoteKind::NoteOn(note) => {
+            NoteKind::NoteOn { note, vel } => {
                 self.is_on = true;
                 self.current_note = note;
+                self.current_amplitude = self.peak_amplitude * (vel as f32 * 127.0);
             }
-            NoteKind::NoteOff(note) => {
+            NoteKind::NoteOff { note, vel: _ } => {
                 if self.current_note != note {
                     return;
                 }
@@ -63,7 +66,7 @@ impl BufferConsumer for SawtoothWaveSource {
                 stretched_progress -= pitch_period_samples;
             }
             let duty = stretched_progress / pitch_period_samples;
-            let amplitude = self.amplitude * (-1.0 + 2.0 * duty);
+            let amplitude = self.current_amplitude * (-1.0 + 2.0 * duty);
             buffer[i] += amplitude;
             buffer[i + 1] += amplitude;
         }

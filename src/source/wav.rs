@@ -113,11 +113,11 @@ impl BufferConsumer for WavSource {
 
     fn set_note(&mut self, event: NoteEvent) {
         match event.kind {
-            NoteKind::NoteOn(note) => {
+            NoteKind::NoteOn { note, vel: _ } => {
                 self.position = 0;
                 self.current_note = note;
             }
-            NoteKind::NoteOff(note) => {
+            NoteKind::NoteOff { note, vel: _ } => {
                 if self.current_note != note {
                     return;
                 }

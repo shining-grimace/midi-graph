@@ -3,9 +3,10 @@ use crate::{consts, util, BufferConsumer, Error, NoteEvent, NoteKind, Status};
 pub struct SquareWaveSource {
     is_on: bool,
     current_note: u8,
+    current_amplitude: f32,
     cycle_progress_samples: f32,
     period_samples_a440: f32,
-    amplitude: f32,
+    peak_amplitude: f32,
     duty_cycle: f32,
 }
 
@@ -14,9 +15,10 @@ impl SquareWaveSource {
         Self {
             is_on: false,
             current_note: 0,
+            current_amplitude: 0.0,
             cycle_progress_samples: 0.0,
             period_samples_a440: consts::PLAYBACK_SAMPLE_RATE as f32 / 440.0,
-            amplitude,
+            peak_amplitude: amplitude,
             duty_cycle,
         }
     }
@@ -24,17 +26,18 @@ impl SquareWaveSource {
 
 impl BufferConsumer for SquareWaveSource {
     fn duplicate(&self) -> Result<Box<dyn BufferConsumer + Send + 'static>, Error> {
-        let source = Self::new(self.amplitude, self.duty_cycle);
+        let source = Self::new(self.peak_amplitude, self.duty_cycle);
         Ok(Box::new(source))
     }
 
     fn set_note(&mut self, event: NoteEvent) {
         match event.kind {
-            NoteKind::NoteOn(note) => {
+            NoteKind::NoteOn { note, vel } => {
                 self.is_on = true;
                 self.current_note = note;
+                self.current_amplitude = self.peak_amplitude * vel;
             }
-            NoteKind::NoteOff(note) => {
+            NoteKind::NoteOff { note, vel: _ } => {
                 if self.current_note != note {
                     return;
                 }
@@ -67,8 +70,8 @@ impl BufferConsumer for SquareWaveSource {
             }
             let duty = stretched_progress / pitch_period_samples;
             let amplitude = match duty > self.duty_cycle {
-                true => self.amplitude,
-                false => -self.amplitude,
+                true => self.current_amplitude,
+                false => -self.current_amplitude,
             };
             buffer[i] += amplitude;
             buffer[i + 1] += amplitude;
