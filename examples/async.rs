@@ -30,66 +30,75 @@ fn main() {
         send_or_log(
             &mut sender,
             NoteEvent {
-                kind: NoteKind::NoteOn(69),
+                kind: NoteKind::NoteOn { note: 69, vel: 1.0 },
             },
         );
         sleep(Duration::from_millis(1500));
         send_or_log(
             &mut sender,
             NoteEvent {
-                kind: NoteKind::NoteOff(69),
+                kind: NoteKind::NoteOff { note: 69, vel: 0.0 },
             },
         );
         send_or_log(
             &mut sender,
             NoteEvent {
-                kind: NoteKind::NoteOn(73),
-            },
-        );
-        sleep(Duration::from_millis(500));
-        send_or_log(
-            &mut sender,
-            NoteEvent {
-                kind: NoteKind::NoteOff(73),
-            },
-        );
-        send_or_log(
-            &mut sender,
-            NoteEvent {
-                kind: NoteKind::NoteOn(74),
+                kind: NoteKind::NoteOn {
+                    note: 73,
+                    vel: 0.375,
+                },
             },
         );
         sleep(Duration::from_millis(500));
         send_or_log(
             &mut sender,
             NoteEvent {
-                kind: NoteKind::NoteOff(74),
+                kind: NoteKind::NoteOff { note: 73, vel: 0.0 },
             },
         );
         send_or_log(
             &mut sender,
             NoteEvent {
-                kind: NoteKind::NoteOn(71),
+                kind: NoteKind::NoteOn {
+                    note: 74,
+                    vel: 0.75,
+                },
             },
         );
         sleep(Duration::from_millis(500));
         send_or_log(
             &mut sender,
             NoteEvent {
-                kind: NoteKind::NoteOff(71),
+                kind: NoteKind::NoteOff { note: 74, vel: 0.0 },
             },
         );
         send_or_log(
             &mut sender,
             NoteEvent {
-                kind: NoteKind::NoteOn(69),
+                kind: NoteKind::NoteOn {
+                    note: 71,
+                    vel: 0.375,
+                },
+            },
+        );
+        sleep(Duration::from_millis(500));
+        send_or_log(
+            &mut sender,
+            NoteEvent {
+                kind: NoteKind::NoteOff { note: 71, vel: 0.0 },
+            },
+        );
+        send_or_log(
+            &mut sender,
+            NoteEvent {
+                kind: NoteKind::NoteOn { note: 69, vel: 1.0 },
             },
         );
         sleep(Duration::from_millis(1000));
         send_or_log(
             &mut sender,
             NoteEvent {
-                kind: NoteKind::NoteOff(69),
+                kind: NoteKind::NoteOff { note: 69, vel: 0.0 },
             },
         );
     });
