@@ -14,10 +14,8 @@ pub struct WavSource {
 impl WavSource {
     pub fn new_from_raw_data(header: &SampleHeader, data: Vec<f32>) -> Result<Self, Error> {
         Self::validate_header(header)?;
-        let playback_scale = consts::PLAYBACK_SAMPLE_RATE as f64 / header.sample_rate as f64;
         let source_channel_count = match header.sample_type {
             SampleLink::MonoSample => 1,
-            SampleLink::LinkedSample => 2,
             _ => {
                 return Err(Error::User(format!(
                     "SF2: Unsupported sample type: {:?}",
@@ -25,14 +23,12 @@ impl WavSource {
                 )));
             }
         };
-        Ok(Self {
-            source_note: header.origpitch,
+        Ok(Self::new(
+            header.sample_rate,
             source_channel_count,
-            position: 0,
-            current_note: 0,
-            source_data: data,
-            playback_scale,
-        })
+            header.origpitch,
+            data,
+        ))
     }
 
     /// Make a new WavSource holding the given sample data.
@@ -40,21 +36,29 @@ impl WavSource {
     /// The note is a MIDI key, where A440 is 69.
     pub fn new_from_data(spec: WavSpec, source_note: u8, data: Vec<f32>) -> Result<Self, Error> {
         Self::validate_spec(&spec)?;
-        let playback_scale = consts::PLAYBACK_SAMPLE_RATE as f64 / spec.sample_rate as f64;
-        Ok(Self {
+        Ok(Self::new(
+            spec.sample_rate,
+            spec.channels as usize,
             source_note,
-            source_channel_count: spec.channels as usize,
+            data,
+        ))
+    }
+
+    fn new(sample_rate: u32, channels: usize, source_note: u8, data: Vec<f32>) -> Self {
+        let playback_scale = consts::PLAYBACK_SAMPLE_RATE as f64 / sample_rate as f64;
+        Self {
+            source_note,
+            source_channel_count: channels,
             position: 0,
             current_note: 0,
             source_data: data,
             playback_scale,
-        })
+        }
     }
 
     fn validate_header(header: &SampleHeader) -> Result<(), Error> {
         match header.sample_type {
             SampleLink::MonoSample => Ok(()),
-            SampleLink::LinkedSample => Ok(()),
             _ => Err(Error::User(format!(
                 "SF2: Unsupported sample type: {:?}",
                 header.sample_type
@@ -88,26 +92,12 @@ impl WavSource {
 impl BufferConsumer for WavSource {
     fn duplicate(&self) -> Result<Box<dyn BufferConsumer + Send + 'static>, Error> {
         let sample_rate = (consts::PLAYBACK_SAMPLE_RATE as f64 / self.playback_scale) as u32;
-        let sample_type = match self.source_channel_count {
-            1 => SampleLink::MonoSample,
-            2 => SampleLink::LinkedSample,
-            _ => {
-                return Err(Error::User("Unexpected channel count".to_owned()));
-            }
-        };
-        let header = SampleHeader {
-            name: String::new(),
-            start: 0,
-            end: 0,
-            loop_start: 0,
-            loop_end: 0,
+        let source = Self::new(
             sample_rate,
-            origpitch: self.source_note,
-            pitchadj: 0,
-            sample_link: 0,
-            sample_type,
-        };
-        let source = Self::new_from_raw_data(&header, self.source_data.clone())?;
+            self.source_channel_count,
+            self.source_note,
+            self.source_data.clone(),
+        );
         Ok(Box::new(source))
     }
 
