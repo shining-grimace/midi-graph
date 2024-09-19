@@ -8,7 +8,7 @@ use midi_graph::{
 use std::time::Duration;
 
 const MIDI_FILE: &'static str = "resources/sample-in-c.mid";
-const SF2_FILE: &'static str = "resources/german8-harpsichord.sf2";
+const SF2_FILE: &'static str = "resources/demo-font.sf2";
 const WAV_FILE: &'static str = "resources/guitar-a2-48k-stereo.wav";
 
 const SOUNDFONT_CHANNEL: usize = 0;

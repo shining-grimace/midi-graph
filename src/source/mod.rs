@@ -26,8 +26,8 @@ pub trait NoteConsumer {
 }
 
 pub struct NoteRange {
-    lower_inclusive: u8,
-    upper_inclusive: u8,
+    pub lower_inclusive: u8,
+    pub upper_inclusive: u8,
 }
 
 impl NoteRange {

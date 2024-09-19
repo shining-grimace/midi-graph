@@ -26,5 +26,5 @@ pub fn wav_from_i16_samples(header: &SampleHeader, data: &Vec<i16>) -> Result<Wa
     for (i, sample) in data.iter().enumerate() {
         float_data[i] = *sample as f32 / 32768.0;
     }
-    WavSource::new_from_raw_data(header, float_data)
+    WavSource::new_from_raw_sf2_data(header, float_data)
 }

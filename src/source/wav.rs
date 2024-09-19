@@ -12,7 +12,7 @@ pub struct WavSource {
 }
 
 impl WavSource {
-    pub fn new_from_raw_data(header: &SampleHeader, data: Vec<f32>) -> Result<Self, Error> {
+    pub fn new_from_raw_sf2_data(header: &SampleHeader, data: Vec<f32>) -> Result<Self, Error> {
         Self::validate_header(header)?;
         let source_channel_count = match header.sample_type {
             SampleLink::MonoSample => 1,
