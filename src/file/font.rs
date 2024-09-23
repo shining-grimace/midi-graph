@@ -79,8 +79,9 @@ fn load_sample(
     sample_position: u64,
     sample_length: u64,
 ) -> Result<Vec<i16>, Error> {
-    reader.seek(SeekFrom::Start(sample_position))?;
-    let mut sample_data = vec![0i16; sample_length as usize / std::mem::size_of::<i16>()];
+    let byte_size = std::mem::size_of::<i16>();
+    reader.seek(SeekFrom::Start(sample_position * byte_size as u64))?;
+    let mut sample_data = vec![0i16; sample_length as usize];
     reader.read_i16_into::<LittleEndian>(&mut sample_data)?;
     Ok(sample_data)
 }

@@ -2,31 +2,24 @@ extern crate midi_graph;
 
 use cpal::traits::StreamTrait;
 use midi_graph::{
-    util::{smf_from_file, soundfont_from_file, wav_from_file},
-    BaseMixer, MidiSourceBuilder, NoteRange, SoundFontBuilder,
+    util::{smf_from_file, soundfont_from_file},
+    BaseMixer, MidiSourceBuilder,
 };
 use std::time::Duration;
 
 const MIDI_FILE: &'static str = "resources/sample-in-c.mid";
 const SF2_FILE: &'static str = "resources/demo-font.sf2";
-const WAV_FILE: &'static str = "resources/guitar-a2-48k-stereo.wav";
 
-const SOUNDFONT_CHANNEL: usize = 0;
-const WAV_CHANNEL: usize = 1;
+const SOUNDFONT_0_CHANNEL: usize = 0;
+const SOUNDFONT_1_CHANNEL: usize = 1;
 
 fn main() {
     let smf = smf_from_file(MIDI_FILE).unwrap();
-    let sf2_font = soundfont_from_file(SF2_FILE, 0).unwrap();
-    let wav_font = SoundFontBuilder::new()
-        .add_range(
-            NoteRange::new_full_range(),
-            Box::new(wav_from_file(WAV_FILE, 45).unwrap()),
-        )
-        .unwrap()
-        .build();
+    let font_0 = soundfont_from_file(SF2_FILE, 0).unwrap();
+    let font_1 = soundfont_from_file(SF2_FILE, 0).unwrap();
     let midi = MidiSourceBuilder::new(smf)
-        .add_channel_font(SOUNDFONT_CHANNEL, sf2_font)
-        .add_channel_font(WAV_CHANNEL, wav_font)
+        .add_channel_font(SOUNDFONT_0_CHANNEL, font_0)
+        .add_channel_font(SOUNDFONT_1_CHANNEL, font_1)
         .build()
         .unwrap();
 
