@@ -12,7 +12,7 @@ pub mod wav;
 #[cfg(debug_assertions)]
 pub mod log;
 
-use crate::{Error, RangeSource};
+use crate::{Error, Loop, RangeSource};
 
 pub trait BufferConsumer {
     fn duplicate(&self) -> Result<Box<dyn BufferConsumer + Send + 'static>, Error>;
@@ -70,4 +70,25 @@ pub struct NoteEvent {
 pub enum NoteKind {
     NoteOn { note: u8, vel: f32 },
     NoteOff { note: u8, vel: f32 },
+}
+
+pub struct LoopRange {
+    pub start_frame: usize,
+    pub end_frame: usize,
+}
+
+impl LoopRange {
+    pub fn new_frame_range(start_frame: usize, end_frame: usize) -> Self {
+        Self {
+            start_frame,
+            end_frame,
+        }
+    }
+
+    pub fn from_config(config: &Loop) -> Self {
+        Self {
+            start_frame: config.start,
+            end_frame: config.end,
+        }
+    }
 }

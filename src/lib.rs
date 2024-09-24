@@ -16,7 +16,7 @@ mod file;
 mod mix;
 mod source;
 
-pub use config::{Config, FontSource, MidiDataSource, RangeSource, SoundSource};
+pub use config::{Config, FontSource, Loop, MidiDataSource, RangeSource, SoundSource};
 pub use error::Error;
 pub use mix::base::BaseMixer;
 pub use source::{
@@ -29,7 +29,7 @@ pub use source::{
     square::SquareWaveSource,
     triangle::TriangleWaveSource,
     wav::WavSource,
-    BufferConsumer, NoteConsumer, NoteEvent, NoteKind, NoteRange, Status,
+    BufferConsumer, LoopRange, NoteConsumer, NoteEvent, NoteKind, NoteRange, Status,
 };
 
 pub mod util {

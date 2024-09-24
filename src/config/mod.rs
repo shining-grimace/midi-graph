@@ -56,6 +56,14 @@ pub struct RangeSource {
     pub upper: u8,
 }
 
+/// Loop range, defined as the inclusive start and exclusive end.
+/// These points are specified in frames, not data points.
+#[derive(Deserialize)]
+pub struct Loop {
+    pub start: usize,
+    pub end: usize,
+}
+
 #[derive(Deserialize)]
 pub enum SoundSource {
     SquareWave {
@@ -82,6 +90,7 @@ pub enum SoundSource {
     SampleFilePath {
         path: String,
         base_note: u8,
+        looping: Option<Loop>,
     },
     Envelope {
         #[serde(default = "default_attack")]

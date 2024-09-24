@@ -1,10 +1,13 @@
-use crate::{consts, util, BufferConsumer, Error, NoteEvent, NoteKind, Status};
+use crate::{consts, util, BufferConsumer, Error, LoopRange, NoteEvent, NoteKind, Status};
 use hound::{SampleFormat, WavSpec};
 use soundfont::data::{sample::SampleLink, SampleHeader};
 
 pub struct WavSource {
+    is_on: bool,
     source_note: u8,
     source_channel_count: usize,
+    loop_start_data_position: usize,
+    loop_end_data_position: usize,
     data_position: usize,
     current_note: u8,
     source_data: Vec<f32>,
@@ -23,10 +26,18 @@ impl WavSource {
                 )));
             }
         };
+        let sample_offset = header.start as usize;
+        let loop_range = Some(LoopRange::new_frame_range(
+            (header.loop_start as usize - sample_offset) / source_channel_count,
+            (header.loop_end as usize - sample_offset) / source_channel_count,
+        ));
+        Self::validate_loop_range(&data, source_channel_count, &loop_range)?;
+        let loop_range = loop_range.unwrap();
         Ok(Self::new(
             header.sample_rate,
             source_channel_count,
             header.origpitch,
+            loop_range,
             data,
         ))
     }
@@ -34,22 +45,42 @@ impl WavSource {
     /// Make a new WavSource holding the given sample data.
     /// Data in the spec will be checked for compatibility.
     /// The note is a MIDI key, where A440 is 69.
-    pub fn new_from_data(spec: WavSpec, source_note: u8, data: Vec<f32>) -> Result<Self, Error> {
+    pub fn new_from_data(
+        spec: WavSpec,
+        source_note: u8,
+        data: Vec<f32>,
+        loop_range: Option<LoopRange>,
+    ) -> Result<Self, Error> {
         Self::validate_spec(&spec)?;
+        Self::validate_loop_range(&data, spec.channels as usize, &loop_range)?;
+        let loop_range = match loop_range {
+            Some(range) => range,
+            None => LoopRange::new_frame_range(0, usize::MAX / spec.channels as usize),
+        };
         Ok(Self::new(
             spec.sample_rate,
             spec.channels as usize,
             source_note,
+            loop_range,
             data,
         ))
     }
 
-    fn new(sample_rate: u32, channels: usize, source_note: u8, data: Vec<f32>) -> Self {
+    fn new(
+        sample_rate: u32,
+        channels: usize,
+        source_note: u8,
+        loop_range: LoopRange,
+        data: Vec<f32>,
+    ) -> Self {
         let playback_scale = consts::PLAYBACK_SAMPLE_RATE as f64 / sample_rate as f64;
         Self {
+            is_on: false,
             source_note,
             source_channel_count: channels,
-            data_position: 0,
+            loop_start_data_position: loop_range.start_frame * channels,
+            loop_end_data_position: loop_range.end_frame * channels,
+            data_position: data.len(),
             current_note: 0,
             source_data: data,
             playback_scale,
@@ -64,6 +95,26 @@ impl WavSource {
                 header.sample_type
             ))),
         }
+    }
+
+    fn validate_loop_range(
+        data: &Vec<f32>,
+        channel_count: usize,
+        loop_range: &Option<LoopRange>,
+    ) -> Result<(), Error> {
+        let Some(range) = loop_range else {
+            return Ok(());
+        };
+        let frames_in_data = data.len() / channel_count;
+        let range_makes_sense =
+            range.start_frame <= frames_in_data || range.end_frame > frames_in_data;
+        if !range_makes_sense {
+            return Err(Error::User(format!(
+                "Invalid sample loop range: {} to {}",
+                range.start_frame, range.end_frame
+            )));
+        }
+        Ok(())
     }
 
     fn validate_spec(spec: &WavSpec) -> Result<(), Error> {
@@ -122,10 +173,15 @@ impl WavSource {
 impl BufferConsumer for WavSource {
     fn duplicate(&self) -> Result<Box<dyn BufferConsumer + Send + 'static>, Error> {
         let sample_rate = (consts::PLAYBACK_SAMPLE_RATE as f64 / self.playback_scale) as u32;
+        let loop_range = LoopRange::new_frame_range(
+            self.loop_start_data_position / self.source_channel_count,
+            self.loop_end_data_position / self.source_channel_count,
+        );
         let source = Self::new(
             sample_rate,
             self.source_channel_count,
             self.source_note,
+            loop_range,
             self.source_data.clone(),
         );
         Ok(Box::new(source))
@@ -134,14 +190,15 @@ impl BufferConsumer for WavSource {
     fn set_note(&mut self, event: NoteEvent) {
         match event.kind {
             NoteKind::NoteOn { note, vel: _ } => {
+                self.is_on = true;
                 self.data_position = 0;
                 self.current_note = note;
             }
             NoteKind::NoteOff { note, vel: _ } => {
-                if self.current_note != note {
+                if self.current_note != note || !self.is_on {
                     return;
                 }
-                self.data_position = self.source_data.len();
+                self.is_on = false;
             }
         }
     }
@@ -156,6 +213,10 @@ impl BufferConsumer for WavSource {
 
         #[cfg(debug_assertions)]
         assert_eq!(buffer.len() % consts::CHANNEL_COUNT, 0);
+
+        if !self.is_on && self.data_position >= self.source_data.len() {
+            return Status::Ended;
+        }
 
         // Scaling
         let relative_pitch =
