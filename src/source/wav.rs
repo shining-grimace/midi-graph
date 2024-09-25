@@ -223,17 +223,31 @@ impl BufferConsumer for WavSource {
             util::relative_pitch_ratio_of(self.current_note, self.source_note) as f64;
         let source_frames_per_output_frame = relative_pitch * self.playback_scale;
 
+        let source_end_point = match self.is_on {
+            true => self.source_data.len().min(self.loop_end_data_position),
+            false => self.source_data.len(),
+        };
+
         let (src_data_points_advanced, dst_data_points_advanced) = Self::stretch_buffer(
-            &self.source_data[self.data_position..],
+            &self.source_data[self.data_position..source_end_point],
             self.source_channel_count,
             buffer,
             source_frames_per_output_frame,
         );
 
         self.data_position += src_data_points_advanced;
-        match self.data_position >= self.source_data.len() {
-            true => Status::Ended,
-            false => Status::Ok,
+
+        if self.data_position == source_end_point {
+            if self.is_on && source_end_point == self.loop_start_data_position {
+                self.data_position = self.loop_start_data_position;
+                let dst_buffer_index = dst_data_points_advanced;
+                self.fill_buffer(&mut buffer[dst_buffer_index..]);
+            } else {
+                self.is_on = false;
+                return Status::Ended;
+            }
         }
+
+        Status::Ok
     }
 }
