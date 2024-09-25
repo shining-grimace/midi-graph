@@ -87,6 +87,36 @@ impl WavSource {
         }
         Ok(())
     }
+
+    fn stretch_buffer(
+        src: &[f32],
+        src_channels: usize,
+        dst: &mut [f32],
+        source_frames_per_output_frame: f64,
+    ) -> (usize, usize) {
+        let mut src_index = 0;
+        let mut dst_index = 0;
+        while src_index < src.len() && dst_index < dst.len() {
+            match src_channels {
+                1 => {
+                    let sample = src[src_index];
+                    dst[dst_index] = sample;
+                    dst[dst_index + 1] = sample;
+                }
+                2 => {
+                    dst[dst_index] = src[src_index];
+                    dst[dst_index + 1] = src[src_index + 1];
+                }
+                _ => {}
+            }
+            dst_index += 2;
+            src_index =
+                ((dst_index / 2) as f64 * source_frames_per_output_frame) as usize * src_channels;
+        }
+        let uncopied_src_data_points = src.len().saturating_sub(src_index);
+        let unfilled_dst_data_points = dst.len().saturating_sub(dst_index);
+        (uncopied_src_data_points, unfilled_dst_data_points)
+    }
 }
 
 impl BufferConsumer for WavSource {
@@ -125,60 +155,14 @@ impl BufferConsumer for WavSource {
             util::relative_pitch_ratio_of(self.current_note, self.source_note) as f64;
         let source_frames_per_output_frame = relative_pitch * self.playback_scale;
 
-        // Output properties
-        let data_points_can_write = buffer.len();
-        let frames_can_write = data_points_can_write / consts::CHANNEL_COUNT;
+        let (uncopied_src_data_points, unfilled_dst_data_points) = Self::stretch_buffer(
+            &self.source_data[self.data_position..],
+            self.source_channel_count,
+            buffer,
+            source_frames_per_output_frame,
+        );
 
-        // Input properties
-        let source_data_points_remaining = self.source_data.len() - self.data_position;
-        let source_frames_remaining = source_data_points_remaining / self.source_channel_count;
-
-        // Transfer alignment
-        let needed_source_frames = {
-            let unrounded = (frames_can_write as f64 * source_frames_per_output_frame) as usize;
-            unrounded - (unrounded % self.source_channel_count)
-        };
-        let enough_frames_in_source = needed_source_frames <= source_frames_remaining;
-        let frames_will_write = match enough_frames_in_source {
-            true => frames_can_write,
-            false => {
-                let unrounded =
-                    (source_frames_remaining as f64 / source_frames_per_output_frame) as usize;
-                unrounded - unrounded % consts::CHANNEL_COUNT
-            }
-        };
-
-        #[cfg(debug_assertions)]
-        {
-            if frames_will_write > 0 {
-                let largest_index = ((frames_will_write - 1) as f64
-                    * source_frames_per_output_frame) as usize
-                    * self.source_channel_count;
-                assert!(largest_index < self.source_data.len());
-            }
-        }
-
-        let source = &self.source_data[self.data_position..];
-        for i in 0..frames_will_write {
-            let output_index = i * consts::CHANNEL_COUNT;
-            match self.source_channel_count {
-                1 => {
-                    let source_index = (i as f64 * source_frames_per_output_frame) as usize;
-                    buffer[output_index] += source[source_index];
-                    buffer[output_index + 1] += source[source_index];
-                }
-                2 => {
-                    let source_index = (i as f64 * source_frames_per_output_frame) as usize * 2;
-                    buffer[output_index] += source[source_index];
-                    buffer[output_index + 1] += source[source_index + 1];
-                }
-                _ => {}
-            };
-        }
-
-        let frames_did_read = needed_source_frames.min(source_frames_remaining);
-        self.data_position = (self.data_position + (frames_did_read * self.source_channel_count))
-            .min(self.source_data.len());
+        self.data_position = self.source_data.len() - uncopied_src_data_points;
         match self.data_position >= self.source_data.len() {
             true => Status::Ended,
             false => Status::Ok,
