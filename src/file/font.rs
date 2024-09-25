@@ -45,9 +45,9 @@ pub fn soundfont_from_file(file_name: &str, instrument_index: usize) -> Result<S
             continue;
         };
 
-        let sample_position = sample_chunk_metadata.offset() + sample_header.start as u64;
-        let sample_length = sample_header.end as u64 - sample_position;
-        let sample_data = load_sample(&mut reader, sample_position, sample_length)?;
+        let sample_file_offset = sample_chunk_metadata.offset() + sample_header.start as u64;
+        let sample_length = sample_header.end as u64 - sample_file_offset;
+        let sample_data = load_sample(&mut reader, sample_file_offset, sample_length)?;
         let note_range = note_range_for_zone(&zone)?;
         let source = wav_from_i16_samples(&sample_header, &sample_data)?;
         soundfont_builder = soundfont_builder.add_range(note_range, Box::new(source))?;

@@ -5,7 +5,7 @@ use soundfont::data::{sample::SampleLink, SampleHeader};
 pub struct WavSource {
     source_note: u8,
     source_channel_count: usize,
-    position: usize,
+    data_position: usize,
     current_note: u8,
     source_data: Vec<f32>,
     playback_scale: f64,
@@ -49,7 +49,7 @@ impl WavSource {
         Self {
             source_note,
             source_channel_count: channels,
-            position: 0,
+            data_position: 0,
             current_note: 0,
             source_data: data,
             playback_scale,
@@ -104,14 +104,14 @@ impl BufferConsumer for WavSource {
     fn set_note(&mut self, event: NoteEvent) {
         match event.kind {
             NoteKind::NoteOn { note, vel: _ } => {
-                self.position = 0;
+                self.data_position = 0;
                 self.current_note = note;
             }
             NoteKind::NoteOff { note, vel: _ } => {
                 if self.current_note != note {
                     return;
                 }
-                self.position = self.source_data.len();
+                self.data_position = self.source_data.len();
             }
         }
     }
@@ -126,12 +126,12 @@ impl BufferConsumer for WavSource {
         let source_frames_per_output_frame = relative_pitch * self.playback_scale;
 
         // Output properties
-        let samples_can_write = buffer.len();
-        let frames_can_write = samples_can_write / consts::CHANNEL_COUNT;
+        let data_points_can_write = buffer.len();
+        let frames_can_write = data_points_can_write / consts::CHANNEL_COUNT;
 
         // Input properties
-        let source_samples_remaining = self.source_data.len() - self.position;
-        let source_frames_remaining = source_samples_remaining / self.source_channel_count;
+        let source_data_points_remaining = self.source_data.len() - self.data_position;
+        let source_frames_remaining = source_data_points_remaining / self.source_channel_count;
 
         // Transfer alignment
         let needed_source_frames = {
@@ -158,7 +158,7 @@ impl BufferConsumer for WavSource {
             }
         }
 
-        let source = &self.source_data[self.position..];
+        let source = &self.source_data[self.data_position..];
         for i in 0..frames_will_write {
             let output_index = i * consts::CHANNEL_COUNT;
             match self.source_channel_count {
@@ -177,9 +177,9 @@ impl BufferConsumer for WavSource {
         }
 
         let frames_did_read = needed_source_frames.min(source_frames_remaining);
-        self.position = (self.position + (frames_did_read * self.source_channel_count))
+        self.data_position = (self.data_position + (frames_did_read * self.source_channel_count))
             .min(self.source_data.len());
-        match self.position >= self.source_data.len() {
+        match self.data_position >= self.source_data.len() {
             true => Status::Ended,
             false => Status::Ok,
         }
