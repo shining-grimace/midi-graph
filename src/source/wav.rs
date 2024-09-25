@@ -204,18 +204,12 @@ impl BufferConsumer for WavSource {
     }
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) -> Status {
-        if self.data_position >= self.source_data.len() {
-            return Status::Ended;
-        }
         if buffer.is_empty() {
             return Status::Ok;
         }
 
-        #[cfg(debug_assertions)]
-        assert_eq!(buffer.len() % consts::CHANNEL_COUNT, 0);
-
-        if !self.is_on && self.data_position >= self.source_data.len() {
-            return Status::Ended;
+        if self.is_on && self.data_position >= self.loop_end_data_position {
+            self.data_position -= self.loop_end_data_position - self.loop_start_data_position;
         }
 
         // Scaling
@@ -223,28 +217,42 @@ impl BufferConsumer for WavSource {
             util::relative_pitch_ratio_of(self.current_note, self.source_note) as f64;
         let source_frames_per_output_frame = relative_pitch * self.playback_scale;
 
-        let source_end_point = match self.is_on {
-            true => self.source_data.len().min(self.loop_end_data_position),
-            false => self.source_data.len(),
-        };
+        #[cfg(debug_assertions)]
+        assert_eq!(buffer.len() % consts::CHANNEL_COUNT, 0);
 
-        let (src_data_points_advanced, dst_data_points_advanced) = Self::stretch_buffer(
-            &self.source_data[self.data_position..source_end_point],
-            self.source_channel_count,
-            buffer,
-            source_frames_per_output_frame,
-        );
-
-        self.data_position += src_data_points_advanced;
-
-        if self.data_position == source_end_point {
-            if self.is_on && source_end_point == self.loop_start_data_position {
-                self.data_position = self.loop_start_data_position;
-                let dst_buffer_index = dst_data_points_advanced;
-                self.fill_buffer(&mut buffer[dst_buffer_index..]);
-            } else {
-                self.is_on = false;
+        let mut remaining_buffer = &mut buffer[0..];
+        while remaining_buffer.len() > 0 {
+            if self.data_position >= self.source_data.len() {
                 return Status::Ended;
+            }
+
+            let source_end_point = match self.is_on {
+                true => self.source_data.len().min(self.loop_end_data_position),
+                false => self.source_data.len(),
+            };
+
+            let (src_data_points_advanced, dst_data_points_advanced) = Self::stretch_buffer(
+                &self.source_data[self.data_position..source_end_point],
+                self.source_channel_count,
+                remaining_buffer,
+                source_frames_per_output_frame,
+            );
+
+            self.data_position += src_data_points_advanced;
+
+            if self.data_position == source_end_point {
+                if self.is_on && source_end_point == self.loop_start_data_position {
+                    self.data_position = self.loop_start_data_position;
+                    let remaining_dst_data_points =
+                        remaining_buffer.len() - dst_data_points_advanced;
+                    let dst_buffer_index = buffer.len() - remaining_dst_data_points;
+                    remaining_buffer = &mut buffer[dst_buffer_index..];
+                } else {
+                    self.is_on = false;
+                    return Status::Ended;
+                }
+            } else {
+                break;
             }
         }
 
