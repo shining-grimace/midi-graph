@@ -113,9 +113,9 @@ impl WavSource {
             src_index =
                 ((dst_index / 2) as f64 * source_frames_per_output_frame) as usize * src_channels;
         }
-        let uncopied_src_data_points = src.len().saturating_sub(src_index);
-        let unfilled_dst_data_points = dst.len().saturating_sub(dst_index);
-        (uncopied_src_data_points, unfilled_dst_data_points)
+        let src_data_points_advanced = src_index;
+        let dst_data_points_advanced = dst_index;
+        (src_data_points_advanced, dst_data_points_advanced)
     }
 }
 
@@ -147,6 +147,13 @@ impl BufferConsumer for WavSource {
     }
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) -> Status {
+        if self.data_position >= self.source_data.len() {
+            return Status::Ended;
+        }
+        if buffer.is_empty() {
+            return Status::Ok;
+        }
+
         #[cfg(debug_assertions)]
         assert_eq!(buffer.len() % consts::CHANNEL_COUNT, 0);
 
@@ -155,14 +162,14 @@ impl BufferConsumer for WavSource {
             util::relative_pitch_ratio_of(self.current_note, self.source_note) as f64;
         let source_frames_per_output_frame = relative_pitch * self.playback_scale;
 
-        let (uncopied_src_data_points, unfilled_dst_data_points) = Self::stretch_buffer(
+        let (src_data_points_advanced, dst_data_points_advanced) = Self::stretch_buffer(
             &self.source_data[self.data_position..],
             self.source_channel_count,
             buffer,
             source_frames_per_output_frame,
         );
 
-        self.data_position = self.source_data.len() - uncopied_src_data_points;
+        self.data_position += src_data_points_advanced;
         match self.data_position >= self.source_data.len() {
             true => Status::Ended,
             false => Status::Ok,
