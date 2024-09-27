@@ -100,12 +100,12 @@ impl WavSource {
             match src_channels {
                 1 => {
                     let sample = src[src_index];
-                    dst[dst_index] = sample;
-                    dst[dst_index + 1] = sample;
+                    dst[dst_index] += sample;
+                    dst[dst_index + 1] += sample;
                 }
                 2 => {
-                    dst[dst_index] = src[src_index];
-                    dst[dst_index + 1] = src[src_index + 1];
+                    dst[dst_index] += src[src_index];
+                    dst[dst_index + 1] += src[src_index + 1];
                 }
                 _ => {}
             }
