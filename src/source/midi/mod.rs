@@ -36,7 +36,7 @@ impl<'a> MidiSourceBuilder<'a> {
 }
 
 pub struct MidiSource<'a> {
-    source: Box<MidiChunkSource<'a>>,
+    consumer: Box<MidiChunkSource<'a>>,
     has_finished: bool,
 }
 
@@ -45,10 +45,10 @@ impl<'a> MidiSource<'a> {
         #[cfg(debug_assertions)]
         log::log_loaded_midi(&smf);
 
-        let source = MidiChunkSource::new(smf, channel_fonts)?;
+        let consumer = MidiChunkSource::new(smf, channel_fonts)?;
 
         Ok(Self {
-            source: Box::new(source),
+            consumer: Box::new(consumer),
             has_finished: false,
         })
     }
@@ -79,6 +79,6 @@ impl<'a> BufferConsumer for MidiSource<'a> {
     }
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) -> Status {
-        self.source.fill_buffer(buffer)
+        self.consumer.fill_buffer(buffer)
     }
 }

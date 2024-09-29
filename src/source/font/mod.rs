@@ -56,8 +56,8 @@ impl SoundFont {
                 let mut font_builder = SoundFontBuilder::new();
                 for range in ranges {
                     let note_range = NoteRange::new_inclusive_range(range.lower, range.upper);
-                    let source = Self::source_from_config(&range.source)?;
-                    font_builder = font_builder.add_range(note_range, source)?;
+                    let consumer = Self::consumer_from_config(&range.source)?;
+                    font_builder = font_builder.add_range(note_range, consumer)?;
                 }
                 Ok(font_builder.build())
             }
@@ -71,10 +71,10 @@ impl SoundFont {
         }
     }
 
-    fn source_from_config(
+    fn consumer_from_config(
         config: &SoundSource,
     ) -> Result<Box<dyn BufferConsumer + Send + 'static>, Error> {
-        let source: Box<dyn BufferConsumer + Send + 'static> = match config {
+        let consumer: Box<dyn BufferConsumer + Send + 'static> = match config {
             SoundSource::SquareWave {
                 amplitude,
                 duty_cycle,
@@ -112,17 +112,17 @@ impl SoundFont {
                 release_time,
                 source,
             } => {
-                let source = Self::source_from_config(source)?;
+                let consumer = Self::consumer_from_config(source)?;
                 Box::new(Envelope::from_adsr(
                     *attack_time,
                     *decay_time,
                     *sustain_multiplier,
                     *release_time,
-                    source,
+                    consumer,
                 ))
             }
         };
-        Ok(source)
+        Ok(consumer)
     }
 }
 

@@ -15,7 +15,7 @@ pub struct MidiTrackSource<'a> {
     has_finished: bool,
     next_event_index: usize,
     event_ticks_progress: isize,
-    source: Box<dyn NoteConsumer + Send + 'static>,
+    consumer: Box<dyn NoteConsumer + Send + 'static>,
 }
 
 impl<'a> MidiTrackSource<'a> {
@@ -34,7 +34,7 @@ impl<'a> MidiTrackSource<'a> {
             has_finished: false,
             next_event_index: 0,
             event_ticks_progress: 0,
-            source: note_consumer,
+            consumer: note_consumer,
         }
     }
 
@@ -45,7 +45,7 @@ impl<'a> MidiTrackSource<'a> {
                 if e.channel != self.channel_no {
                     return;
                 }
-                self.source.restart_with_event(&e.event);
+                self.consumer.restart_with_event(&e.event);
             }
         }
     }
@@ -81,7 +81,7 @@ impl<'a> MidiTrackSource<'a> {
     }
 
     fn write_buffer(&mut self, buffer: &mut [f32]) -> Status {
-        self.source.fill_buffer(buffer)
+        self.consumer.fill_buffer(buffer)
     }
 
     pub fn fill_buffer(&mut self, buffer: &mut [f32]) -> Status {

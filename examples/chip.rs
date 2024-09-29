@@ -47,7 +47,7 @@ fn main() {
         .add_channel_font(NOISE_CHANNEL, noise_font)
         .build()
         .unwrap();
-    let mixer = BaseMixer::from_source(Box::new(midi));
+    let mixer = BaseMixer::from_consumer(Box::new(midi));
     let stream = mixer.open_stream().expect("Could not open stream");
     stream.play().expect("Could not play the stream");
     std::thread::sleep(Duration::from_secs(16));

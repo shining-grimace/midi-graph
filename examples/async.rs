@@ -22,7 +22,7 @@ fn main() {
         .unwrap()
         .build();
     let (mut sender, receiver) = AsyncEventReceiver::new(Box::new(square_font));
-    let mixer = BaseMixer::from_source(Box::new(receiver));
+    let mixer = BaseMixer::from_consumer(Box::new(receiver));
     let stream = mixer.open_stream().expect("Could not open stream");
     stream.play().expect("Could not play the stream");
     std::thread::spawn(move || {

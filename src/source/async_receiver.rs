@@ -3,13 +3,13 @@ use crossbeam_channel::{unbounded, Receiver, Sender};
 
 pub struct AsyncEventReceiver {
     receiver: Receiver<NoteEvent>,
-    source: Box<dyn NoteConsumer + Send + 'static>,
+    consumer: Box<dyn NoteConsumer + Send + 'static>,
 }
 
 impl AsyncEventReceiver {
-    pub fn new(source: Box<dyn NoteConsumer + Send + 'static>) -> (Sender<NoteEvent>, Self) {
+    pub fn new(consumer: Box<dyn NoteConsumer + Send + 'static>) -> (Sender<NoteEvent>, Self) {
         let (sender, receiver) = unbounded();
-        let async_receiver = AsyncEventReceiver { receiver, source };
+        let async_receiver = AsyncEventReceiver { receiver, consumer };
         (sender, async_receiver)
     }
 }
@@ -25,9 +25,9 @@ impl BufferConsumer for AsyncEventReceiver {
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) -> Status {
         for event in self.receiver.try_iter() {
-            self.source.restart_with_event(&event);
+            self.consumer.restart_with_event(&event);
         }
-        self.source.fill_buffer(buffer);
+        self.consumer.fill_buffer(buffer);
         Status::Ok
     }
 }

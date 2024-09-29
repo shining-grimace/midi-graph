@@ -3,12 +3,12 @@ use cpal::traits::{DeviceTrait, HostTrait};
 use cpal::{Stream, StreamConfig};
 
 pub struct BaseMixer {
-    source: Box<dyn BufferConsumer + Send + 'static>,
+    consumer: Box<dyn BufferConsumer + Send + 'static>,
 }
 
 impl BaseMixer {
-    pub fn from_source(source: Box<dyn BufferConsumer + Send + 'static>) -> Self {
-        Self { source }
+    pub fn from_consumer(consumer: Box<dyn BufferConsumer + Send + 'static>) -> Self {
+        Self { consumer }
     }
 
     pub fn open_stream(self) -> Result<Stream, Error> {
@@ -19,12 +19,12 @@ impl BaseMixer {
             channels: consts::CHANNEL_COUNT as u16,
             sample_rate: cpal::SampleRate(consts::PLAYBACK_SAMPLE_RATE as u32),
         };
-        let mut source = self.source;
+        let mut consumer = self.consumer;
         let stream = device.build_output_stream(
             &required_config,
             move |data: &mut [f32], _: &cpal::OutputCallbackInfo| {
                 data.fill(0.0);
-                source.fill_buffer(data);
+                consumer.fill_buffer(data);
             },
             move |err| {
                 println!("ERROR: Stream: {:?}", err);
