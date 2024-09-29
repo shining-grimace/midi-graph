@@ -223,6 +223,7 @@ impl BufferConsumer for WavSource {
         let mut remaining_buffer = &mut buffer[0..];
         while remaining_buffer.len() > 0 {
             if self.data_position >= self.source_data.len() {
+                self.is_on = false;
                 return Status::Ended;
             }
 
@@ -240,19 +241,17 @@ impl BufferConsumer for WavSource {
 
             self.data_position += src_data_points_advanced;
 
-            if self.data_position == source_end_point {
-                if self.is_on && source_end_point == self.loop_start_data_position {
-                    self.data_position = self.loop_start_data_position;
-                    let remaining_dst_data_points =
-                        remaining_buffer.len() - dst_data_points_advanced;
-                    let dst_buffer_index = buffer.len() - remaining_dst_data_points;
-                    remaining_buffer = &mut buffer[dst_buffer_index..];
-                } else {
-                    self.is_on = false;
-                    return Status::Ended;
-                }
-            } else {
+            if self.data_position != source_end_point {
                 break;
+            }
+            if self.is_on && source_end_point == self.loop_end_data_position {
+                self.data_position = self.loop_start_data_position;
+                let remaining_dst_data_points = remaining_buffer.len() - dst_data_points_advanced;
+                let dst_buffer_index = buffer.len() - remaining_dst_data_points;
+                remaining_buffer = &mut buffer[dst_buffer_index..];
+            } else {
+                self.is_on = false;
+                return Status::Ended;
             }
         }
 
