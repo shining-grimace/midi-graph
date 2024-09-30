@@ -57,6 +57,7 @@ impl NoteRange {
     }
 }
 
+#[derive(PartialEq)]
 pub enum Status {
     Ok,
     Ended,

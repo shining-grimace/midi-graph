@@ -28,11 +28,7 @@ impl SoundFontBuilder {
         for _ in 0..SOURCE_CAPACITY {
             consumers.push((0, consumer.duplicate()?));
         }
-        self.ranges.push(RangeData {
-            range,
-            active_count: 0,
-            consumers,
-        });
+        self.ranges.push(RangeData::new(range, consumers));
         Ok(self)
     }
 
@@ -149,9 +145,7 @@ impl NoteConsumer for SoundFont {
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) -> Status {
         for range_data in self.ranges.iter_mut() {
-            for i in 0..range_data.active_count {
-                range_data.consumers[i].1.fill_buffer(buffer);
-            }
+            range_data.fill_buffer(buffer);
         }
         Status::Ok
     }
