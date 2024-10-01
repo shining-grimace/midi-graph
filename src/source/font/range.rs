@@ -1,17 +1,17 @@
-use crate::{BufferConsumer, NoteEvent, NoteKind, NoteRange, Status};
+use crate::{BufferConsumerNode, NoteEvent, NoteKind, NoteRange, Status};
 use std::cell::RefCell;
 
 pub struct RangeData {
     pub range: NoteRange,
     pub active_count: usize,
-    pub consumers: Vec<(u8, Box<dyn BufferConsumer + Send + 'static>)>,
+    pub consumers: Vec<(u8, Box<dyn BufferConsumerNode + Send + 'static>)>,
     ended_notes: RefCell<Vec<u8>>,
 }
 
 impl RangeData {
     pub fn new(
         range: NoteRange,
-        consumers: Vec<(u8, Box<dyn BufferConsumer + Send + 'static>)>,
+        consumers: Vec<(u8, Box<dyn BufferConsumerNode + Send + 'static>)>,
     ) -> Self {
         Self {
             range,
@@ -30,7 +30,7 @@ impl RangeData {
             .position(|(n, _)| *n == note);
         match existing_index {
             Some(index) => {
-                self.consumers[index].1.set_note(NoteEvent {
+                self.consumers[index].1.on_event(NoteEvent {
                     kind: NoteKind::NoteOn { note, vel },
                 });
             }
@@ -41,7 +41,7 @@ impl RangeData {
                     return;
                 }
                 self.consumers[self.active_count].0 = note;
-                self.consumers[self.active_count].1.set_note(NoteEvent {
+                self.consumers[self.active_count].1.on_event(NoteEvent {
                     kind: NoteKind::NoteOn { note, vel },
                 });
                 self.active_count += 1;
@@ -68,7 +68,7 @@ impl RangeData {
             #[cfg(debug_assertions)]
             println!("WARNING: Soundfont: Note turning off, but source not in use");
         }
-        self.consumers[source_index].1.set_note(NoteEvent {
+        self.consumers[source_index].1.on_event(NoteEvent {
             kind: NoteKind::NoteOff { note, vel },
         });
     }

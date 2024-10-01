@@ -1,4 +1,6 @@
-use crate::{consts, util, BufferConsumer, Error, NoteEvent, NoteKind, Status};
+use crate::{
+    consts, util, BufferConsumer, BufferConsumerNode, Error, Node, NoteEvent, NoteKind, Status,
+};
 
 pub struct SawtoothWaveSource {
     is_on: bool,
@@ -22,12 +24,10 @@ impl SawtoothWaveSource {
     }
 }
 
-impl BufferConsumer for SawtoothWaveSource {
-    fn duplicate(&self) -> Result<Box<dyn BufferConsumer + Send + 'static>, Error> {
-        Ok(Box::new(Self::new(self.peak_amplitude)))
-    }
+impl BufferConsumerNode for SawtoothWaveSource {}
 
-    fn set_note(&mut self, event: NoteEvent) {
+impl Node for SawtoothWaveSource {
+    fn on_event(&mut self, event: NoteEvent) {
         match event.kind {
             NoteKind::NoteOn { note, vel } => {
                 self.is_on = true;
@@ -41,6 +41,12 @@ impl BufferConsumer for SawtoothWaveSource {
                 self.is_on = false;
             }
         }
+    }
+}
+
+impl BufferConsumer for SawtoothWaveSource {
+    fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
+        Ok(Box::new(Self::new(self.peak_amplitude)))
     }
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) -> Status {

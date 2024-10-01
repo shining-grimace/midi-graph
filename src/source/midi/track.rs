@@ -1,4 +1,4 @@
-use crate::{consts, NoteConsumer, NoteEvent, NoteKind, Status};
+use crate::{consts, NoteConsumerNode, NoteEvent, NoteKind, Status};
 use midly::{MidiMessage, Smf, TrackEvent, TrackEventKind};
 use std::sync::Arc;
 
@@ -15,7 +15,7 @@ pub struct MidiTrackSource<'a> {
     has_finished: bool,
     next_event_index: usize,
     event_ticks_progress: isize,
-    consumer: Box<dyn NoteConsumer + Send + 'static>,
+    consumer: Box<dyn NoteConsumerNode + Send + 'static>,
 }
 
 impl<'a> MidiTrackSource<'a> {
@@ -24,7 +24,7 @@ impl<'a> MidiTrackSource<'a> {
         track_no: usize,
         channel_no: usize,
         samples_per_tick: f64,
-        note_consumer: Box<dyn NoteConsumer + Send + 'static>,
+        note_consumer: Box<dyn NoteConsumerNode + Send + 'static>,
     ) -> Self {
         Self {
             smf,
@@ -45,7 +45,7 @@ impl<'a> MidiTrackSource<'a> {
                 if e.channel != self.channel_no {
                     return;
                 }
-                self.consumer.restart_with_event(&e.event);
+                self.consumer.on_event(e.event.clone());
             }
         }
     }

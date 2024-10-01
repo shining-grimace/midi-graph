@@ -2,9 +2,9 @@ mod range;
 
 use crate::{
     util::{soundfont_from_file, wav_from_file},
-    BufferConsumer, Envelope, Error, FontSource, LfsrNoiseSource, LoopRange, NoteConsumer,
-    NoteEvent, NoteKind, NoteRange, SawtoothWaveSource, SoundSource, SquareWaveSource, Status,
-    TriangleWaveSource,
+    BufferConsumerNode, Envelope, Error, FontSource, LfsrNoiseSource, LoopRange, Node,
+    NoteConsumer, NoteConsumerNode, NoteEvent, NoteKind, NoteRange, SawtoothWaveSource,
+    SoundSource, SquareWaveSource, Status, TriangleWaveSource,
 };
 use range::RangeData;
 
@@ -22,7 +22,7 @@ impl SoundFontBuilder {
     pub fn add_range(
         mut self,
         range: NoteRange,
-        consumer: Box<dyn BufferConsumer + Send + 'static>,
+        consumer: Box<dyn BufferConsumerNode + Send + 'static>,
     ) -> Result<Self, Error> {
         let mut consumers = Vec::new();
         for _ in 0..SOURCE_CAPACITY {
@@ -69,8 +69,8 @@ impl SoundFont {
 
     fn consumer_from_config(
         config: &SoundSource,
-    ) -> Result<Box<dyn BufferConsumer + Send + 'static>, Error> {
-        let consumer: Box<dyn BufferConsumer + Send + 'static> = match config {
+    ) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
+        let consumer: Box<dyn BufferConsumerNode + Send + 'static> = match config {
             SoundSource::SquareWave {
                 amplitude,
                 duty_cycle,
@@ -122,8 +122,10 @@ impl SoundFont {
     }
 }
 
-impl NoteConsumer for SoundFont {
-    fn restart_with_event(&mut self, event: &NoteEvent) {
+impl NoteConsumerNode for SoundFont {}
+
+impl Node for SoundFont {
+    fn on_event(&mut self, event: NoteEvent) {
         let (note, vel) = match event.kind {
             NoteKind::NoteOn { note, vel } => (note, vel),
             NoteKind::NoteOff { note, vel } => (note, vel),
@@ -142,7 +144,9 @@ impl NoteConsumer for SoundFont {
             }
         }
     }
+}
 
+impl NoteConsumer for SoundFont {
     fn fill_buffer(&mut self, buffer: &mut [f32]) -> Status {
         for range_data in self.ranges.iter_mut() {
             range_data.fill_buffer(buffer);

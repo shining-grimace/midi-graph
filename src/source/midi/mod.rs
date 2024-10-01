@@ -3,8 +3,8 @@ pub mod track;
 pub mod util;
 
 use crate::{
-    util::smf_from_file, BufferConsumer, Config, Error, MidiChunkSource, MidiDataSource, NoteEvent,
-    NoteKind, SoundFont, Status,
+    util::smf_from_file, BufferConsumer, BufferConsumerNode, Config, Error, MidiChunkSource,
+    MidiDataSource, Node, NoteEvent, NoteKind, SoundFont, Status,
 };
 use midly::Smf;
 use std::collections::HashMap;
@@ -66,16 +66,20 @@ impl<'a> MidiSource<'a> {
     }
 }
 
-impl<'a> BufferConsumer for MidiSource<'a> {
-    fn duplicate(&self) -> Result<Box<dyn BufferConsumer + Send + 'static>, Error> {
-        Err(Error::User("MidiSource cannot be duplicated".to_owned()))
-    }
+impl<'a> BufferConsumerNode for MidiSource<'a> {}
 
-    fn set_note(&mut self, event: NoteEvent) {
+impl<'a> Node for MidiSource<'a> {
+    fn on_event(&mut self, event: NoteEvent) {
         self.has_finished = match event.kind {
             NoteKind::NoteOn { .. } => true,
             NoteKind::NoteOff { .. } => false,
         };
+    }
+}
+
+impl<'a> BufferConsumer for MidiSource<'a> {
+    fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
+        Err(Error::User("MidiSource cannot be duplicated".to_owned()))
     }
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) -> Status {

@@ -14,16 +14,22 @@ pub mod log;
 
 use crate::{Error, Loop, RangeSource};
 
+pub trait Node {
+    fn on_event(&mut self, event: NoteEvent);
+}
+
 pub trait BufferConsumer {
-    fn duplicate(&self) -> Result<Box<dyn BufferConsumer + Send + 'static>, Error>;
-    fn set_note(&mut self, event: NoteEvent);
+    fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error>;
     fn fill_buffer(&mut self, buffer: &mut [f32]) -> Status;
 }
 
 pub trait NoteConsumer {
-    fn restart_with_event(&mut self, event: &NoteEvent);
     fn fill_buffer(&mut self, buffer: &mut [f32]) -> Status;
 }
+
+pub trait NoteConsumerNode: NoteConsumer + Node {}
+
+pub trait BufferConsumerNode: BufferConsumer + Node {}
 
 pub struct NoteRange {
     pub lower_inclusive: u8,
@@ -63,6 +69,7 @@ pub enum Status {
     Ended,
 }
 
+#[derive(Clone)]
 pub struct NoteEvent {
     pub kind: NoteKind,
 }

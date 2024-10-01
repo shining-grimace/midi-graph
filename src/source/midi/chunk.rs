@@ -1,4 +1,7 @@
-use crate::{util, BufferConsumer, Error, MidiTrackSource, NoteEvent, SoundFont, Status};
+use crate::{
+    util, BufferConsumer, BufferConsumerNode, Error, MidiTrackSource, Node, NoteEvent, SoundFont,
+    Status,
+};
 use midly::Smf;
 use std::{collections::HashMap, sync::Arc};
 
@@ -37,14 +40,18 @@ impl<'a> MidiChunkSource<'a> {
     }
 }
 
+impl<'a> BufferConsumerNode for MidiChunkSource<'a> {}
+
+impl<'a> Node for MidiChunkSource<'a> {
+    fn on_event(&mut self, _event: NoteEvent) {}
+}
+
 impl<'a> BufferConsumer for MidiChunkSource<'a> {
-    fn duplicate(&self) -> Result<Box<dyn BufferConsumer + Send + 'static>, Error> {
+    fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
         Err(Error::User(
             "MIDI chunk source cannot be replicated".to_owned(),
         ))
     }
-
-    fn set_note(&mut self, _: NoteEvent) {}
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) -> Status {
         let mut status = Status::Ok;
