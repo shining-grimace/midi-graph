@@ -13,6 +13,7 @@ enum EnvelopeMode {
 }
 
 pub struct Envelope {
+    node_id: u64,
     attack_gradient: f32,
     decay_gradient: f32,
     sustain_multiplier: f32,
@@ -25,6 +26,7 @@ pub struct Envelope {
 
 impl Envelope {
     pub fn from_adsr(
+        node_id: Option<u64>,
         attack_time: f32,
         decay_time: f32,
         sustain_multiplier: f32,
@@ -37,6 +39,7 @@ impl Envelope {
         let release_gradient =
             (0.0 - sustain_multiplier) / (release_time * consts::PLAYBACK_SAMPLE_RATE as f32);
         Self {
+            node_id: node_id.unwrap_or_else(|| <Self as Node>::new_node_id()),
             attack_gradient,
             decay_gradient,
             sustain_multiplier,
@@ -52,6 +55,10 @@ impl Envelope {
 impl BufferConsumerNode for Envelope {}
 
 impl Node for Envelope {
+    fn get_node_id(&self) -> u64 {
+        self.node_id
+    }
+
     fn on_event(&mut self, event: &NodeEvent) {
         match event {
             NodeEvent::Note { note: _, event } => {
@@ -100,6 +107,7 @@ impl BufferConsumer for Envelope {
     fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
         let consumer = self.consumer.duplicate()?;
         let envelope = Self {
+            node_id: self.node_id,
             attack_gradient: self.attack_gradient,
             decay_gradient: self.decay_gradient,
             sustain_multiplier: self.sustain_multiplier,

@@ -3,6 +3,7 @@ use crate::{
 };
 
 pub struct SquareWaveSource {
+    node_id: u64,
     is_on: bool,
     current_note: u8,
     current_amplitude: f32,
@@ -13,8 +14,9 @@ pub struct SquareWaveSource {
 }
 
 impl SquareWaveSource {
-    pub fn new(amplitude: f32, duty_cycle: f32) -> Self {
+    pub fn new(node_id: Option<u64>, amplitude: f32, duty_cycle: f32) -> Self {
         Self {
+            node_id: node_id.unwrap_or_else(|| <Self as Node>::new_node_id()),
             is_on: false,
             current_note: 0,
             current_amplitude: 0.0,
@@ -29,6 +31,10 @@ impl SquareWaveSource {
 impl BufferConsumerNode for SquareWaveSource {}
 
 impl Node for SquareWaveSource {
+    fn get_node_id(&self) -> u64 {
+        self.node_id
+    }
+
     fn on_event(&mut self, event: &NodeEvent) {
         match event {
             NodeEvent::Note { note, event } => match event {
@@ -54,7 +60,7 @@ impl Node for SquareWaveSource {
 
 impl BufferConsumer for SquareWaveSource {
     fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
-        let source = Self::new(self.peak_amplitude, self.duty_cycle);
+        let source = Self::new(Some(self.node_id), self.peak_amplitude, self.duty_cycle);
         Ok(Box::new(source))
     }
 

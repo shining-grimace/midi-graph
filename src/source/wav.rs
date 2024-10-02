@@ -6,6 +6,7 @@ use hound::{SampleFormat, WavSpec};
 use soundfont::data::{sample::SampleLink, SampleHeader};
 
 pub struct WavSource {
+    node_id: u64,
     is_on: bool,
     source_note: u8,
     source_channel_count: usize,
@@ -37,6 +38,7 @@ impl WavSource {
         Self::validate_loop_range(&data, source_channel_count, &loop_range)?;
         let loop_range = loop_range.unwrap();
         Ok(Self::new(
+            None,
             header.sample_rate,
             source_channel_count,
             header.origpitch,
@@ -53,6 +55,7 @@ impl WavSource {
         source_note: u8,
         data: Vec<f32>,
         loop_range: Option<LoopRange>,
+        node_id: Option<u64>,
     ) -> Result<Self, Error> {
         Self::validate_spec(&spec)?;
         Self::validate_loop_range(&data, spec.channels as usize, &loop_range)?;
@@ -61,6 +64,7 @@ impl WavSource {
             None => LoopRange::new_frame_range(0, usize::MAX / spec.channels as usize),
         };
         Ok(Self::new(
+            node_id,
             spec.sample_rate,
             spec.channels as usize,
             source_note,
@@ -70,6 +74,7 @@ impl WavSource {
     }
 
     fn new(
+        node_id: Option<u64>,
         sample_rate: u32,
         channels: usize,
         source_note: u8,
@@ -78,6 +83,7 @@ impl WavSource {
     ) -> Self {
         let playback_scale = consts::PLAYBACK_SAMPLE_RATE as f64 / sample_rate as f64;
         Self {
+            node_id: node_id.unwrap_or_else(|| <Self as Node>::new_node_id()),
             is_on: false,
             source_note,
             source_channel_count: channels,
@@ -176,6 +182,10 @@ impl WavSource {
 impl BufferConsumerNode for WavSource {}
 
 impl Node for WavSource {
+    fn get_node_id(&self) -> u64 {
+        self.node_id
+    }
+
     fn on_event(&mut self, event: &NodeEvent) {
         match event {
             NodeEvent::Note { note, event } => match event {
@@ -207,6 +217,7 @@ impl BufferConsumer for WavSource {
             self.loop_end_data_position / self.source_channel_count,
         );
         let source = Self::new(
+            Some(self.node_id),
             sample_rate,
             self.source_channel_count,
             self.source_note,

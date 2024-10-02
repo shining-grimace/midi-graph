@@ -1,6 +1,10 @@
 use serde_derive::Deserialize;
 use std::collections::HashMap;
 
+const fn none_id() -> Option<u64> {
+    None
+}
+
 const fn default_amplitude() -> f32 {
     0.5
 }
@@ -67,20 +71,28 @@ pub struct Loop {
 #[derive(Deserialize)]
 pub enum SoundSource {
     SquareWave {
+        #[serde(default = "none_id")]
+        node_id: Option<u64>,
         #[serde(default = "default_amplitude")]
         amplitude: f32,
         #[serde(default = "default_duty_cycle")]
         duty_cycle: f32,
     },
     TriangleWave {
+        #[serde(default = "none_id")]
+        node_id: Option<u64>,
         #[serde(default = "default_amplitude")]
         amplitude: f32,
     },
     SawtoothWave {
+        #[serde(default = "none_id")]
+        node_id: Option<u64>,
         #[serde(default = "default_amplitude")]
         amplitude: f32,
     },
     LfsrNoise {
+        #[serde(default = "none_id")]
+        node_id: Option<u64>,
         #[serde(default = "default_amplitude")]
         amplitude: f32,
         inside_feedback: bool,
@@ -88,11 +100,15 @@ pub enum SoundSource {
         note_for_16_shifts: u8,
     },
     SampleFilePath {
+        #[serde(default = "none_id")]
+        node_id: Option<u64>,
         path: String,
         base_note: u8,
         looping: Option<Loop>,
     },
     Envelope {
+        #[serde(default = "none_id")]
+        node_id: Option<u64>,
         #[serde(default = "default_attack")]
         attack_time: f32,
         #[serde(default = "default_decay")]

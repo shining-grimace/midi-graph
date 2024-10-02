@@ -18,26 +18,26 @@ fn main() {
     let triangle_font = SoundFontBuilder::new()
         .add_range(
             NoteRange::new_full_range(),
-            Box::new(TriangleWaveSource::new(1.0)),
+            Box::new(TriangleWaveSource::new(None, 1.0)),
         )
         .unwrap()
         .build();
     let square_font = SoundFontBuilder::new()
         .add_range(
             NoteRange::new_inclusive_range(0, 50),
-            Box::new(SquareWaveSource::new(0.125, 0.5)),
+            Box::new(SquareWaveSource::new(None, 0.125, 0.5)),
         )
         .unwrap()
         .add_range(
             NoteRange::new_inclusive_range(51, 255),
-            Box::new(SquareWaveSource::new(0.125, 0.875)),
+            Box::new(SquareWaveSource::new(None, 0.125, 0.875)),
         )
         .unwrap()
         .build();
     let noise_font = SoundFontBuilder::new()
         .add_range(
             NoteRange::new_full_range(),
-            Box::new(LfsrNoiseSource::new(0.25, false, 50)),
+            Box::new(LfsrNoiseSource::new(None, 0.25, false, 50)),
         )
         .unwrap()
         .build();

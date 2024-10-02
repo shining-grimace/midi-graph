@@ -6,6 +6,7 @@ use midly::Smf;
 use std::{collections::HashMap, sync::Arc};
 
 pub struct MidiChunkSource<'a> {
+    node_id: u64,
     channel_sources: HashMap<usize, Box<MidiTrackSource<'a>>>,
 }
 
@@ -36,13 +37,20 @@ impl<'a> MidiChunkSource<'a> {
                     Some(())
                 });
         }
-        Ok(Self { channel_sources })
+        Ok(Self {
+            node_id: <Self as Node>::new_node_id(),
+            channel_sources,
+        })
     }
 }
 
 impl<'a> BufferConsumerNode for MidiChunkSource<'a> {}
 
 impl<'a> Node for MidiChunkSource<'a> {
+    fn get_node_id(&self) -> u64 {
+        self.node_id
+    }
+
     fn on_event(&mut self, _event: &NodeEvent) {}
 }
 

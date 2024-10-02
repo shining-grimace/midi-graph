@@ -13,9 +13,21 @@ pub mod wav;
 pub mod log;
 
 use crate::{Error, Loop, RangeSource};
+use std::sync::atomic::{AtomicU64, Ordering};
+
+const START_GENERATED_NODE_IDS: u64 = 0x10000;
+static NEXT_ID: AtomicU64 = AtomicU64::new(START_GENERATED_NODE_IDS);
 
 pub trait Node {
+    fn get_node_id(&self) -> u64;
     fn on_event(&mut self, event: &NodeEvent);
+
+    fn new_node_id() -> u64
+    where
+        Self: Sized,
+    {
+        NEXT_ID.fetch_add(1, Ordering::Relaxed)
+    }
 }
 
 pub trait BufferConsumer {

@@ -38,12 +38,16 @@ impl SoundFontBuilder {
 }
 
 pub struct SoundFont {
+    node_id: u64,
     ranges: Vec<RangeData>,
 }
 
 impl SoundFont {
     fn new(ranges: Vec<RangeData>) -> Self {
-        Self { ranges }
+        Self {
+            node_id: <Self as Node>::new_node_id(),
+            ranges,
+        }
     }
 
     pub fn from_config(config: &FontSource) -> Result<Self, Error> {
@@ -72,25 +76,29 @@ impl SoundFont {
     ) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
         let consumer: Box<dyn BufferConsumerNode + Send + 'static> = match config {
             SoundSource::SquareWave {
+                node_id,
                 amplitude,
                 duty_cycle,
-            } => Box::new(SquareWaveSource::new(*amplitude, *duty_cycle)),
-            SoundSource::TriangleWave { amplitude } => {
-                Box::new(TriangleWaveSource::new(*amplitude))
+            } => Box::new(SquareWaveSource::new(*node_id, *amplitude, *duty_cycle)),
+            SoundSource::TriangleWave { node_id, amplitude } => {
+                Box::new(TriangleWaveSource::new(*node_id, *amplitude))
             }
-            SoundSource::SawtoothWave { amplitude } => {
-                Box::new(SawtoothWaveSource::new(*amplitude))
+            SoundSource::SawtoothWave { node_id, amplitude } => {
+                Box::new(SawtoothWaveSource::new(*node_id, *amplitude))
             }
             SoundSource::LfsrNoise {
+                node_id,
                 amplitude,
                 inside_feedback,
                 note_for_16_shifts,
             } => Box::new(LfsrNoiseSource::new(
+                *node_id,
                 *amplitude,
                 *inside_feedback,
                 *note_for_16_shifts,
             )),
             SoundSource::SampleFilePath {
+                node_id,
                 path,
                 base_note,
                 looping,
@@ -99,9 +107,15 @@ impl SoundFont {
                     Some(range) => Some(LoopRange::from_config(range)),
                     None => None,
                 };
-                Box::new(wav_from_file(path.as_str(), *base_note, loop_range)?)
+                Box::new(wav_from_file(
+                    path.as_str(),
+                    *base_note,
+                    loop_range,
+                    *node_id,
+                )?)
             }
             SoundSource::Envelope {
+                node_id,
                 attack_time,
                 decay_time,
                 sustain_multiplier,
@@ -110,6 +124,7 @@ impl SoundFont {
             } => {
                 let consumer = Self::consumer_from_config(source)?;
                 Box::new(Envelope::from_adsr(
+                    *node_id,
                     *attack_time,
                     *decay_time,
                     *sustain_multiplier,
@@ -125,6 +140,10 @@ impl SoundFont {
 impl NoteConsumerNode for SoundFont {}
 
 impl Node for SoundFont {
+    fn get_node_id(&self) -> u64 {
+        self.node_id
+    }
+
     fn on_event(&mut self, event: &NodeEvent) {
         match event {
             NodeEvent::Note { note, event } => match event {

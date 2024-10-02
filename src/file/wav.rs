@@ -9,24 +9,26 @@ pub fn wav_from_file(
     file_name: &str,
     source_note: u8,
     loop_range: Option<LoopRange>,
+    node_id: Option<u64>,
 ) -> Result<WavSource, Error> {
     let wav = WavReader::open(file_name)?;
     let spec = wav.spec();
     let data: Vec<f32> = wav.into_samples().map(|s| s.unwrap()).collect();
-    WavSource::new_from_data(spec, source_note, data, loop_range)
+    WavSource::new_from_data(spec, source_note, data, loop_range, node_id)
 }
 
-/// Make a WavSource. The source note is a MIDI notes, where 69 is A440.
+/// Make a WavSource. The source note is a MIDI note, where 69 is A440.
 pub fn wav_from_bytes(
     bytes: &'static [u8],
     source_note: u8,
     loop_range: Option<LoopRange>,
+    node_id: Option<u64>,
 ) -> Result<WavSource, Error> {
     let cursor = Cursor::new(bytes);
     let wav = WavReader::new(cursor)?;
     let spec = wav.spec();
     let data: Vec<f32> = wav.into_samples().map(|s| s.unwrap()).collect();
-    WavSource::new_from_data(spec, source_note, data, loop_range)
+    WavSource::new_from_data(spec, source_note, data, loop_range, node_id)
 }
 
 pub fn wav_from_i16_samples(

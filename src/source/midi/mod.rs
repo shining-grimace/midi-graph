@@ -36,6 +36,7 @@ impl<'a> MidiSourceBuilder<'a> {
 }
 
 pub struct MidiSource<'a> {
+    node_id: u64,
     consumer: Box<MidiChunkSource<'a>>,
 }
 
@@ -47,6 +48,7 @@ impl<'a> MidiSource<'a> {
         let consumer = MidiChunkSource::new(smf, channel_fonts)?;
 
         Ok(Self {
+            node_id: <Self as Node>::new_node_id(),
             consumer: Box::new(consumer),
         })
     }
@@ -67,6 +69,10 @@ impl<'a> MidiSource<'a> {
 impl<'a> BufferConsumerNode for MidiSource<'a> {}
 
 impl<'a> Node for MidiSource<'a> {
+    fn get_node_id(&self) -> u64 {
+        self.node_id
+    }
+
     fn on_event(&mut self, _event: &NodeEvent) {}
 }
 
