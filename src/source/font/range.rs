@@ -30,9 +30,10 @@ impl RangeData {
             .position(|(n, _)| *n == note);
         match existing_index {
             Some(index) => {
-                self.consumers[index].1.on_event(NoteEvent {
+                let event = NoteEvent {
                     kind: NoteKind::NoteOn { note, vel },
-                });
+                };
+                self.consumers[index].1.on_event(&event);
             }
             None => {
                 if self.active_count >= self.consumers.len() {
@@ -40,10 +41,11 @@ impl RangeData {
                     println!("WARNING: Soundfont: Note turning on, but all consumers in use");
                     return;
                 }
-                self.consumers[self.active_count].0 = note;
-                self.consumers[self.active_count].1.on_event(NoteEvent {
+                let event = NoteEvent {
                     kind: NoteKind::NoteOn { note, vel },
-                });
+                };
+                self.consumers[self.active_count].0 = note;
+                self.consumers[self.active_count].1.on_event(&event);
                 self.active_count += 1;
             }
         }
@@ -68,9 +70,10 @@ impl RangeData {
             #[cfg(debug_assertions)]
             println!("WARNING: Soundfont: Note turning off, but source not in use");
         }
-        self.consumers[source_index].1.on_event(NoteEvent {
+        let event = NoteEvent {
             kind: NoteKind::NoteOff { note, vel },
-        });
+        };
+        self.consumers[source_index].1.on_event(&event);
     }
 
     fn remove_note(&mut self, note: u8) {

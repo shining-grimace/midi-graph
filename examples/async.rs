@@ -29,20 +29,20 @@ fn main() {
         sleep(Duration::from_millis(50));
         send_or_log(
             &mut sender,
-            NoteEvent {
+            &NoteEvent {
                 kind: NoteKind::NoteOn { note: 69, vel: 1.0 },
             },
         );
         sleep(Duration::from_millis(1500));
         send_or_log(
             &mut sender,
-            NoteEvent {
+            &NoteEvent {
                 kind: NoteKind::NoteOff { note: 69, vel: 0.0 },
             },
         );
         send_or_log(
             &mut sender,
-            NoteEvent {
+            &NoteEvent {
                 kind: NoteKind::NoteOn {
                     note: 73,
                     vel: 0.375,
@@ -52,13 +52,13 @@ fn main() {
         sleep(Duration::from_millis(500));
         send_or_log(
             &mut sender,
-            NoteEvent {
+            &NoteEvent {
                 kind: NoteKind::NoteOff { note: 73, vel: 0.0 },
             },
         );
         send_or_log(
             &mut sender,
-            NoteEvent {
+            &NoteEvent {
                 kind: NoteKind::NoteOn {
                     note: 74,
                     vel: 0.75,
@@ -68,13 +68,13 @@ fn main() {
         sleep(Duration::from_millis(500));
         send_or_log(
             &mut sender,
-            NoteEvent {
+            &NoteEvent {
                 kind: NoteKind::NoteOff { note: 74, vel: 0.0 },
             },
         );
         send_or_log(
             &mut sender,
-            NoteEvent {
+            &NoteEvent {
                 kind: NoteKind::NoteOn {
                     note: 71,
                     vel: 0.375,
@@ -84,20 +84,20 @@ fn main() {
         sleep(Duration::from_millis(500));
         send_or_log(
             &mut sender,
-            NoteEvent {
+            &NoteEvent {
                 kind: NoteKind::NoteOff { note: 71, vel: 0.0 },
             },
         );
         send_or_log(
             &mut sender,
-            NoteEvent {
+            &NoteEvent {
                 kind: NoteKind::NoteOn { note: 69, vel: 1.0 },
             },
         );
         sleep(Duration::from_millis(1000));
         send_or_log(
             &mut sender,
-            NoteEvent {
+            &NoteEvent {
                 kind: NoteKind::NoteOff { note: 69, vel: 0.0 },
             },
         );
@@ -106,8 +106,8 @@ fn main() {
     stream.pause().expect("Could not pause the stream");
 }
 
-fn send_or_log(sender: &mut Sender<NoteEvent>, event: NoteEvent) {
-    if let Err(error) = sender.send(event) {
+fn send_or_log(sender: &mut Sender<NoteEvent>, event: &NoteEvent) {
+    if let Err(error) = sender.send(event.clone()) {
         println!("Send error: {:?}", error);
     }
 }

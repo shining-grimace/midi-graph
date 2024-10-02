@@ -176,7 +176,7 @@ impl WavSource {
 impl BufferConsumerNode for WavSource {}
 
 impl Node for WavSource {
-    fn on_event(&mut self, event: NoteEvent) {
+    fn on_event(&mut self, event: &NoteEvent) {
         match event.kind {
             NoteKind::NoteOn { note, vel: _ } => {
                 self.is_on = true;

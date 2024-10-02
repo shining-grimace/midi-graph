@@ -50,7 +50,7 @@ impl Envelope {
 impl BufferConsumerNode for Envelope {}
 
 impl Node for Envelope {
-    fn on_event(&mut self, event: NoteEvent) {
+    fn on_event(&mut self, event: &NoteEvent) {
         match event.kind {
             NoteKind::NoteOn { .. } => {
                 self.mode = EnvelopeMode::Attack;

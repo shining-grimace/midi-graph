@@ -45,7 +45,7 @@ impl<'a> MidiTrackSource<'a> {
                 if e.channel != self.channel_no {
                     return;
                 }
-                self.consumer.on_event(e.event.clone());
+                self.consumer.on_event(&e.event);
             }
         }
     }

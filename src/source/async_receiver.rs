@@ -17,7 +17,7 @@ impl AsyncEventReceiver {
 impl BufferConsumerNode for AsyncEventReceiver {}
 
 impl Node for AsyncEventReceiver {
-    fn on_event(&mut self, _event: NoteEvent) {}
+    fn on_event(&mut self, _event: &NoteEvent) {}
 }
 
 impl BufferConsumer for AsyncEventReceiver {
@@ -29,7 +29,7 @@ impl BufferConsumer for AsyncEventReceiver {
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) -> Status {
         for event in self.receiver.try_iter() {
-            self.consumer.on_event(event);
+            self.consumer.on_event(&event);
         }
         self.consumer.fill_buffer(buffer);
         Status::Ok

@@ -43,7 +43,7 @@ impl<'a> MidiChunkSource<'a> {
 impl<'a> BufferConsumerNode for MidiChunkSource<'a> {}
 
 impl<'a> Node for MidiChunkSource<'a> {
-    fn on_event(&mut self, _event: NoteEvent) {}
+    fn on_event(&mut self, _event: &NoteEvent) {}
 }
 
 impl<'a> BufferConsumer for MidiChunkSource<'a> {

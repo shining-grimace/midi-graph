@@ -27,7 +27,7 @@ impl TriangleWaveSource {
 impl BufferConsumerNode for TriangleWaveSource {}
 
 impl Node for TriangleWaveSource {
-    fn on_event(&mut self, event: NoteEvent) {
+    fn on_event(&mut self, event: &NoteEvent) {
         match event.kind {
             NoteKind::NoteOn { note, vel } => {
                 self.is_on = true;

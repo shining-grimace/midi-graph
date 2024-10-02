@@ -125,7 +125,7 @@ impl SoundFont {
 impl NoteConsumerNode for SoundFont {}
 
 impl Node for SoundFont {
-    fn on_event(&mut self, event: NoteEvent) {
+    fn on_event(&mut self, event: &NoteEvent) {
         let (note, vel) = match event.kind {
             NoteKind::NoteOn { note, vel } => (note, vel),
             NoteKind::NoteOff { note, vel } => (note, vel),

@@ -69,7 +69,7 @@ impl<'a> MidiSource<'a> {
 impl<'a> BufferConsumerNode for MidiSource<'a> {}
 
 impl<'a> Node for MidiSource<'a> {
-    fn on_event(&mut self, event: NoteEvent) {
+    fn on_event(&mut self, event: &NoteEvent) {
         self.has_finished = match event.kind {
             NoteKind::NoteOn { .. } => true,
             NoteKind::NoteOff { .. } => false,

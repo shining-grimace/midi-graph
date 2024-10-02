@@ -15,7 +15,7 @@ pub mod log;
 use crate::{Error, Loop, RangeSource};
 
 pub trait Node {
-    fn on_event(&mut self, event: NoteEvent);
+    fn on_event(&mut self, event: &NoteEvent);
 }
 
 pub trait BufferConsumer {

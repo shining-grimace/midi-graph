@@ -29,7 +29,7 @@ impl SquareWaveSource {
 impl BufferConsumerNode for SquareWaveSource {}
 
 impl Node for SquareWaveSource {
-    fn on_event(&mut self, event: NoteEvent) {
+    fn on_event(&mut self, event: &NoteEvent) {
         match event.kind {
             NoteKind::NoteOn { note, vel } => {
                 self.is_on = true;
