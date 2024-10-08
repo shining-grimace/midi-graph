@@ -1,13 +1,13 @@
-use crate::{BufferConsumer, BufferConsumerNode, Error, Node, NoteConsumerNode, NoteEvent, Status};
+use crate::{BufferConsumer, BufferConsumerNode, Error, Node, NodeEvent, NoteConsumerNode, Status};
 use crossbeam_channel::{unbounded, Receiver, Sender};
 
 pub struct AsyncEventReceiver {
-    receiver: Receiver<NoteEvent>,
+    receiver: Receiver<NodeEvent>,
     consumer: Box<dyn NoteConsumerNode + Send + 'static>,
 }
 
 impl AsyncEventReceiver {
-    pub fn new(consumer: Box<dyn NoteConsumerNode + Send + 'static>) -> (Sender<NoteEvent>, Self) {
+    pub fn new(consumer: Box<dyn NoteConsumerNode + Send + 'static>) -> (Sender<NodeEvent>, Self) {
         let (sender, receiver) = unbounded();
         let async_receiver = AsyncEventReceiver { receiver, consumer };
         (sender, async_receiver)
@@ -17,7 +17,7 @@ impl AsyncEventReceiver {
 impl BufferConsumerNode for AsyncEventReceiver {}
 
 impl Node for AsyncEventReceiver {
-    fn on_event(&mut self, _event: &NoteEvent) {}
+    fn on_event(&mut self, _event: &NodeEvent) {}
 }
 
 impl BufferConsumer for AsyncEventReceiver {

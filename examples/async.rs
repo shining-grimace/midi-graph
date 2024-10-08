@@ -106,7 +106,7 @@ fn main() {
     stream.pause().expect("Could not pause the stream");
 }
 
-fn send_or_log(sender: &mut Sender<NoteEvent>, event: &NoteEvent) {
+fn send_or_log(sender: &mut Sender<NodeEvent>, event: &NoteEvent) {
     if let Err(error) = sender.send(event.clone()) {
         println!("Send error: {:?}", error);
     }

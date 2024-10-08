@@ -1,5 +1,5 @@
 use crate::{
-    consts, util, BufferConsumer, BufferConsumerNode, Error, Node, NoteEvent, NoteKind, Status,
+    consts, util, BufferConsumer, BufferConsumerNode, Error, Node, NodeEvent, NoteEvent, Status,
 };
 
 pub struct SquareWaveSource {
@@ -29,19 +29,25 @@ impl SquareWaveSource {
 impl BufferConsumerNode for SquareWaveSource {}
 
 impl Node for SquareWaveSource {
-    fn on_event(&mut self, event: &NoteEvent) {
-        match event.kind {
-            NoteKind::NoteOn { note, vel } => {
-                self.is_on = true;
-                self.current_note = note;
-                self.current_amplitude = self.peak_amplitude * vel;
-            }
-            NoteKind::NoteOff { note, vel: _ } => {
-                if self.current_note != note {
-                    return;
+    fn on_event(&mut self, event: &NodeEvent) {
+        match event {
+            NodeEvent::Note { note, event } => match event {
+                NoteEvent::NoteOn { vel } => {
+                    self.is_on = true;
+                    self.current_note = *note;
+                    self.current_amplitude = self.peak_amplitude * vel;
                 }
-                self.is_on = false;
-            }
+                NoteEvent::NoteOff { vel: _ } => {
+                    if self.current_note != *note {
+                        return;
+                    }
+                    self.is_on = false;
+                }
+            },
+            NodeEvent::Control {
+                node_id: _,
+                event: _,
+            } => {}
         }
     }
 }

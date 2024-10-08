@@ -4,7 +4,7 @@ pub mod util;
 
 use crate::{
     util::smf_from_file, BufferConsumer, BufferConsumerNode, Config, Error, MidiChunkSource,
-    MidiDataSource, Node, NoteEvent, NoteKind, SoundFont, Status,
+    MidiDataSource, Node, NodeEvent, SoundFont, Status,
 };
 use midly::Smf;
 use std::collections::HashMap;
@@ -37,7 +37,6 @@ impl<'a> MidiSourceBuilder<'a> {
 
 pub struct MidiSource<'a> {
     consumer: Box<MidiChunkSource<'a>>,
-    has_finished: bool,
 }
 
 impl<'a> MidiSource<'a> {
@@ -49,7 +48,6 @@ impl<'a> MidiSource<'a> {
 
         Ok(Self {
             consumer: Box::new(consumer),
-            has_finished: false,
         })
     }
 
@@ -69,12 +67,7 @@ impl<'a> MidiSource<'a> {
 impl<'a> BufferConsumerNode for MidiSource<'a> {}
 
 impl<'a> Node for MidiSource<'a> {
-    fn on_event(&mut self, event: &NoteEvent) {
-        self.has_finished = match event.kind {
-            NoteKind::NoteOn { .. } => true,
-            NoteKind::NoteOff { .. } => false,
-        };
-    }
+    fn on_event(&mut self, _event: &NodeEvent) {}
 }
 
 impl<'a> BufferConsumer for MidiSource<'a> {

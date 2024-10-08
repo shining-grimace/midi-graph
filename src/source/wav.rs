@@ -1,5 +1,5 @@
 use crate::{
-    consts, util, BufferConsumer, BufferConsumerNode, Error, LoopRange, Node, NoteEvent, NoteKind,
+    consts, util, BufferConsumer, BufferConsumerNode, Error, LoopRange, Node, NodeEvent, NoteEvent,
     Status,
 };
 use hound::{SampleFormat, WavSpec};
@@ -176,19 +176,25 @@ impl WavSource {
 impl BufferConsumerNode for WavSource {}
 
 impl Node for WavSource {
-    fn on_event(&mut self, event: &NoteEvent) {
-        match event.kind {
-            NoteKind::NoteOn { note, vel: _ } => {
-                self.is_on = true;
-                self.data_position = 0;
-                self.current_note = note;
-            }
-            NoteKind::NoteOff { note, vel: _ } => {
-                if self.current_note != note || !self.is_on {
-                    return;
+    fn on_event(&mut self, event: &NodeEvent) {
+        match event {
+            NodeEvent::Note { note, event } => match event {
+                NoteEvent::NoteOn { vel: _ } => {
+                    self.is_on = true;
+                    self.data_position = 0;
+                    self.current_note = *note;
                 }
-                self.is_on = false;
-            }
+                NoteEvent::NoteOff { vel: _ } => {
+                    if self.current_note != *note || !self.is_on {
+                        return;
+                    }
+                    self.is_on = false;
+                }
+            },
+            NodeEvent::Control {
+                node_id: _,
+                event: _,
+            } => {}
         }
     }
 }

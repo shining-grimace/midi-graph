@@ -1,4 +1,6 @@
-use crate::{consts, BufferConsumer, BufferConsumerNode, Error, Node, NoteEvent, NoteKind, Status};
+use crate::{
+    consts, BufferConsumer, BufferConsumerNode, Error, Node, NodeEvent, NoteEvent, Status,
+};
 
 const PEAK_AMPLITUDE: f32 = 1.0;
 
@@ -50,35 +52,46 @@ impl Envelope {
 impl BufferConsumerNode for Envelope {}
 
 impl Node for Envelope {
-    fn on_event(&mut self, event: &NoteEvent) {
-        match event.kind {
-            NoteKind::NoteOn { .. } => {
-                self.mode = EnvelopeMode::Attack;
-                self.samples_progress_in_mode = 0;
-            }
-            NoteKind::NoteOff { .. } => {
-                self.samples_progress_in_mode = match self.mode {
-                    EnvelopeMode::Attack => {
-                        let current_multiplier =
-                            self.samples_progress_in_mode as f32 * self.attack_gradient;
-                        ((current_multiplier - self.sustain_multiplier) / self.release_gradient)
-                            as isize
+    fn on_event(&mut self, event: &NodeEvent) {
+        match event {
+            NodeEvent::Note { note: _, event } => {
+                match event {
+                    NoteEvent::NoteOn { .. } => {
+                        self.mode = EnvelopeMode::Attack;
+                        self.samples_progress_in_mode = 0;
                     }
-                    EnvelopeMode::Decay => {
-                        let current_multiplier = PEAK_AMPLITUDE
-                            + self.samples_progress_in_mode as f32 * self.decay_gradient;
-                        ((current_multiplier - self.sustain_multiplier) / self.release_gradient)
-                            as isize
-                    }
-                    EnvelopeMode::Sustain => 0,
-                    EnvelopeMode::Release => self.samples_progress_in_mode,
-                    EnvelopeMode::Finished => {
-                        (self.release_gradient * self.sustain_multiplier * PEAK_AMPLITUDE) as isize
+                    NoteEvent::NoteOff { .. } => {
+                        self.samples_progress_in_mode = match self.mode {
+                            EnvelopeMode::Attack => {
+                                let current_multiplier =
+                                    self.samples_progress_in_mode as f32 * self.attack_gradient;
+                                ((current_multiplier - self.sustain_multiplier)
+                                    / self.release_gradient)
+                                    as isize
+                            }
+                            EnvelopeMode::Decay => {
+                                let current_multiplier = PEAK_AMPLITUDE
+                                    + self.samples_progress_in_mode as f32 * self.decay_gradient;
+                                ((current_multiplier - self.sustain_multiplier)
+                                    / self.release_gradient)
+                                    as isize
+                            }
+                            EnvelopeMode::Sustain => 0,
+                            EnvelopeMode::Release => self.samples_progress_in_mode,
+                            EnvelopeMode::Finished => {
+                                (self.release_gradient * self.sustain_multiplier * PEAK_AMPLITUDE)
+                                    as isize
+                            }
+                        };
+                        self.mode = EnvelopeMode::Release;
                     }
                 };
-                self.mode = EnvelopeMode::Release;
             }
-        };
+            NodeEvent::Control {
+                node_id: _,
+                event: _,
+            } => {}
+        }
         self.consumer.on_event(event);
     }
 }

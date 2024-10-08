@@ -29,8 +29,8 @@ pub use source::{
     square::SquareWaveSource,
     triangle::TriangleWaveSource,
     wav::WavSource,
-    BufferConsumer, BufferConsumerNode, LoopRange, Node, NoteConsumer, NoteConsumerNode, NoteEvent,
-    NoteKind, NoteRange, Status,
+    BufferConsumer, BufferConsumerNode, ControlEvent, LoopRange, Node, NodeEvent, NoteConsumer,
+    NoteConsumerNode, NoteEvent, NoteRange, Status,
 };
 
 pub mod util {

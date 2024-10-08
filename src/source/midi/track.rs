@@ -1,10 +1,10 @@
-use crate::{consts, NoteConsumerNode, NoteEvent, NoteKind, Status};
+use crate::{consts, NodeEvent, NoteConsumerNode, NoteEvent, Status};
 use midly::{MidiMessage, Smf, TrackEvent, TrackEventKind};
 use std::sync::Arc;
 
-struct NoteEventOnChannel {
+struct NodeEventOnChannel {
     channel: usize,
-    event: NoteEvent,
+    event: NodeEvent,
 }
 
 pub struct MidiTrackSource<'a> {
@@ -38,7 +38,7 @@ impl<'a> MidiTrackSource<'a> {
         }
     }
 
-    fn on_event_reached(&mut self, event: &Option<NoteEventOnChannel>) {
+    fn on_event_reached(&mut self, event: &Option<NodeEventOnChannel>) {
         match event {
             None => {}
             Some(e) => {
@@ -50,16 +50,16 @@ impl<'a> MidiTrackSource<'a> {
         }
     }
 
-    fn note_event_from_midi_event(event: &TrackEvent) -> Option<NoteEventOnChannel> {
+    fn note_event_from_midi_event(event: &TrackEvent) -> Option<NodeEventOnChannel> {
         match event.kind {
             TrackEventKind::Midi {
                 channel,
                 message: MidiMessage::NoteOn { key, vel },
-            } => Some(NoteEventOnChannel {
+            } => Some(NodeEventOnChannel {
                 channel: u8::from(channel) as usize,
-                event: NoteEvent {
-                    kind: NoteKind::NoteOn {
-                        note: u8::from(key),
+                event: NodeEvent::Note {
+                    note: u8::from(key),
+                    event: NoteEvent::NoteOn {
                         vel: u8::from(vel) as f32 / 127.0,
                     },
                 },
@@ -67,11 +67,11 @@ impl<'a> MidiTrackSource<'a> {
             TrackEventKind::Midi {
                 channel,
                 message: MidiMessage::NoteOff { key, vel },
-            } => Some(NoteEventOnChannel {
+            } => Some(NodeEventOnChannel {
                 channel: u8::from(channel) as usize,
-                event: NoteEvent {
-                    kind: NoteKind::NoteOff {
-                        note: u8::from(key),
+                event: NodeEvent::Note {
+                    note: u8::from(key),
+                    event: NoteEvent::NoteOff {
                         vel: u8::from(vel) as f32 / 127.0,
                     },
                 },

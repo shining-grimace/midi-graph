@@ -1,4 +1,4 @@
-use crate::{BufferConsumerNode, NoteEvent, NoteKind, NoteRange, Status};
+use crate::{BufferConsumerNode, NodeEvent, NoteEvent, NoteRange, Status};
 use std::cell::RefCell;
 
 pub struct RangeData {
@@ -30,8 +30,9 @@ impl RangeData {
             .position(|(n, _)| *n == note);
         match existing_index {
             Some(index) => {
-                let event = NoteEvent {
-                    kind: NoteKind::NoteOn { note, vel },
+                let event = NodeEvent::Note {
+                    note,
+                    event: NoteEvent::NoteOn { vel },
                 };
                 self.consumers[index].1.on_event(&event);
             }
@@ -41,8 +42,9 @@ impl RangeData {
                     println!("WARNING: Soundfont: Note turning on, but all consumers in use");
                     return;
                 }
-                let event = NoteEvent {
-                    kind: NoteKind::NoteOn { note, vel },
+                let event = NodeEvent::Note {
+                    note,
+                    event: NoteEvent::NoteOn { vel },
                 };
                 self.consumers[self.active_count].0 = note;
                 self.consumers[self.active_count].1.on_event(&event);
@@ -70,8 +72,9 @@ impl RangeData {
             #[cfg(debug_assertions)]
             println!("WARNING: Soundfont: Note turning off, but source not in use");
         }
-        let event = NoteEvent {
-            kind: NoteKind::NoteOff { note, vel },
+        let event = NodeEvent::Note {
+            note,
+            event: NoteEvent::NoteOff { vel },
         };
         self.consumers[source_index].1.on_event(&event);
     }

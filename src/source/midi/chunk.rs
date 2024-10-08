@@ -1,5 +1,5 @@
 use crate::{
-    util, BufferConsumer, BufferConsumerNode, Error, MidiTrackSource, Node, NoteEvent, SoundFont,
+    util, BufferConsumer, BufferConsumerNode, Error, MidiTrackSource, Node, NodeEvent, SoundFont,
     Status,
 };
 use midly::Smf;
@@ -43,7 +43,7 @@ impl<'a> MidiChunkSource<'a> {
 impl<'a> BufferConsumerNode for MidiChunkSource<'a> {}
 
 impl<'a> Node for MidiChunkSource<'a> {
-    fn on_event(&mut self, _event: &NoteEvent) {}
+    fn on_event(&mut self, _event: &NodeEvent) {}
 }
 
 impl<'a> BufferConsumer for MidiChunkSource<'a> {

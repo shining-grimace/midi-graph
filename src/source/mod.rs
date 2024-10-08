@@ -15,7 +15,7 @@ pub mod log;
 use crate::{Error, Loop, RangeSource};
 
 pub trait Node {
-    fn on_event(&mut self, event: &NoteEvent);
+    fn on_event(&mut self, event: &NodeEvent);
 }
 
 pub trait BufferConsumer {
@@ -70,14 +70,20 @@ pub enum Status {
 }
 
 #[derive(Clone)]
-pub struct NoteEvent {
-    pub kind: NoteKind,
+pub enum NodeEvent {
+    Note { note: u8, event: NoteEvent },
+    Control { node_id: u64, event: ControlEvent },
 }
 
 #[derive(PartialEq, Copy, Clone)]
-pub enum NoteKind {
-    NoteOn { note: u8, vel: f32 },
-    NoteOff { note: u8, vel: f32 },
+pub enum NoteEvent {
+    NoteOn { vel: f32 },
+    NoteOff { vel: f32 },
+}
+
+#[derive(Clone)]
+pub enum ControlEvent {
+    Unknown,
 }
 
 pub struct LoopRange {

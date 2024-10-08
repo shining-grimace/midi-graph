@@ -2,9 +2,9 @@ mod range;
 
 use crate::{
     util::{soundfont_from_file, wav_from_file},
-    BufferConsumerNode, Envelope, Error, FontSource, LfsrNoiseSource, LoopRange, Node,
-    NoteConsumer, NoteConsumerNode, NoteEvent, NoteKind, NoteRange, SawtoothWaveSource,
-    SoundSource, SquareWaveSource, Status, TriangleWaveSource,
+    BufferConsumerNode, Envelope, Error, FontSource, LfsrNoiseSource, LoopRange, Node, NodeEvent,
+    NoteConsumer, NoteConsumerNode, NoteEvent, NoteRange, SawtoothWaveSource, SoundSource,
+    SquareWaveSource, Status, TriangleWaveSource,
 };
 use range::RangeData;
 
@@ -125,23 +125,24 @@ impl SoundFont {
 impl NoteConsumerNode for SoundFont {}
 
 impl Node for SoundFont {
-    fn on_event(&mut self, event: &NoteEvent) {
-        let (note, vel) = match event.kind {
-            NoteKind::NoteOn { note, vel } => (note, vel),
-            NoteKind::NoteOff { note, vel } => (note, vel),
-        };
-        let turning_on = match event.kind {
-            NoteKind::NoteOn { .. } => true,
-            NoteKind::NoteOff { .. } => false,
-        };
-        if turning_on {
-            for range_data in self.ranges.iter_mut() {
-                range_data.turn_note_on(note, vel);
-            }
-        } else {
-            for range_data in self.ranges.iter_mut() {
-                range_data.turn_note_off(note, vel);
-            }
+    fn on_event(&mut self, event: &NodeEvent) {
+        match event {
+            NodeEvent::Note { note, event } => match event {
+                NoteEvent::NoteOn { vel } => {
+                    for range_data in self.ranges.iter_mut() {
+                        range_data.turn_note_on(*note, *vel);
+                    }
+                }
+                NoteEvent::NoteOff { vel } => {
+                    for range_data in self.ranges.iter_mut() {
+                        range_data.turn_note_off(*note, *vel);
+                    }
+                }
+            },
+            NodeEvent::Control {
+                node_id: _,
+                event: _,
+            } => {}
         }
     }
 }
