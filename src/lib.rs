@@ -24,6 +24,7 @@ pub use source::{
     envelope::Envelope,
     font::{SoundFont, SoundFontBuilder},
     midi::{chunk::MidiChunkSource, track::MidiTrackSource, MidiSource, MidiSourceBuilder},
+    mixer::MixerSource,
     noise::LfsrNoiseSource,
     sawtooth::SawtoothWaveSource,
     square::SquareWaveSource,

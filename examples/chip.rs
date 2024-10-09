@@ -2,8 +2,8 @@ extern crate midi_graph;
 
 use cpal::traits::StreamTrait;
 use midi_graph::{
-    util::smf_from_file, BaseMixer, LfsrNoiseSource, MidiSourceBuilder, NoteRange,
-    SoundFontBuilder, SquareWaveSource, TriangleWaveSource,
+    util::smf_from_file, BaseMixer, LfsrNoiseSource, MidiSourceBuilder, MixerSource, NoteRange,
+    SawtoothWaveSource, SoundFontBuilder, SquareWaveSource, TriangleWaveSource,
 };
 use std::time::Duration;
 
@@ -15,11 +15,14 @@ const NOISE_CHANNEL: usize = 2;
 
 fn main() {
     let smf = smf_from_file(MIDI_FILE).unwrap();
+    let triangle_unison = MixerSource::new(
+        None,
+        0.5,
+        Box::new(TriangleWaveSource::new(None, 1.0)),
+        Box::new(SawtoothWaveSource::new(None, 0.00125)),
+    );
     let triangle_font = SoundFontBuilder::new()
-        .add_range(
-            NoteRange::new_full_range(),
-            Box::new(TriangleWaveSource::new(None, 1.0)),
-        )
+        .add_range(NoteRange::new_full_range(), Box::new(triangle_unison))
         .unwrap()
         .build();
     let square_font = SoundFontBuilder::new()

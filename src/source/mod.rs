@@ -2,6 +2,7 @@ pub mod async_receiver;
 pub mod envelope;
 pub mod font;
 pub mod midi;
+pub mod mixer;
 pub mod noise;
 pub mod sawtooth;
 pub mod square;
