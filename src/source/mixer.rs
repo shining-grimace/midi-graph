@@ -5,8 +5,7 @@ pub struct MixerSource {
     balance: f32,
     consumer_0: Box<dyn BufferConsumerNode + Send + 'static>,
     consumer_1: Box<dyn BufferConsumerNode + Send + 'static>,
-    intermediate_buffer_0: Vec<f32>,
-    intermediate_buffer_1: Vec<f32>,
+    intermediate_buffer: Vec<f32>,
 }
 
 impl MixerSource {
@@ -21,8 +20,7 @@ impl MixerSource {
             balance,
             consumer_0,
             consumer_1,
-            intermediate_buffer_0: vec![0.0; consts::BUFFER_SIZE * consts::CHANNEL_COUNT],
-            intermediate_buffer_1: vec![0.0; consts::BUFFER_SIZE * consts::CHANNEL_COUNT],
+            intermediate_buffer: vec![0.0; consts::BUFFER_SIZE * consts::CHANNEL_COUNT],
         }
     }
 }
@@ -51,20 +49,21 @@ impl BufferConsumer for MixerSource {
     fn fill_buffer(&mut self, buffer: &mut [f32]) -> Status {
         let buffer_size = buffer.len();
         let sample_count = buffer_size / consts::CHANNEL_COUNT;
-        let mut intermediate_slice_0 = &mut self.intermediate_buffer_0[0..buffer_size];
-        let mut intermediate_slice_1 = &mut self.intermediate_buffer_1[0..buffer_size];
-        intermediate_slice_0.fill(0.0);
-        intermediate_slice_1.fill(0.0);
-        let status_0 = self.consumer_0.fill_buffer(&mut intermediate_slice_0);
-        let status_1 = self.consumer_1.fill_buffer(&mut intermediate_slice_1);
+        let mut intermediate_slice = &mut self.intermediate_buffer[0..buffer_size];
+        intermediate_slice.fill(0.0);
+        let status_0 = self.consumer_0.fill_buffer(&mut intermediate_slice);
         let multiplier_0 = 1.0 - self.balance;
         for i in 0..sample_count {
-            let mut index = i * 2;
-            buffer[index] += multiplier_0 * intermediate_slice_0[index]
-                + self.balance * intermediate_slice_1[index];
-            index += 1;
-            buffer[index] += multiplier_0 * intermediate_slice_0[index]
-                + self.balance * intermediate_slice_1[index];
+            let index = i * 2;
+            buffer[index] += multiplier_0 * intermediate_slice[index];
+            buffer[index + 1] += multiplier_0 * intermediate_slice[index + 1];
+        }
+        intermediate_slice.fill(0.0);
+        let status_1 = self.consumer_1.fill_buffer(&mut intermediate_slice);
+        for i in 0..sample_count {
+            let index = i * 2;
+            buffer[index] += self.balance * intermediate_slice[index];
+            buffer[index + 1] += self.balance * intermediate_slice[index + 1];
         }
 
         match (status_0, status_1) {
