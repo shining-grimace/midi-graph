@@ -19,7 +19,7 @@ fn main() {
         None,
         0.5,
         Box::new(TriangleWaveSource::new(None, 1.0)),
-        Box::new(SawtoothWaveSource::new(None, 0.00125)),
+        Box::new(SawtoothWaveSource::new(None, 0.25)),
     );
     let triangle_font = SoundFontBuilder::new()
         .add_range(NoteRange::new_full_range(), Box::new(triangle_unison))

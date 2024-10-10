@@ -39,7 +39,7 @@ impl Node for SawtoothWaveSource {
                 NoteEvent::NoteOn { vel } => {
                     self.is_on = true;
                     self.current_note = *note;
-                    self.current_amplitude = self.peak_amplitude * (*vel as f32 * 127.0);
+                    self.current_amplitude = self.peak_amplitude * vel;
                 }
                 NoteEvent::NoteOff { vel: _ } => {
                     if self.current_note != *note {
