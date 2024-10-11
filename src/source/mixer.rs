@@ -1,4 +1,6 @@
-use crate::{consts, BufferConsumer, BufferConsumerNode, Error, Node, NodeEvent, Status};
+use crate::{
+    consts, BufferConsumer, BufferConsumerNode, ControlEvent, Error, Node, NodeEvent, Status,
+};
 
 pub struct MixerSource {
     node_id: u64,
@@ -33,6 +35,18 @@ impl Node for MixerSource {
     }
 
     fn on_event(&mut self, event: &NodeEvent) {
+        match event {
+            NodeEvent::Control {
+                node_id,
+                event: ControlEvent::MixerBalance(balance),
+            } => {
+                if *node_id == self.node_id {
+                    self.balance = *balance;
+                    return;
+                }
+            }
+            _ => {}
+        }
         self.consumer_0.on_event(event);
         self.consumer_1.on_event(event);
     }

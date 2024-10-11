@@ -97,6 +97,7 @@ pub enum NoteEvent {
 
 #[derive(Clone)]
 pub enum ControlEvent {
+    MixerBalance(f32),
     Unknown,
 }
 
