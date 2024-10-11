@@ -1,7 +1,10 @@
-use crate::{BufferConsumerNode, NodeEvent, NoteEvent, NoteRange, Status};
+use crate::{
+    BufferConsumer, BufferConsumerNode, Error, Node, NodeEvent, NoteEvent, NoteRange, Status,
+};
 use std::cell::RefCell;
 
 pub struct RangeData {
+    node_id: u64,
     pub range: NoteRange,
     pub active_count: usize,
     pub consumers: Vec<(u8, Box<dyn BufferConsumerNode + Send + 'static>)>,
@@ -14,6 +17,7 @@ impl RangeData {
         consumers: Vec<(u8, Box<dyn BufferConsumerNode + Send + 'static>)>,
     ) -> Self {
         Self {
+            node_id: <Self as Node>::new_node_id(),
             range,
             active_count: 0,
             consumers,
@@ -21,7 +25,7 @@ impl RangeData {
         }
     }
 
-    pub fn turn_note_on(&mut self, note: u8, vel: f32) {
+    fn turn_note_on(&mut self, note: u8, vel: f32) {
         if !self.range.contains(note) {
             return;
         }
@@ -53,7 +57,7 @@ impl RangeData {
         }
     }
 
-    pub fn turn_note_off(&mut self, note: u8, vel: f32) {
+    fn turn_note_off(&mut self, note: u8, vel: f32) {
         if !self.range.contains(note) {
             return;
         }
@@ -99,8 +103,47 @@ impl RangeData {
         self.consumers.push(removed_source);
         self.active_count -= 1;
     }
+}
 
-    pub fn fill_buffer(&mut self, buffer: &mut [f32]) {
+impl BufferConsumerNode for RangeData {}
+
+impl Node for RangeData {
+    fn get_node_id(&self) -> u64 {
+        self.node_id
+    }
+
+    fn on_event(&mut self, event: &NodeEvent) {
+        match event {
+            NodeEvent::Note { note, event } => match event {
+                NoteEvent::NoteOn { vel } => self.turn_note_on(*note, *vel),
+                NoteEvent::NoteOff { vel } => self.turn_note_off(*note, *vel),
+            },
+            NodeEvent::Control { .. } => {
+                for (_, consumer) in self.consumers.iter_mut().take(self.active_count) {
+                    consumer.on_event(event);
+                }
+            }
+        }
+    }
+}
+
+impl BufferConsumer for RangeData {
+    fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
+        let mut consumers = vec![];
+        for (_, consumer) in self.consumers.iter() {
+            consumers.push((0, consumer.duplicate()?));
+        }
+        let source = Self {
+            node_id: self.node_id,
+            range: self.range.clone(),
+            active_count: 0,
+            consumers,
+            ended_notes: RefCell::new(vec![]),
+        };
+        Ok(Box::new(source))
+    }
+
+    fn fill_buffer(&mut self, buffer: &mut [f32]) -> Status {
         {
             let mut ended_notes = self.ended_notes.borrow_mut();
             for (note, consumer) in self.consumers.iter_mut().take(self.active_count) {
@@ -119,5 +162,6 @@ impl RangeData {
             self.remove_note(note);
         }
         self.ended_notes.borrow_mut().clear();
+        Status::Ok
     }
 }

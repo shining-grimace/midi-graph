@@ -2,8 +2,8 @@ mod range;
 
 use crate::{
     util::{soundfont_from_file, wav_from_file},
-    BufferConsumerNode, Envelope, Error, FontSource, LfsrNoiseSource, LoopRange, Node, NodeEvent,
-    NoteConsumer, NoteConsumerNode, NoteEvent, NoteRange, SawtoothWaveSource, SoundSource,
+    BufferConsumer, BufferConsumerNode, Envelope, Error, FontSource, LfsrNoiseSource, LoopRange,
+    Node, NodeEvent, NoteConsumer, NoteConsumerNode, NoteRange, SawtoothWaveSource, SoundSource,
     SquareWaveSource, Status, TriangleWaveSource,
 };
 use range::RangeData;
@@ -145,23 +145,8 @@ impl Node for SoundFont {
     }
 
     fn on_event(&mut self, event: &NodeEvent) {
-        match event {
-            NodeEvent::Note { note, event } => match event {
-                NoteEvent::NoteOn { vel } => {
-                    for range_data in self.ranges.iter_mut() {
-                        range_data.turn_note_on(*note, *vel);
-                    }
-                }
-                NoteEvent::NoteOff { vel } => {
-                    for range_data in self.ranges.iter_mut() {
-                        range_data.turn_note_off(*note, *vel);
-                    }
-                }
-            },
-            NodeEvent::Control {
-                node_id: _,
-                event: _,
-            } => {}
+        for range_data in self.ranges.iter_mut() {
+            range_data.on_event(event);
         }
     }
 }

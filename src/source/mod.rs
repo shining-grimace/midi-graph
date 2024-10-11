@@ -44,6 +44,7 @@ pub trait NoteConsumerNode: NoteConsumer + Node {}
 
 pub trait BufferConsumerNode: BufferConsumer + Node {}
 
+#[derive(Clone)]
 pub struct NoteRange {
     pub lower_inclusive: u8,
     pub upper_inclusive: u8,
