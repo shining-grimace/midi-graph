@@ -84,21 +84,22 @@ pub enum Status {
     Ended,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum NodeEvent {
     Note { note: u8, event: NoteEvent },
     Control { node_id: u64, event: ControlEvent },
 }
 
-#[derive(PartialEq, Copy, Clone)]
+#[derive(PartialEq, Copy, Clone, Debug)]
 pub enum NoteEvent {
     NoteOn { vel: f32 },
     NoteOff { vel: f32 },
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum ControlEvent {
     MixerBalance(f32),
+    Volume(f32),
     Unknown,
 }
 

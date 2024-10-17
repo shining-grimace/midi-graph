@@ -1,5 +1,6 @@
 use crate::{
-    consts, util, BufferConsumer, BufferConsumerNode, Error, Node, NodeEvent, NoteEvent, Status,
+    consts, util, BufferConsumer, BufferConsumerNode, ControlEvent, Error, Node, NodeEvent,
+    NoteEvent, Status,
 };
 
 pub struct SawtoothWaveSource {
@@ -49,9 +50,15 @@ impl Node for SawtoothWaveSource {
                 }
             },
             NodeEvent::Control {
-                node_id: _,
-                event: _,
-            } => {}
+                node_id,
+                event: ControlEvent::Volume(volume),
+            } => {
+                if *node_id != self.node_id {
+                    return;
+                }
+                self.peak_amplitude = *volume;
+            }
+            _ => {}
         }
     }
 }

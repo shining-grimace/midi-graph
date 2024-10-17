@@ -1,5 +1,6 @@
 use crate::{
-    consts, BufferConsumer, BufferConsumerNode, Error, Node, NodeEvent, NoteEvent, Status,
+    consts, BufferConsumer, BufferConsumerNode, ControlEvent, Error, Node, NodeEvent, NoteEvent,
+    Status,
 };
 use hound::{SampleFormat, WavSpec};
 use soundfont::data::{sample::SampleLink, SampleHeader};
@@ -7,6 +8,7 @@ use soundfont::data::{sample::SampleLink, SampleHeader};
 pub struct OneShotSource {
     node_id: u64,
     source_channel_count: usize,
+    volume: f32,
     data_position: usize,
     source_data: Vec<f32>,
 }
@@ -42,6 +44,7 @@ impl OneShotSource {
         Self {
             node_id: node_id.unwrap_or_else(|| <Self as Node>::new_node_id()),
             source_channel_count: channels,
+            volume: 1.0,
             data_position: data.len(),
             source_data: data,
         }
@@ -112,9 +115,15 @@ impl Node for OneShotSource {
                 }
             },
             NodeEvent::Control {
-                node_id: _,
-                event: _,
-            } => {}
+                node_id,
+                event: ControlEvent::Volume(volume),
+            } => {
+                if *node_id != self.node_id {
+                    return;
+                }
+                self.volume = *volume;
+            }
+            _ => {}
         }
     }
 }
@@ -146,7 +155,7 @@ impl BufferConsumer for OneShotSource {
             1 => {
                 let src_data_points = (buffer.len() / 2).min(src.len());
                 for src_data_index in 0..src_data_points {
-                    let sample = src[src_data_index];
+                    let sample = src[src_data_index] * self.volume;
                     buffer[src_data_index * 2] += sample;
                     buffer[src_data_index * 2 + 1] += sample;
                 }
@@ -155,7 +164,7 @@ impl BufferConsumer for OneShotSource {
             2 => {
                 let src_data_points = buffer.len().min(src.len());
                 for src_data_index in 0..src_data_points {
-                    buffer[src_data_index] += src[src_data_index];
+                    buffer[src_data_index] += src[src_data_index] * self.volume;
                 }
                 self.data_position += src_data_points;
             }

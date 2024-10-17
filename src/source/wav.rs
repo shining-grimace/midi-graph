@@ -1,6 +1,6 @@
 use crate::{
-    consts, util, BufferConsumer, BufferConsumerNode, Error, LoopRange, Node, NodeEvent, NoteEvent,
-    Status,
+    consts, util, BufferConsumer, BufferConsumerNode, ControlEvent, Error, LoopRange, Node,
+    NodeEvent, NoteEvent, Status,
 };
 use hound::{SampleFormat, WavSpec};
 use soundfont::data::{sample::SampleLink, SampleHeader};
@@ -14,6 +14,7 @@ pub struct WavSource {
     loop_end_data_position: usize,
     data_position: usize,
     current_note: u8,
+    volume: f32,
     source_data: Vec<f32>,
     playback_scale: f64,
 }
@@ -91,6 +92,7 @@ impl WavSource {
             loop_end_data_position: loop_range.end_frame * channels,
             data_position: data.len(),
             current_note: 0,
+            volume: 1.0,
             source_data: data,
             playback_scale,
         }
@@ -149,6 +151,7 @@ impl WavSource {
     }
 
     fn stretch_buffer(
+        &self,
         src: &[f32],
         src_channels: usize,
         dst: &mut [f32],
@@ -159,13 +162,13 @@ impl WavSource {
         while src_index < src.len() && dst_index < dst.len() {
             match src_channels {
                 1 => {
-                    let sample = src[src_index];
+                    let sample = src[src_index] * self.volume;
                     dst[dst_index] += sample;
                     dst[dst_index + 1] += sample;
                 }
                 2 => {
-                    dst[dst_index] += src[src_index];
-                    dst[dst_index + 1] += src[src_index + 1];
+                    dst[dst_index] += src[src_index] * self.volume;
+                    dst[dst_index + 1] += src[src_index + 1] * self.volume;
                 }
                 _ => {}
             }
@@ -202,9 +205,15 @@ impl Node for WavSource {
                 }
             },
             NodeEvent::Control {
-                node_id: _,
-                event: _,
-            } => {}
+                node_id,
+                event: ControlEvent::Volume(volume),
+            } => {
+                if *node_id != self.node_id {
+                    return;
+                }
+                self.volume = *volume;
+            }
+            _ => {}
         }
     }
 }
@@ -256,7 +265,7 @@ impl BufferConsumer for WavSource {
                 false => self.source_data.len(),
             };
 
-            let (src_data_points_advanced, dst_data_points_advanced) = Self::stretch_buffer(
+            let (src_data_points_advanced, dst_data_points_advanced) = self.stretch_buffer(
                 &self.source_data[self.data_position..source_end_point],
                 self.source_channel_count,
                 remaining_buffer,

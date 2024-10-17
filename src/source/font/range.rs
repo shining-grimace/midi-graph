@@ -119,7 +119,7 @@ impl Node for RangeData {
                 NoteEvent::NoteOff { vel } => self.turn_note_off(*note, *vel),
             },
             NodeEvent::Control { .. } => {
-                for (_, consumer) in self.consumers.iter_mut().take(self.active_count) {
+                for (_, consumer) in self.consumers.iter_mut() {
                     consumer.on_event(event);
                 }
             }
