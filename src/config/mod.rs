@@ -106,6 +106,11 @@ pub enum SoundSource {
         base_note: u8,
         looping: Option<Loop>,
     },
+    OneShotFilePath {
+        #[serde(default = "none_id")]
+        node_id: Option<u64>,
+        path: String,
+    },
     Envelope {
         #[serde(default = "none_id")]
         node_id: Option<u64>,

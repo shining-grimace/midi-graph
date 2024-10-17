@@ -1,4 +1,4 @@
-use crate::{Error, LoopRange, WavSource};
+use crate::{Error, LoopRange, OneShotSource, WavSource};
 use hound::WavReader;
 use soundfont::data::SampleHeader;
 
@@ -40,4 +40,33 @@ pub fn wav_from_i16_samples(
         data[i] = *sample as f32 / 32768.0;
     }
     WavSource::new_from_raw_sf2_data(header, data)
+}
+
+pub fn one_shot_from_file(file_name: &str, node_id: Option<u64>) -> Result<OneShotSource, Error> {
+    let wav = WavReader::open(file_name)?;
+    let spec = wav.spec();
+    let data: Vec<f32> = wav.into_samples().map(|s| s.unwrap()).collect();
+    OneShotSource::new_from_data(spec, data, node_id)
+}
+
+pub fn one_shot_from_bytes(
+    bytes: &'static [u8],
+    node_id: Option<u64>,
+) -> Result<OneShotSource, Error> {
+    let cursor = Cursor::new(bytes);
+    let wav = WavReader::new(cursor)?;
+    let spec = wav.spec();
+    let data: Vec<f32> = wav.into_samples().map(|s| s.unwrap()).collect();
+    OneShotSource::new_from_data(spec, data, node_id)
+}
+
+pub fn one_shot_from_i16_samples(
+    header: &SampleHeader,
+    source_data: &Vec<i16>,
+) -> Result<OneShotSource, Error> {
+    let mut data: Vec<f32> = vec![0.0; source_data.len()];
+    for (i, sample) in source_data.iter().enumerate() {
+        data[i] = *sample as f32 / 32768.0;
+    }
+    OneShotSource::new_from_raw_sf2_data(header, data)
 }

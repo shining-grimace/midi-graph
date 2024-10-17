@@ -26,6 +26,7 @@ pub use source::{
     midi::{chunk::MidiChunkSource, track::MidiTrackSource, MidiSource, MidiSourceBuilder},
     mixer::MixerSource,
     noise::LfsrNoiseSource,
+    one_shot::OneShotSource,
     sawtooth::SawtoothWaveSource,
     square::SquareWaveSource,
     triangle::TriangleWaveSource,

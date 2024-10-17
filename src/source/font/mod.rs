@@ -1,7 +1,7 @@
 mod range;
 
 use crate::{
-    util::{soundfont_from_file, wav_from_file},
+    util::{one_shot_from_file, soundfont_from_file, wav_from_file},
     BufferConsumer, BufferConsumerNode, Envelope, Error, FontSource, LfsrNoiseSource, LoopRange,
     Node, NodeEvent, NoteConsumer, NoteConsumerNode, NoteRange, SawtoothWaveSource, SoundSource,
     SquareWaveSource, Status, TriangleWaveSource,
@@ -113,6 +113,9 @@ impl SoundFont {
                     loop_range,
                     *node_id,
                 )?)
+            }
+            SoundSource::OneShotFilePath { node_id, path } => {
+                Box::new(one_shot_from_file(path.as_str(), *node_id)?)
             }
             SoundSource::Envelope {
                 node_id,
