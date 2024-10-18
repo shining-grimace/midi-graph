@@ -1,6 +1,5 @@
 use crate::{
     consts, BufferConsumer, BufferConsumerNode, ControlEvent, Error, Node, NodeEvent, NoteEvent,
-    Status,
 };
 use hound::{SampleFormat, WavSpec};
 use soundfont::data::{sample::SampleLink, SampleHeader};
@@ -138,13 +137,13 @@ impl BufferConsumer for OneShotSource {
         Ok(Box::new(source))
     }
 
-    fn fill_buffer(&mut self, buffer: &mut [f32]) -> Status {
+    fn fill_buffer(&mut self, buffer: &mut [f32]) {
         if buffer.is_empty() {
-            return Status::Ok;
+            return;
         }
 
         if self.data_position >= self.source_data.len() {
-            return Status::Ended;
+            return;
         }
 
         #[cfg(debug_assertions)]
@@ -169,11 +168,6 @@ impl BufferConsumer for OneShotSource {
                 self.data_position += src_data_points;
             }
             _ => {}
-        }
-
-        match self.data_position >= self.source_data.len() {
-            true => Status::Ended,
-            false => Status::Ok,
         }
     }
 }

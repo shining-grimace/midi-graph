@@ -1,6 +1,4 @@
-use crate::{
-    consts, BufferConsumer, BufferConsumerNode, ControlEvent, Error, Node, NodeEvent, Status,
-};
+use crate::{consts, BufferConsumer, BufferConsumerNode, ControlEvent, Error, Node, NodeEvent};
 
 pub struct MixerSource {
     node_id: u64,
@@ -60,12 +58,12 @@ impl BufferConsumer for MixerSource {
         Ok(Box::new(mixer))
     }
 
-    fn fill_buffer(&mut self, buffer: &mut [f32]) -> Status {
+    fn fill_buffer(&mut self, buffer: &mut [f32]) {
         let buffer_size = buffer.len();
         let sample_count = buffer_size / consts::CHANNEL_COUNT;
         let mut intermediate_slice = &mut self.intermediate_buffer[0..buffer_size];
         intermediate_slice.fill(0.0);
-        let status_0 = self.consumer_0.fill_buffer(&mut intermediate_slice);
+        self.consumer_0.fill_buffer(&mut intermediate_slice);
         let multiplier_0 = 1.0 - self.balance;
         for i in 0..sample_count {
             let index = i * 2;
@@ -73,16 +71,11 @@ impl BufferConsumer for MixerSource {
             buffer[index + 1] += multiplier_0 * intermediate_slice[index + 1];
         }
         intermediate_slice.fill(0.0);
-        let status_1 = self.consumer_1.fill_buffer(&mut intermediate_slice);
+        self.consumer_1.fill_buffer(&mut intermediate_slice);
         for i in 0..sample_count {
             let index = i * 2;
             buffer[index] += self.balance * intermediate_slice[index];
             buffer[index + 1] += self.balance * intermediate_slice[index + 1];
-        }
-
-        match (status_0, status_1) {
-            (Status::Ended, Status::Ended) => Status::Ended,
-            _ => Status::Ok,
         }
     }
 }

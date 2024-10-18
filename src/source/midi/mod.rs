@@ -4,7 +4,7 @@ pub mod util;
 
 use crate::{
     util::smf_from_file, BufferConsumer, BufferConsumerNode, Config, Error, MidiChunkSource,
-    MidiDataSource, Node, NodeEvent, SoundFont, Status,
+    MidiDataSource, Node, NodeEvent, SoundFont,
 };
 use midly::Smf;
 use std::collections::HashMap;
@@ -81,7 +81,7 @@ impl<'a> BufferConsumer for MidiSource<'a> {
         Err(Error::User("MidiSource cannot be duplicated".to_owned()))
     }
 
-    fn fill_buffer(&mut self, buffer: &mut [f32]) -> Status {
+    fn fill_buffer(&mut self, buffer: &mut [f32]) {
         self.consumer.fill_buffer(buffer)
     }
 }

@@ -1,6 +1,5 @@
 use crate::{
     util, BufferConsumer, BufferConsumerNode, Error, MidiTrackSource, Node, NodeEvent, SoundFont,
-    Status,
 };
 use midly::Smf;
 use std::{collections::HashMap, sync::Arc};
@@ -61,16 +60,9 @@ impl<'a> BufferConsumer for MidiChunkSource<'a> {
         ))
     }
 
-    fn fill_buffer(&mut self, buffer: &mut [f32]) -> Status {
-        let mut status = Status::Ok;
+    fn fill_buffer(&mut self, buffer: &mut [f32]) {
         for (_, source) in self.channel_sources.iter_mut() {
-            match source.fill_buffer(buffer) {
-                Status::Ok => {}
-                Status::Ended => {
-                    status = Status::Ended;
-                }
-            };
+            source.fill_buffer(buffer);
         }
-        status
     }
 }

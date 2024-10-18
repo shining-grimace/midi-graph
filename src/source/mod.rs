@@ -34,11 +34,11 @@ pub trait Node {
 
 pub trait BufferConsumer {
     fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error>;
-    fn fill_buffer(&mut self, buffer: &mut [f32]) -> Status;
+    fn fill_buffer(&mut self, buffer: &mut [f32]);
 }
 
 pub trait NoteConsumer {
-    fn fill_buffer(&mut self, buffer: &mut [f32]) -> Status;
+    fn fill_buffer(&mut self, buffer: &mut [f32]);
 }
 
 pub trait NoteConsumerNode: NoteConsumer + Node {}
@@ -76,12 +76,6 @@ impl NoteRange {
     pub fn contains(&self, note: u8) -> bool {
         self.lower_inclusive <= note && self.upper_inclusive >= note
     }
-}
-
-#[derive(PartialEq)]
-pub enum Status {
-    Ok,
-    Ended,
 }
 
 #[derive(Clone, Debug)]

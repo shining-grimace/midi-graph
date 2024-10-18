@@ -1,4 +1,4 @@
-use crate::{BufferConsumer, BufferConsumerNode, Error, Node, NodeEvent, NoteConsumerNode, Status};
+use crate::{BufferConsumer, BufferConsumerNode, Error, Node, NodeEvent, NoteConsumerNode};
 use crossbeam_channel::{unbounded, Receiver, Sender};
 
 pub struct AsyncEventReceiver {
@@ -39,11 +39,10 @@ impl BufferConsumer for AsyncEventReceiver {
         ))
     }
 
-    fn fill_buffer(&mut self, buffer: &mut [f32]) -> Status {
+    fn fill_buffer(&mut self, buffer: &mut [f32]) {
         for event in self.receiver.try_iter() {
             self.consumer.on_event(&event);
         }
         self.consumer.fill_buffer(buffer);
-        Status::Ok
     }
 }

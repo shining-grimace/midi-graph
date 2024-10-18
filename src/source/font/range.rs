@@ -1,6 +1,4 @@
-use crate::{
-    BufferConsumer, BufferConsumerNode, Error, Node, NodeEvent, NoteEvent, NoteRange, Status,
-};
+use crate::{BufferConsumer, BufferConsumerNode, Error, Node, NodeEvent, NoteEvent, NoteRange};
 
 pub struct RangeData {
     node_id: u64,
@@ -85,10 +83,9 @@ impl BufferConsumer for RangeData {
         Ok(Box::new(source))
     }
 
-    fn fill_buffer(&mut self, buffer: &mut [f32]) -> Status {
+    fn fill_buffer(&mut self, buffer: &mut [f32]) {
         for consumer in self.consumers.iter_mut() {
             consumer.fill_buffer(buffer);
         }
-        Status::Ok
     }
 }

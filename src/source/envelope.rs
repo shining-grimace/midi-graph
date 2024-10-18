@@ -1,6 +1,4 @@
-use crate::{
-    consts, BufferConsumer, BufferConsumerNode, Error, Node, NodeEvent, NoteEvent, Status,
-};
+use crate::{consts, BufferConsumer, BufferConsumerNode, Error, Node, NodeEvent, NoteEvent};
 
 const PEAK_AMPLITUDE: f32 = 1.0;
 
@@ -120,7 +118,7 @@ impl BufferConsumer for Envelope {
         Ok(Box::new(envelope))
     }
 
-    fn fill_buffer(&mut self, buffer: &mut [f32]) -> Status {
+    fn fill_buffer(&mut self, buffer: &mut [f32]) {
         let buffer_size = buffer.len();
         let samples_in_buffer = buffer_size / consts::CHANNEL_COUNT;
 
@@ -205,11 +203,6 @@ impl BufferConsumer for Envelope {
                 EnvelopeMode::Finished => {}
             };
             samples_available -= samples_to_fill;
-        }
-
-        match self.mode {
-            EnvelopeMode::Finished => Status::Ended,
-            _ => Status::Ok,
         }
     }
 }

@@ -4,7 +4,7 @@ use crate::{
     util::{one_shot_from_file, soundfont_from_file, wav_from_file},
     BufferConsumer, BufferConsumerNode, Envelope, Error, FontSource, LfsrNoiseSource, LoopRange,
     Node, NodeEvent, NoteConsumer, NoteConsumerNode, NoteRange, SawtoothWaveSource, SoundSource,
-    SquareWaveSource, Status, TriangleWaveSource,
+    SquareWaveSource, TriangleWaveSource,
 };
 use range::RangeData;
 
@@ -155,10 +155,9 @@ impl Node for SoundFont {
 }
 
 impl NoteConsumer for SoundFont {
-    fn fill_buffer(&mut self, buffer: &mut [f32]) -> Status {
+    fn fill_buffer(&mut self, buffer: &mut [f32]) {
         for range_data in self.ranges.iter_mut() {
             range_data.fill_buffer(buffer);
         }
-        Status::Ok
     }
 }

@@ -32,7 +32,7 @@ pub use source::{
     triangle::TriangleWaveSource,
     wav::WavSource,
     BufferConsumer, BufferConsumerNode, ControlEvent, LoopRange, Node, NodeEvent, NoteConsumer,
-    NoteConsumerNode, NoteEvent, NoteRange, Status,
+    NoteConsumerNode, NoteEvent, NoteRange,
 };
 
 pub mod util {

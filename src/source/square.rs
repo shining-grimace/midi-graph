@@ -1,6 +1,6 @@
 use crate::{
     consts, util, BufferConsumer, BufferConsumerNode, ControlEvent, Error, Node, NodeEvent,
-    NoteEvent, Status,
+    NoteEvent,
 };
 
 pub struct SquareWaveSource {
@@ -71,9 +71,9 @@ impl BufferConsumer for SquareWaveSource {
         Ok(Box::new(source))
     }
 
-    fn fill_buffer(&mut self, buffer: &mut [f32]) -> Status {
+    fn fill_buffer(&mut self, buffer: &mut [f32]) {
         if !self.is_on {
-            return Status::Ended;
+            return;
         }
         let size = buffer.len();
         let note_frequency = util::frequency_of(self.current_note);
@@ -104,6 +104,5 @@ impl BufferConsumer for SquareWaveSource {
 
         self.cycle_progress_samples =
             stretched_progress * self.period_samples_a440 / pitch_period_samples;
-        Status::Ok
     }
 }

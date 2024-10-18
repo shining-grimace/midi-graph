@@ -1,6 +1,6 @@
 use crate::{
     consts, util, BufferConsumer, BufferConsumerNode, ControlEvent, Error, LoopRange, Node,
-    NodeEvent, NoteEvent, Status,
+    NodeEvent, NoteEvent,
 };
 use hound::{SampleFormat, WavSpec};
 use soundfont::data::{sample::SampleLink, SampleHeader};
@@ -236,9 +236,9 @@ impl BufferConsumer for WavSource {
         Ok(Box::new(source))
     }
 
-    fn fill_buffer(&mut self, buffer: &mut [f32]) -> Status {
+    fn fill_buffer(&mut self, buffer: &mut [f32]) {
         if buffer.is_empty() {
-            return Status::Ok;
+            return;
         }
 
         if self.is_on && self.data_position >= self.loop_end_data_position {
@@ -257,7 +257,7 @@ impl BufferConsumer for WavSource {
         while remaining_buffer.len() > 0 {
             if self.data_position >= self.source_data.len() {
                 self.is_on = false;
-                return Status::Ended;
+                return;
             }
 
             let source_end_point = match self.is_on {
@@ -284,10 +284,8 @@ impl BufferConsumer for WavSource {
                 remaining_buffer = &mut buffer[dst_buffer_index..];
             } else {
                 self.is_on = false;
-                return Status::Ended;
+                return;
             }
         }
-
-        Status::Ok
     }
 }
