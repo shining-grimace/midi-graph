@@ -26,7 +26,7 @@ impl SoundFontBuilder {
     ) -> Result<Self, Error> {
         let mut consumers = Vec::new();
         for _ in 0..SOURCE_CAPACITY {
-            consumers.push((0, consumer.duplicate()?));
+            consumers.push(consumer.duplicate()?);
         }
         self.ranges.push(RangeData::new(range, consumers));
         Ok(self)
