@@ -1,5 +1,6 @@
 pub mod async_receiver;
 pub mod envelope;
+pub mod fader;
 pub mod font;
 pub mod midi;
 pub mod mixer;
@@ -94,6 +95,7 @@ pub enum NoteEvent {
 pub enum ControlEvent {
     MixerBalance(f32),
     Volume(f32),
+    Fade { from: f32, to: f32, seconds: f32 },
     Unknown,
 }
 

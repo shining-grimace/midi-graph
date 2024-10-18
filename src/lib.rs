@@ -22,6 +22,7 @@ pub use mix::base::BaseMixer;
 pub use source::{
     async_receiver::AsyncEventReceiver,
     envelope::Envelope,
+    fader::Fader,
     font::{SoundFont, SoundFontBuilder},
     midi::{chunk::MidiChunkSource, track::MidiTrackSource, MidiSource, MidiSourceBuilder},
     mixer::MixerSource,

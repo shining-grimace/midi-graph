@@ -3,15 +3,13 @@ extern crate midi_graph;
 use cpal::traits::StreamTrait;
 use crossbeam_channel::Sender;
 use midi_graph::{
-    util, AsyncEventReceiver, BaseMixer, ControlEvent, MixerSource, NodeEvent, NoteEvent,
-    NoteRange, SawtoothWaveSource, SoundFontBuilder, TriangleWaveSource,
+    AsyncEventReceiver, BaseMixer, ControlEvent, Fader, MixerSource, NodeEvent, NoteEvent,
+    NoteRange, SawtoothWaveSource, SoundFontBuilder, SquareWaveSource, TriangleWaveSource,
 };
 use std::{thread::sleep, time::Duration};
 
-const WAV_FILE: &'static str = "resources/guitar-a2-48k-stereo.wav";
-
 const MIXER_NODE_ID: u64 = 100;
-const WAV_NODE_ID: u64 = 101;
+const FADER_NODE_ID: u64 = 101;
 
 fn main() {
     let triangle_unison = MixerSource::new(
@@ -20,17 +18,16 @@ fn main() {
         Box::new(TriangleWaveSource::new(None, 0.75)),
         Box::new(SawtoothWaveSource::new(None, 0.1625)),
     );
-    let wav_source = util::wav_from_file(WAV_FILE, 70, None, Some(WAV_NODE_ID)).unwrap();
+
+    let square_source = SquareWaveSource::new(None, 0.375, 0.25);
+    let fader = Fader::new(Some(FADER_NODE_ID), 0.0, Box::new(square_source));
     let soundfont = SoundFontBuilder::new()
         .add_range(
             NoteRange::new_inclusive_range(0, 70),
             Box::new(triangle_unison),
         )
         .unwrap()
-        .add_range(
-            NoteRange::new_inclusive_range(71, 255),
-            Box::new(wav_source),
-        )
+        .add_range(NoteRange::new_inclusive_range(71, 255), Box::new(fader))
         .unwrap()
         .build();
     let (mut sender, receiver) = AsyncEventReceiver::new(None, Box::new(soundfont));
@@ -72,6 +69,18 @@ fn main() {
                 event: NoteEvent::NoteOff { vel: 0.0 },
             },
         );
+        println!("Sending fade event");
+        send_or_log(
+            &mut sender,
+            &NodeEvent::Control {
+                node_id: FADER_NODE_ID,
+                event: ControlEvent::Fade {
+                    from: 0.0,
+                    to: 1.0,
+                    seconds: 1.0,
+                },
+            },
+        );
         send_or_log(
             &mut sender,
             &NodeEvent::Note {
@@ -100,13 +109,6 @@ fn main() {
             &NodeEvent::Note {
                 note: 74,
                 event: NoteEvent::NoteOff { vel: 0.0 },
-            },
-        );
-        send_or_log(
-            &mut sender,
-            &NodeEvent::Control {
-                node_id: WAV_NODE_ID,
-                event: ControlEvent::Volume(0.5),
             },
         );
         send_or_log(
