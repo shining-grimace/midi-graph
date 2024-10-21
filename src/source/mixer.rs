@@ -48,15 +48,6 @@ impl Node for MixerSource {
         self.consumer_0.on_event(event);
         self.consumer_1.on_event(event);
     }
-}
-
-impl BufferConsumer for MixerSource {
-    fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
-        let consumer_0 = self.consumer_0.duplicate()?;
-        let consumer_1 = self.consumer_1.duplicate()?;
-        let mixer = Self::new(Some(self.node_id), self.balance, consumer_0, consumer_1);
-        Ok(Box::new(mixer))
-    }
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) {
         let buffer_size = buffer.len();
@@ -77,5 +68,14 @@ impl BufferConsumer for MixerSource {
             buffer[index] += self.balance * intermediate_slice[index];
             buffer[index + 1] += self.balance * intermediate_slice[index + 1];
         }
+    }
+}
+
+impl BufferConsumer for MixerSource {
+    fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
+        let consumer_0 = self.consumer_0.duplicate()?;
+        let consumer_1 = self.consumer_1.duplicate()?;
+        let mixer = Self::new(Some(self.node_id), self.balance, consumer_0, consumer_1);
+        Ok(Box::new(mixer))
     }
 }

@@ -1,13 +1,13 @@
-use crate::{consts, BufferConsumer, Error};
+use crate::{consts, Error, Node};
 use cpal::traits::{DeviceTrait, HostTrait};
 use cpal::{Stream, StreamConfig};
 
 pub struct BaseMixer {
-    consumer: Box<dyn BufferConsumer + Send + 'static>,
+    consumer: Box<dyn Node + Send + 'static>,
 }
 
 impl BaseMixer {
-    pub fn from_consumer(consumer: Box<dyn BufferConsumer + Send + 'static>) -> Self {
+    pub fn from_consumer(consumer: Box<dyn Node + Send + 'static>) -> Self {
         Self { consumer }
     }
 

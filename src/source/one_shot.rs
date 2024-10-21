@@ -125,17 +125,6 @@ impl Node for OneShotSource {
             _ => {}
         }
     }
-}
-
-impl BufferConsumer for OneShotSource {
-    fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
-        let source = Self::new(
-            Some(self.node_id),
-            self.source_channel_count,
-            self.source_data.clone(),
-        );
-        Ok(Box::new(source))
-    }
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) {
         if buffer.is_empty() {
@@ -169,5 +158,16 @@ impl BufferConsumer for OneShotSource {
             }
             _ => {}
         }
+    }
+}
+
+impl BufferConsumer for OneShotSource {
+    fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
+        let source = Self::new(
+            Some(self.node_id),
+            self.source_channel_count,
+            self.source_data.clone(),
+        );
+        Ok(Box::new(source))
     }
 }

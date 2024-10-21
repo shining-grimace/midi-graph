@@ -63,13 +63,6 @@ impl Node for SquareWaveSource {
             _ => {}
         }
     }
-}
-
-impl BufferConsumer for SquareWaveSource {
-    fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
-        let source = Self::new(Some(self.node_id), self.peak_amplitude, self.duty_cycle);
-        Ok(Box::new(source))
-    }
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) {
         if !self.is_on {
@@ -104,5 +97,12 @@ impl BufferConsumer for SquareWaveSource {
 
         self.cycle_progress_samples =
             stretched_progress * self.period_samples_a440 / pitch_period_samples;
+    }
+}
+
+impl BufferConsumer for SquareWaveSource {
+    fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
+        let source = Self::new(Some(self.node_id), self.peak_amplitude, self.duty_cycle);
+        Ok(Box::new(source))
     }
 }

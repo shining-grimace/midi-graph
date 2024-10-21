@@ -216,25 +216,6 @@ impl Node for WavSource {
             _ => {}
         }
     }
-}
-
-impl BufferConsumer for WavSource {
-    fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
-        let sample_rate = (consts::PLAYBACK_SAMPLE_RATE as f64 / self.playback_scale) as u32;
-        let loop_range = LoopRange::new_frame_range(
-            self.loop_start_data_position / self.source_channel_count,
-            self.loop_end_data_position / self.source_channel_count,
-        );
-        let source = Self::new(
-            Some(self.node_id),
-            sample_rate,
-            self.source_channel_count,
-            self.source_note,
-            loop_range,
-            self.source_data.clone(),
-        );
-        Ok(Box::new(source))
-    }
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) {
         if buffer.is_empty() {
@@ -287,5 +268,24 @@ impl BufferConsumer for WavSource {
                 return;
             }
         }
+    }
+}
+
+impl BufferConsumer for WavSource {
+    fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
+        let sample_rate = (consts::PLAYBACK_SAMPLE_RATE as f64 / self.playback_scale) as u32;
+        let loop_range = LoopRange::new_frame_range(
+            self.loop_start_data_position / self.source_channel_count,
+            self.loop_end_data_position / self.source_channel_count,
+        );
+        let source = Self::new(
+            Some(self.node_id),
+            sample_rate,
+            self.source_channel_count,
+            self.source_note,
+            loop_range,
+            self.source_data.clone(),
+        );
+        Ok(Box::new(source))
     }
 }

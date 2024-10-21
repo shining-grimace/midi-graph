@@ -97,25 +97,6 @@ impl Node for LfsrNoiseSource {
             _ => {}
         }
     }
-}
-
-impl BufferConsumer for LfsrNoiseSource {
-    fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
-        let inside_feedback = match self.feedback_mask {
-            0x4040 => true,
-            0x4000 => false,
-            _ => {
-                return Err(Error::User("Unexpected feedback mask".to_owned()));
-            }
-        };
-        let source = Self::new(
-            Some(self.node_id),
-            self.peak_amplitude,
-            inside_feedback,
-            self.note_of_16_shifts,
-        );
-        Ok(Box::new(source))
-    }
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) {
         if !self.is_on {
@@ -148,5 +129,24 @@ impl BufferConsumer for LfsrNoiseSource {
 
         self.cycle_progress_samples =
             stretched_progress * self.cycle_samples_a440 / pitch_cycle_samples;
+    }
+}
+
+impl BufferConsumer for LfsrNoiseSource {
+    fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
+        let inside_feedback = match self.feedback_mask {
+            0x4040 => true,
+            0x4000 => false,
+            _ => {
+                return Err(Error::User("Unexpected feedback mask".to_owned()));
+            }
+        };
+        let source = Self::new(
+            Some(self.node_id),
+            self.peak_amplitude,
+            inside_feedback,
+            self.note_of_16_shifts,
+        );
+        Ok(Box::new(source))
     }
 }

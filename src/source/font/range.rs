@@ -66,6 +66,12 @@ impl Node for RangeData {
             }
         }
     }
+
+    fn fill_buffer(&mut self, buffer: &mut [f32]) {
+        for consumer in self.consumers.iter_mut() {
+            consumer.fill_buffer(buffer);
+        }
+    }
 }
 
 impl BufferConsumer for RangeData {
@@ -81,11 +87,5 @@ impl BufferConsumer for RangeData {
             consumers,
         };
         Ok(Box::new(source))
-    }
-
-    fn fill_buffer(&mut self, buffer: &mut [f32]) {
-        for consumer in self.consumers.iter_mut() {
-            consumer.fill_buffer(buffer);
-        }
     }
 }

@@ -51,6 +51,12 @@ impl<'a> Node for MidiChunkSource<'a> {
     }
 
     fn on_event(&mut self, _event: &NodeEvent) {}
+
+    fn fill_buffer(&mut self, buffer: &mut [f32]) {
+        for (_, source) in self.channel_sources.iter_mut() {
+            source.fill_buffer(buffer);
+        }
+    }
 }
 
 impl<'a> BufferConsumer for MidiChunkSource<'a> {
@@ -58,11 +64,5 @@ impl<'a> BufferConsumer for MidiChunkSource<'a> {
         Err(Error::User(
             "MIDI chunk source cannot be replicated".to_owned(),
         ))
-    }
-
-    fn fill_buffer(&mut self, buffer: &mut [f32]) {
-        for (_, source) in self.channel_sources.iter_mut() {
-            source.fill_buffer(buffer);
-        }
     }
 }

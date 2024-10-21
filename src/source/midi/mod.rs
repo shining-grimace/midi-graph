@@ -74,14 +74,14 @@ impl<'a> Node for MidiSource<'a> {
     }
 
     fn on_event(&mut self, _event: &NodeEvent) {}
+
+    fn fill_buffer(&mut self, buffer: &mut [f32]) {
+        self.consumer.fill_buffer(buffer)
+    }
 }
 
 impl<'a> BufferConsumer for MidiSource<'a> {
     fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
         Err(Error::User("MidiSource cannot be duplicated".to_owned()))
-    }
-
-    fn fill_buffer(&mut self, buffer: &mut [f32]) {
-        self.consumer.fill_buffer(buffer)
     }
 }

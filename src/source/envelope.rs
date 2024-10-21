@@ -99,24 +99,6 @@ impl Node for Envelope {
         }
         self.consumer.on_event(event);
     }
-}
-
-impl BufferConsumer for Envelope {
-    fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
-        let consumer = self.consumer.duplicate()?;
-        let envelope = Self {
-            node_id: self.node_id,
-            attack_gradient: self.attack_gradient,
-            decay_gradient: self.decay_gradient,
-            sustain_multiplier: self.sustain_multiplier,
-            release_gradient: self.release_gradient,
-            consumer,
-            intermediate_buffer: vec![0.0; consts::BUFFER_SIZE * consts::CHANNEL_COUNT],
-            mode: EnvelopeMode::Attack,
-            samples_progress_in_mode: 0,
-        };
-        Ok(Box::new(envelope))
-    }
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) {
         let buffer_size = buffer.len();
@@ -204,5 +186,23 @@ impl BufferConsumer for Envelope {
             };
             samples_available -= samples_to_fill;
         }
+    }
+}
+
+impl BufferConsumer for Envelope {
+    fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
+        let consumer = self.consumer.duplicate()?;
+        let envelope = Self {
+            node_id: self.node_id,
+            attack_gradient: self.attack_gradient,
+            decay_gradient: self.decay_gradient,
+            sustain_multiplier: self.sustain_multiplier,
+            release_gradient: self.release_gradient,
+            consumer,
+            intermediate_buffer: vec![0.0; consts::BUFFER_SIZE * consts::CHANNEL_COUNT],
+            mode: EnvelopeMode::Attack,
+            samples_progress_in_mode: 0,
+        };
+        Ok(Box::new(envelope))
     }
 }

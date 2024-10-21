@@ -61,12 +61,6 @@ impl Node for SawtoothWaveSource {
             _ => {}
         }
     }
-}
-
-impl BufferConsumer for SawtoothWaveSource {
-    fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
-        Ok(Box::new(Self::new(Some(self.node_id), self.peak_amplitude)))
-    }
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) {
         if !self.is_on {
@@ -98,5 +92,11 @@ impl BufferConsumer for SawtoothWaveSource {
 
         self.cycle_progress_samples =
             stretched_progress * self.period_samples_a440 / pitch_period_samples;
+    }
+}
+
+impl BufferConsumer for SawtoothWaveSource {
+    fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
+        Ok(Box::new(Self::new(Some(self.node_id), self.peak_amplitude)))
     }
 }
