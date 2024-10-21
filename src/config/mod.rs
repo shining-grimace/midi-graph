@@ -33,6 +33,10 @@ const fn default_release() -> f32 {
     0.125
 }
 
+const fn default_balance() -> f32 {
+    0.5
+}
+
 #[derive(Deserialize)]
 pub struct Config {
     pub midi: MidiDataSource,
@@ -122,6 +126,20 @@ pub enum SoundSource {
         sustain_multiplier: f32,
         #[serde(default = "default_release")]
         release_time: f32,
+        source: Box<SoundSource>,
+    },
+    Mixer {
+        #[serde(default = "none_id")]
+        node_id: Option<u64>,
+        #[serde(default = "default_balance")]
+        balance: f32,
+        source_0: Box<SoundSource>,
+        source_1: Box<SoundSource>,
+    },
+    Fader {
+        #[serde(default = "none_id")]
+        node_id: Option<u64>,
+        initial_volume: f32,
         source: Box<SoundSource>,
     },
 }

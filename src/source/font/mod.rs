@@ -2,9 +2,9 @@ mod range;
 
 use crate::{
     util::{one_shot_from_file, soundfont_from_file, wav_from_file},
-    BufferConsumer, BufferConsumerNode, Envelope, Error, FontSource, LfsrNoiseSource, LoopRange,
-    Node, NodeEvent, NoteConsumer, NoteConsumerNode, NoteRange, SawtoothWaveSource, SoundSource,
-    SquareWaveSource, TriangleWaveSource,
+    BufferConsumer, BufferConsumerNode, Envelope, Error, Fader, FontSource, LfsrNoiseSource,
+    LoopRange, MixerSource, Node, NodeEvent, NoteConsumer, NoteConsumerNode, NoteRange,
+    SawtoothWaveSource, SoundSource, SquareWaveSource, TriangleWaveSource,
 };
 use range::RangeData;
 
@@ -134,6 +134,24 @@ impl SoundFont {
                     *release_time,
                     consumer,
                 ))
+            }
+            SoundSource::Mixer {
+                node_id,
+                balance,
+                source_0,
+                source_1,
+            } => {
+                let consumer_0 = Self::consumer_from_config(source_0)?;
+                let consumer_1 = Self::consumer_from_config(source_1)?;
+                Box::new(MixerSource::new(*node_id, *balance, consumer_0, consumer_1))
+            }
+            SoundSource::Fader {
+                node_id,
+                initial_volume,
+                source,
+            } => {
+                let consumer = Self::consumer_from_config(source)?;
+                Box::new(Fader::new(*node_id, *initial_volume, consumer))
             }
         };
         Ok(consumer)
