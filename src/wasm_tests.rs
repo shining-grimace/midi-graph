@@ -5,8 +5,8 @@ use wasm_bindgen_test::*;
 
 wasm_bindgen_test_configure!(run_in_browser);
 
-const MIDI_FILE: &[u8] = include_bytes!("../resources/dansenapolitaine.mid");
-const WAV_FILE: &[u8] = include_bytes!("../resources/snare.wav");
+const MIDI_FILE: &'static str = "resources/sample-in-c.mid";
+const WAV_FILE: &'static str = "resources/guitar-a2-48k-stereo.wav";
 
 #[wasm_bindgen_test]
 fn pass() {
@@ -15,6 +15,6 @@ fn pass() {
     assert!(smf.is_ok());
 
     // Test wav file
-    let wav = wav_from_bytes(WAV_FILE);
+    let wav = wav_from_bytes(WAV_FILE, 69, None, None);
     assert!(wav.is_ok());
 }
