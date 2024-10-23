@@ -1,12 +1,14 @@
-use crate::Error;
+use crate::{Error, MidiSourceBuilder};
 use midly::Smf;
 
-pub fn smf_from_file(file_name: &str) -> Result<Smf<'static>, Error> {
+pub fn midi_builder_from_file(file_name: &str) -> Result<MidiSourceBuilder, Error> {
     let bytes = std::fs::read(file_name)?;
-    smf_from_bytes(&bytes)
+    let midi_builder = midi_builder_from_bytes(&bytes)?;
+    Ok(midi_builder)
 }
 
-pub fn smf_from_bytes(bytes: &[u8]) -> Result<Smf<'static>, Error> {
-    let smf = Smf::parse(&bytes)?.to_static();
-    Ok(smf)
+pub fn midi_builder_from_bytes(bytes: &[u8]) -> Result<MidiSourceBuilder, Error> {
+    let smf = Smf::parse(&bytes)?;
+    let midi_builder = MidiSourceBuilder::new(smf);
+    Ok(midi_builder)
 }

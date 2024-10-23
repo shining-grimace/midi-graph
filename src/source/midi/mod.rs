@@ -3,8 +3,8 @@ pub mod track;
 pub mod util;
 
 use crate::{
-    util::smf_from_file, BufferConsumer, BufferConsumerNode, Config, Error, MidiChunkSource,
-    MidiDataSource, Node, NodeEvent, SoundFont,
+    util::midi_builder_from_file, BufferConsumer, BufferConsumerNode, Config, Error,
+    MidiChunkSource, MidiDataSource, Node, NodeEvent, SoundFont,
 };
 use midly::Smf;
 use std::collections::HashMap;
@@ -12,15 +12,29 @@ use std::collections::HashMap;
 #[cfg(debug_assertions)]
 use crate::source::log;
 
-pub struct MidiSourceBuilder<'a> {
-    smf: Smf<'a>,
+struct MidiTimeEvents;
+
+impl MidiTimeEvents {
+    fn from_smf<'a>(_smf: &Smf<'a>) -> Self {
+        Self
+    }
+}
+
+pub struct MidiSourceBuilder {
+    smf: Smf<'static>,
+    time_events: MidiTimeEvents,
     channel_fonts: HashMap<usize, SoundFont>,
 }
 
-impl<'a> MidiSourceBuilder<'a> {
-    pub fn new(smf: Smf<'a>) -> Self {
+impl MidiSourceBuilder {
+    /// Capture a non-static Smf, extracting MIDI event that contain text strings.
+    /// Do not call to_static() on the Smf object before passing it in here!
+    pub fn new<'a>(smf: Smf<'a>) -> Self {
+        let time_events = MidiTimeEvents::from_smf(&smf);
+        let static_smf = smf.to_static();
         Self {
-            smf,
+            smf: static_smf,
+            time_events,
             channel_fonts: HashMap::new(),
         }
     }
@@ -30,18 +44,18 @@ impl<'a> MidiSourceBuilder<'a> {
         self
     }
 
-    pub fn build(self) -> Result<MidiSource<'a>, Error> {
+    pub fn build(self) -> Result<MidiSource, Error> {
         MidiSource::new(self.smf, self.channel_fonts)
     }
 }
 
-pub struct MidiSource<'a> {
+pub struct MidiSource {
     node_id: u64,
-    consumer: Box<MidiChunkSource<'a>>,
+    consumer: Box<MidiChunkSource>,
 }
 
-impl<'a> MidiSource<'a> {
-    fn new(smf: Smf<'a>, channel_fonts: HashMap<usize, SoundFont>) -> Result<Self, Error> {
+impl MidiSource {
+    fn new(smf: Smf<'static>, channel_fonts: HashMap<usize, SoundFont>) -> Result<Self, Error> {
         #[cfg(debug_assertions)]
         log::log_loaded_midi(&smf);
 
@@ -54,21 +68,20 @@ impl<'a> MidiSource<'a> {
     }
 
     pub fn from_config(config: Config) -> Result<Self, Error> {
-        let smf = match config.midi {
-            MidiDataSource::FilePath(file) => smf_from_file(file.as_str())?,
+        let mut midi_builder = match config.midi {
+            MidiDataSource::FilePath(file) => midi_builder_from_file(file.as_str())?,
         };
-        let mut channel_sources = HashMap::new();
         for (channel, font_source) in config.channels.iter() {
             let soundfont = SoundFont::from_config(font_source)?;
-            channel_sources.insert(*channel, soundfont);
+            midi_builder = midi_builder.add_channel_font(*channel, soundfont);
         }
-        MidiSource::new(smf, channel_sources)
+        midi_builder.build()
     }
 }
 
-impl<'a> BufferConsumerNode for MidiSource<'a> {}
+impl BufferConsumerNode for MidiSource {}
 
-impl<'a> Node for MidiSource<'a> {
+impl Node for MidiSource {
     fn get_node_id(&self) -> u64 {
         self.node_id
     }
@@ -80,7 +93,7 @@ impl<'a> Node for MidiSource<'a> {
     }
 }
 
-impl<'a> BufferConsumer for MidiSource<'a> {
+impl BufferConsumer for MidiSource {
     fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
         Err(Error::User("MidiSource cannot be duplicated".to_owned()))
     }

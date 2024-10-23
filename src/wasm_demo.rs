@@ -1,4 +1,4 @@
-use crate::{util::smf_from_bytes, BaseMixer, MidiSource, SquareWaveSource};
+use crate::{util::midi_builder_from_bytes, BaseMixer, MidiSource, SquareWaveSource};
 use cpal::traits::StreamTrait;
 use std::time::Duration;
 use wasm_bindgen::prelude::*;
@@ -7,9 +7,12 @@ const MIDI_FILE: &'static [u8] = include_bytes!("../resources/dansenapolitaine.m
 
 #[wasm_bindgen]
 pub fn play_stream() {
-    let smf = smf_from_bytes(MIDI_FILE).unwrap();
-    let midi = MidiSource::new(smf, || Box::new(SquareWaveSource::default()));
-    let mixer = BaseMixer::from_source(midi);
+    let midi_source = midi_builder_from_bytes(MIDI_FILE)
+        .unwrap()
+        .add_channel_source(0, Box::new(SquareWaveSource::new(None, 0.25, 0.125)))
+        .build()
+        .unwrap();
+    let mixer = BaseMixer::from_source(midi_source);
     let stream = mixer.open_stream().expect("Could not open stream");
     stream.play().expect("Could not play the stream");
     std::thread::sleep(Duration::from_secs(5));

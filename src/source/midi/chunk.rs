@@ -4,13 +4,13 @@ use crate::{
 use midly::Smf;
 use std::{collections::HashMap, sync::Arc};
 
-pub struct MidiChunkSource<'a> {
+pub struct MidiChunkSource {
     node_id: u64,
-    channel_sources: HashMap<usize, Box<MidiTrackSource<'a>>>,
+    channel_sources: HashMap<usize, Box<MidiTrackSource>>,
 }
 
-impl<'a> MidiChunkSource<'a> {
-    pub fn new(smf: Smf<'a>, channel_fonts: HashMap<usize, SoundFont>) -> Result<Self, Error> {
+impl MidiChunkSource {
+    pub fn new(smf: Smf<'static>, channel_fonts: HashMap<usize, SoundFont>) -> Result<Self, Error> {
         let samples_per_tick = util::get_samples_per_tick(&smf)?;
         let track_index = util::choose_track_index(&smf)?;
         if smf.tracks.len() > track_index + 1 {
@@ -43,9 +43,9 @@ impl<'a> MidiChunkSource<'a> {
     }
 }
 
-impl<'a> BufferConsumerNode for MidiChunkSource<'a> {}
+impl BufferConsumerNode for MidiChunkSource {}
 
-impl<'a> Node for MidiChunkSource<'a> {
+impl Node for MidiChunkSource {
     fn get_node_id(&self) -> u64 {
         self.node_id
     }
@@ -59,7 +59,7 @@ impl<'a> Node for MidiChunkSource<'a> {
     }
 }
 
-impl<'a> BufferConsumer for MidiChunkSource<'a> {
+impl BufferConsumer for MidiChunkSource {
     fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
         Err(Error::User(
             "MIDI chunk source cannot be replicated".to_owned(),

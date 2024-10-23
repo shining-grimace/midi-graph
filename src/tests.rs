@@ -1,6 +1,6 @@
 use crate::{
-    util::{smf_from_file, wav_from_file},
-    BaseMixer, MidiSourceBuilder, NoteRange, SoundFontBuilder, SquareWaveSource,
+    util::{midi_builder_from_file, wav_from_file},
+    BaseMixer, NoteRange, SoundFontBuilder, SquareWaveSource,
 };
 use cpal::traits::StreamTrait;
 use std::time::Duration;
@@ -10,8 +10,8 @@ const WAV_FILE: &'static str = "resources/guitar-a2-48k-stereo.wav";
 
 #[test]
 fn can_decode_midi_file() {
-    let smf = smf_from_file(MIDI_FILE);
-    assert!(smf.is_ok());
+    let midi_builder = midi_builder_from_file(MIDI_FILE);
+    assert!(midi_builder.is_ok());
 }
 
 #[test]
@@ -22,8 +22,8 @@ fn can_decode_wav_file() {
 
 #[test]
 fn can_play_square_stream() {
-    let smf = smf_from_file(MIDI_FILE).unwrap();
-    let midi = MidiSourceBuilder::new(smf)
+    let midi = midi_builder_from_file(MIDI_FILE)
+        .unwrap()
         .add_channel_font(
             0,
             SoundFontBuilder::new()
@@ -51,9 +51,8 @@ fn can_play_square_stream() {
 
 #[test]
 fn can_play_wav_stream() {
-    let smf = smf_from_file(MIDI_FILE).unwrap();
-
-    let midi = MidiSourceBuilder::new(smf)
+    let midi = midi_builder_from_file(MIDI_FILE)
+        .unwrap()
         .add_channel_font(
             0,
             SoundFontBuilder::new()

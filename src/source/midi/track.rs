@@ -7,8 +7,8 @@ struct NodeEventOnChannel {
     event: NodeEvent,
 }
 
-pub struct MidiTrackSource<'a> {
-    smf: Arc<Smf<'a>>,
+pub struct MidiTrackSource {
+    smf: Arc<Smf<'static>>,
     track_no: usize,
     channel_no: usize,
     samples_per_tick: f64,
@@ -18,9 +18,9 @@ pub struct MidiTrackSource<'a> {
     consumer: Box<dyn Node + Send + 'static>,
 }
 
-impl<'a> MidiTrackSource<'a> {
+impl MidiTrackSource {
     pub fn new(
-        smf: Arc<Smf<'a>>,
+        smf: Arc<Smf<'static>>,
         track_no: usize,
         channel_no: usize,
         samples_per_tick: f64,

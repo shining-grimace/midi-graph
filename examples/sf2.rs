@@ -2,8 +2,8 @@ extern crate midi_graph;
 
 use cpal::traits::StreamTrait;
 use midi_graph::{
-    util::{smf_from_file, soundfont_from_file},
-    BaseMixer, MidiSourceBuilder,
+    util::{midi_builder_from_file, soundfont_from_file},
+    BaseMixer,
 };
 use std::time::Duration;
 
@@ -14,10 +14,10 @@ const SOUNDFONT_0_CHANNEL: usize = 0;
 const SOUNDFONT_1_CHANNEL: usize = 1;
 
 fn main() {
-    let smf = smf_from_file(MIDI_FILE).unwrap();
     let font_0 = soundfont_from_file(SF2_FILE, 0).unwrap();
     let font_1 = soundfont_from_file(SF2_FILE, 0).unwrap();
-    let midi = MidiSourceBuilder::new(smf)
+    let midi = midi_builder_from_file(MIDI_FILE)
+        .unwrap()
         .add_channel_font(SOUNDFONT_0_CHANNEL, font_0)
         .add_channel_font(SOUNDFONT_1_CHANNEL, font_1)
         .build()
