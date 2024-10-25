@@ -1,8 +1,9 @@
+pub mod cue;
 pub mod util;
 
 use crate::{
-    consts, util::midi_builder_from_file, BufferConsumer, BufferConsumerNode, Config, Error,
-    MidiDataSource, Node, NodeEvent, NoteEvent, SoundFont,
+    consts, BufferConsumer, BufferConsumerNode, Config, Error, MidiDataSource, Node, NodeEvent,
+    NoteEvent, SoundFont, TimelineCue,
 };
 use midly::{MidiMessage, Smf, TrackEvent, TrackEventKind};
 use std::cell::RefCell;
@@ -16,18 +17,10 @@ struct NodeEventOnChannel {
     event: NodeEvent,
 }
 
-struct MidiTimeEvents;
-
-impl MidiTimeEvents {
-    fn from_smf<'a>(_smf: &Smf<'a>) -> Self {
-        Self
-    }
-}
-
 pub struct MidiSourceBuilder {
     smf: Smf<'static>,
     track_no: usize,
-    time_events: MidiTimeEvents,
+    timeline_cues: Vec<(u64, TimelineCue)>,
     channel_fonts: HashMap<usize, SoundFont>,
 }
 
@@ -35,16 +28,16 @@ impl MidiSourceBuilder {
     /// Capture a non-static Smf, extracting MIDI event that contain text strings.
     /// Do not call to_static() on the Smf object before passing it in here!
     pub fn new<'a>(smf: Smf<'a>) -> Result<Self, Error> {
-        let time_events = MidiTimeEvents::from_smf(&smf);
-        let static_smf = smf.to_static();
         let track_no = util::choose_track_index(&smf)?;
+        let timeline_cues = TimelineCue::from_smf(&smf, track_no)?;
+        let static_smf = smf.to_static();
         if smf.tracks.len() > track_no + 1 {
             println!("WARNING: MIDI: Only the first track containing notes will be used");
         }
         Ok(Self {
             smf: static_smf,
             track_no,
-            time_events,
+            timeline_cues,
             channel_fonts: HashMap::new(),
         })
     }
@@ -55,7 +48,12 @@ impl MidiSourceBuilder {
     }
 
     pub fn build(self) -> Result<MidiSource, Error> {
-        MidiSource::new(self.smf, self.track_no, self.channel_fonts)
+        MidiSource::new(
+            self.smf,
+            self.track_no,
+            self.timeline_cues,
+            self.channel_fonts,
+        )
     }
 }
 
@@ -63,6 +61,7 @@ pub struct MidiSource {
     smf: RefCell<Smf<'static>>,
     node_id: u64,
     track_no: usize,
+    timeline_cues: Vec<(u64, TimelineCue)>,
     channel_sources: HashMap<usize, Box<dyn Node + Send + 'static>>,
     has_finished: bool,
     samples_per_tick: f64,
@@ -74,6 +73,7 @@ impl MidiSource {
     fn new(
         smf: Smf<'static>,
         track_no: usize,
+        timeline_cues: Vec<(u64, TimelineCue)>,
         channel_fonts: HashMap<usize, SoundFont>,
     ) -> Result<Self, Error> {
         #[cfg(debug_assertions)]
@@ -97,6 +97,7 @@ impl MidiSource {
             smf: RefCell::new(smf),
             node_id: <Self as Node>::new_node_id(),
             track_no,
+            timeline_cues,
             channel_sources,
             has_finished: false,
             samples_per_tick,
@@ -107,7 +108,7 @@ impl MidiSource {
 
     pub fn from_config(config: Config) -> Result<Self, Error> {
         let mut midi_builder = match config.midi {
-            MidiDataSource::FilePath(file) => midi_builder_from_file(file.as_str())?,
+            MidiDataSource::FilePath(file) => crate::util::midi_builder_from_file(file.as_str())?,
         };
         for (channel, font_source) in config.channels.iter() {
             let soundfont = SoundFont::from_config(font_source)?;

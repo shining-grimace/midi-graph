@@ -9,6 +9,6 @@ pub fn midi_builder_from_file(file_name: &str) -> Result<MidiSourceBuilder, Erro
 
 pub fn midi_builder_from_bytes(bytes: &[u8]) -> Result<MidiSourceBuilder, Error> {
     let smf = Smf::parse(&bytes)?;
-    let midi_builder = MidiSourceBuilder::new(smf);
-    midi_builder
+    let midi_builder = MidiSourceBuilder::new(smf)?;
+    Ok(midi_builder)
 }

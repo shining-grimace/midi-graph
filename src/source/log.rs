@@ -5,7 +5,7 @@ pub fn log_loaded_midi(smf: &Smf) {
     for track_events in smf.tracks.iter() {
         for event in track_events.iter() {
             if let Some(message) = get_log_for_event(event) {
-                println!("{}", message);
+                println!("MIDI: {}", message);
             }
         }
     }
@@ -61,7 +61,10 @@ fn get_log_for_event(event: &TrackEvent) -> Option<String> {
             MetaMessage::InstrumentName(_) => None,
             MetaMessage::Lyric(_) => None,
             MetaMessage::Marker(_) => None,
-            MetaMessage::CuePoint(_) => None,
+            MetaMessage::CuePoint(cue_point) => {
+                let string = std::str::from_utf8(cue_point).unwrap();
+                Some(format!("Cue point: {}", string))
+            }
             MetaMessage::ProgramName(_) => None,
             MetaMessage::DeviceName(_) => None,
             MetaMessage::MidiChannel(_) => None,

@@ -69,7 +69,6 @@ fn main() {
                 event: NoteEvent::NoteOff { vel: 0.0 },
             },
         );
-        println!("Sending fade event");
         send_or_log(
             &mut sender,
             &NodeEvent::Control {
