@@ -1,13 +1,12 @@
-pub mod chunk;
 pub mod track;
 pub mod util;
 
 use crate::{
     util::midi_builder_from_file, BufferConsumer, BufferConsumerNode, Config, Error,
-    MidiChunkSource, MidiDataSource, Node, NodeEvent, SoundFont,
+    MidiDataSource, MidiTrackSource, Node, NodeEvent, SoundFont,
 };
 use midly::Smf;
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 #[cfg(debug_assertions)]
 use crate::source::log;
@@ -51,7 +50,7 @@ impl MidiSourceBuilder {
 
 pub struct MidiSource {
     node_id: u64,
-    consumer: Box<MidiChunkSource>,
+    channel_sources: HashMap<usize, Box<MidiTrackSource>>,
 }
 
 impl MidiSource {
@@ -59,11 +58,35 @@ impl MidiSource {
         #[cfg(debug_assertions)]
         log::log_loaded_midi(&smf);
 
-        let consumer = MidiChunkSource::new(smf, channel_fonts)?;
+        let samples_per_tick = util::get_samples_per_tick(&smf)?;
+        let track_index = util::choose_track_index(&smf)?;
+        if smf.tracks.len() > track_index + 1 {
+            println!("WARNING: MIDI: Only the first track containing notes will be used");
+        }
+        let mut channel_sources = HashMap::new();
+        let smf_arc = Arc::new(smf);
+
+        for (channel, font) in channel_fonts.into_iter() {
+            let source = MidiTrackSource::new(
+                Arc::clone(&smf_arc),
+                track_index,
+                channel,
+                samples_per_tick,
+                Box::new(font),
+            );
+            channel_sources
+                .insert(channel, Box::new(source))
+                .and_then(|_| {
+                    println!(
+                        "WARNING: MIDI: Channel specified again will overwrite previous value"
+                    );
+                    Some(())
+                });
+        }
 
         Ok(Self {
             node_id: <Self as Node>::new_node_id(),
-            consumer: Box::new(consumer),
+            channel_sources,
         })
     }
 
@@ -89,7 +112,9 @@ impl Node for MidiSource {
     fn on_event(&mut self, _event: &NodeEvent) {}
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) {
-        self.consumer.fill_buffer(buffer)
+        for (_, source) in self.channel_sources.iter_mut() {
+            source.fill_buffer(buffer);
+        }
     }
 }
 
