@@ -20,7 +20,7 @@ struct NodeEventOnChannel {
 pub struct MidiSourceBuilder {
     smf: Smf<'static>,
     track_no: usize,
-    timeline_cues: Vec<(u64, TimelineCue)>,
+    timeline_cues: Vec<TimelineCue>,
     channel_fonts: HashMap<usize, SoundFont>,
 }
 
@@ -64,7 +64,7 @@ pub struct MidiSource {
     smf: RefCell<Smf<'static>>,
     node_id: u64,
     track_no: usize,
-    timeline_cues: Vec<(u64, TimelineCue)>,
+    timeline_cues: Vec<TimelineCue>,
     channel_sources: HashMap<usize, Box<dyn Node + Send + 'static>>,
     has_finished: bool,
     samples_per_tick: f64,
@@ -76,7 +76,7 @@ impl MidiSource {
     fn new(
         smf: Smf<'static>,
         track_no: usize,
-        timeline_cues: Vec<(u64, TimelineCue)>,
+        timeline_cues: Vec<TimelineCue>,
         channel_fonts: HashMap<usize, SoundFont>,
     ) -> Result<Self, Error> {
         let samples_per_tick = util::get_samples_per_tick(&smf)?;

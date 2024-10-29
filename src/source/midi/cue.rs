@@ -1,18 +1,23 @@
 use crate::Error;
 use midly::{MetaMessage, Smf, TrackEventKind};
 
-pub enum TimelineCue {
+#[derive(Copy, Clone, Debug)]
+pub struct TimelineCue {
+    pub event_index: usize,
+    pub cue: Cue,
+}
+
+#[derive(Copy, Clone, PartialEq, Debug)]
+pub enum Cue {
     Anchor(u32),
     IdealSeekPoint,
     Seek(u32),
 }
 
 impl TimelineCue {
-    pub fn from_smf<'a>(smf: &Smf<'a>, track_index: usize) -> Result<Vec<(u64, Self)>, Error> {
-        let mut total_delta: u64 = 0;
+    pub fn from_smf<'a>(smf: &Smf<'a>, track_index: usize) -> Result<Vec<Self>, Error> {
         let mut cues = vec![];
-        for event in smf.tracks[track_index].iter() {
-            total_delta += u32::from(event.delta) as u64;
+        for (event_index, event) in smf.tracks[track_index].iter().enumerate() {
             match event.kind {
                 TrackEventKind::Meta(MetaMessage::CuePoint(label)) => {
                     let string = std::str::from_utf8(label).or_else(|_| {
@@ -45,7 +50,10 @@ impl TimelineCue {
                                                 "Failed parsing anchor index".to_owned(),
                                             ))
                                         })?;
-                                    cues.push((total_delta, TimelineCue::Anchor(*anchor_index)));
+                                    cues.push(TimelineCue {
+                                        event_index,
+                                        cue: Cue::Anchor(*anchor_index),
+                                    });
                                 }
                                 index = end_index;
                             }
@@ -68,12 +76,18 @@ impl TimelineCue {
                                         &string[start_index..end_index].parse().or_else(|_| {
                                             Err(Error::User("Failed parsing seek index".to_owned()))
                                         })?;
-                                    cues.push((total_delta, TimelineCue::Seek(*anchor_index)));
+                                    cues.push(TimelineCue {
+                                        event_index,
+                                        cue: Cue::Seek(*anchor_index),
+                                    });
                                 }
                                 index = end_index;
                             }
                             Some('?') => {
-                                cues.push((total_delta, TimelineCue::IdealSeekPoint));
+                                cues.push(TimelineCue {
+                                    event_index,
+                                    cue: Cue::IdealSeekPoint,
+                                });
                                 index += 1;
                             }
                             _ => {
