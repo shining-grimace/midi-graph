@@ -25,7 +25,8 @@ impl TimelineCue {
                     while index < length {
                         match string.chars().nth(index) {
                             Some('#') => {
-                                let mut end_index = index + 1;
+                                let start_index = index + 1;
+                                let mut end_index = start_index;
                                 while end_index < length {
                                     if let Some(ch) = string.chars().nth(end_index) {
                                         if ch.is_numeric() {
@@ -35,11 +36,11 @@ impl TimelineCue {
                                     }
                                     break;
                                 }
-                                if end_index == index + 1 {
+                                if end_index == start_index {
                                     println!("WARNING: MIDI: Cannot parse anchor label");
                                 } else {
                                     let anchor_index =
-                                        &string[index..end_index].parse().or_else(|_| {
+                                        &string[start_index..end_index].parse().or_else(|_| {
                                             Err(Error::User(
                                                 "Failed parsing anchor index".to_owned(),
                                             ))
@@ -49,7 +50,8 @@ impl TimelineCue {
                                 index = end_index;
                             }
                             Some('>') => {
-                                let mut end_index = index + 1;
+                                let start_index = index + 1;
+                                let mut end_index = start_index;
                                 while end_index < length {
                                     if let Some(ch) = string.chars().nth(end_index) {
                                         if ch.is_numeric() {
@@ -59,11 +61,11 @@ impl TimelineCue {
                                     }
                                     break;
                                 }
-                                if end_index == index + 1 {
+                                if end_index == start_index {
                                     println!("WARNING: MIDI: Cannot parse seek label");
                                 } else {
                                     let anchor_index =
-                                        &string[index..end_index].parse().or_else(|_| {
+                                        &string[start_index..end_index].parse().or_else(|_| {
                                             Err(Error::User("Failed parsing seek index".to_owned()))
                                         })?;
                                     cues.push((total_delta, TimelineCue::Seek(*anchor_index)));

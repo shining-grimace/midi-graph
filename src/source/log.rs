@@ -63,7 +63,7 @@ fn get_log_for_event(event: &TrackEvent) -> Option<String> {
             MetaMessage::Marker(_) => None,
             MetaMessage::CuePoint(cue_point) => {
                 let string = std::str::from_utf8(cue_point).unwrap();
-                Some(format!("Cue point: {}", string))
+                Some(format!("Cue label: {}", string))
             }
             MetaMessage::ProgramName(_) => None,
             MetaMessage::DeviceName(_) => None,

@@ -28,6 +28,9 @@ impl MidiSourceBuilder {
     /// Capture a non-static Smf, extracting MIDI event that contain text strings.
     /// Do not call to_static() on the Smf object before passing it in here!
     pub fn new<'a>(smf: Smf<'a>) -> Result<Self, Error> {
+        #[cfg(debug_assertions)]
+        log::log_loaded_midi(&smf);
+
         let track_no = util::choose_track_index(&smf)?;
         let timeline_cues = TimelineCue::from_smf(&smf, track_no)?;
         let static_smf = smf.to_static();
@@ -76,9 +79,6 @@ impl MidiSource {
         timeline_cues: Vec<(u64, TimelineCue)>,
         channel_fonts: HashMap<usize, SoundFont>,
     ) -> Result<Self, Error> {
-        #[cfg(debug_assertions)]
-        log::log_loaded_midi(&smf);
-
         let samples_per_tick = util::get_samples_per_tick(&smf)?;
         let mut channel_sources: HashMap<usize, Box<dyn Node + Send + 'static>> = HashMap::new();
 
@@ -218,7 +218,11 @@ impl Node for MidiSource {
         self.node_id
     }
 
-    fn on_event(&mut self, _event: &NodeEvent) {}
+    fn on_event(&mut self, event: &NodeEvent) {
+        for (_, source) in self.channel_sources.iter_mut() {
+            source.on_event(event);
+        }
+    }
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) {
         self.fill_all_channels(buffer);

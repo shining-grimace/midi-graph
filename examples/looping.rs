@@ -10,8 +10,8 @@ use std::{collections::HashMap, thread::sleep, time::Duration};
 
 const MIDI_FILE: &'static str = "resources/LoopingMidi.mid";
 
-const NOISE_CHANNEL: usize = 1;
-const LEAD_CHANNEL: usize = 2;
+const NOISE_CHANNEL: usize = 0;
+const LEAD_CHANNEL: usize = 1;
 
 const FADER_NODE_ID: u64 = 100;
 
@@ -68,7 +68,7 @@ fn main() {
             },
         );
     });
-    sleep(Duration::from_secs(5));
+    sleep(Duration::from_secs(20));
     stream.pause().expect("Could not pause the stream");
 }
 
