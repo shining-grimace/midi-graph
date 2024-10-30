@@ -2,19 +2,25 @@ pub mod cue;
 pub mod util;
 
 use crate::{
-    consts, BufferConsumer, BufferConsumerNode, Config, Error, MidiDataSource, Node, NodeEvent,
-    NoteEvent, SoundFont, TimelineCue,
+    consts, BroadcastControl, BufferConsumer, BufferConsumerNode, Config, Cue, Error,
+    MidiDataSource, Node, NodeEvent, NoteEvent, SoundFont, TimelineCue,
 };
-use midly::{MidiMessage, Smf, TrackEvent, TrackEventKind};
+use midly::{MetaMessage, MidiMessage, Smf, TrackEvent, TrackEventKind};
 use std::cell::RefCell;
 use std::collections::HashMap;
 
 #[cfg(debug_assertions)]
 use crate::source::log;
 
-struct NodeEventOnChannel {
-    channel: usize,
-    event: NodeEvent,
+enum EventAction {
+    ChannelNodeEvent {
+        channel: usize,
+        event: NodeEvent,
+    },
+    LoopCue {
+        is_ideal_point: bool,
+        seek_anchor: Option<u32>,
+    },
 }
 
 pub struct MidiSourceBuilder {
@@ -117,24 +123,56 @@ impl MidiSource {
         midi_builder.build()
     }
 
-    fn on_event_reached(&mut self, event: &Option<NodeEventOnChannel>) {
+    fn on_event_reached(&mut self, event: &Option<EventAction>) {
         match event {
             None => {}
-            Some(e) => {
-                let Some(source) = self.channel_sources.get_mut(&e.channel) else {
+            Some(EventAction::ChannelNodeEvent { channel, event }) => {
+                let Some(source) = self.channel_sources.get_mut(channel) else {
                     return;
                 };
-                source.on_event(&e.event);
+                source.on_event(event);
+            }
+            Some(EventAction::LoopCue {
+                is_ideal_point,
+                seek_anchor,
+            }) => {
+                if let Some(anchor) = seek_anchor {
+                    if let Some(index) = self.timeline_cues.iter().find_map(|c| match c {
+                        TimelineCue {
+                            event_index,
+                            cue: Cue::Anchor(a),
+                        } => match *a == *anchor {
+                            true => Some(*event_index),
+                            false => None,
+                        },
+                        _ => None,
+                    }) {
+                        self.event_ticks_progress = 0;
+                        self.next_event_index = index + 1;
+                        let broadcast_cutoff = NodeEvent::Broadcast(BroadcastControl::NotesOff);
+                        for (_, source) in self.channel_sources.iter_mut() {
+                            source.on_event(&broadcast_cutoff);
+                        }
+                    };
+                    return;
+                }
+                if *is_ideal_point {
+                    println!("WARNING: MIDI: Ideal cue point '?' not yet implemented");
+                }
             }
         }
     }
 
-    fn note_event_from_midi_event(event: &TrackEvent) -> Option<NodeEventOnChannel> {
+    fn note_event_from_midi_event(
+        &self,
+        at_track_index: usize,
+        event: &TrackEvent,
+    ) -> Option<EventAction> {
         match event.kind {
             TrackEventKind::Midi {
                 channel,
                 message: MidiMessage::NoteOn { key, vel },
-            } => Some(NodeEventOnChannel {
+            } => Some(EventAction::ChannelNodeEvent {
                 channel: u8::from(channel) as usize,
                 event: NodeEvent::Note {
                     note: u8::from(key),
@@ -146,7 +184,7 @@ impl MidiSource {
             TrackEventKind::Midi {
                 channel,
                 message: MidiMessage::NoteOff { key, vel },
-            } => Some(NodeEventOnChannel {
+            } => Some(EventAction::ChannelNodeEvent {
                 channel: u8::from(channel) as usize,
                 event: NodeEvent::Note {
                     note: u8::from(key),
@@ -155,6 +193,32 @@ impl MidiSource {
                     },
                 },
             }),
+            TrackEventKind::Meta(MetaMessage::CuePoint(_)) => {
+                let is_ideal_point = self.timeline_cues.iter().any(|c| match c {
+                    TimelineCue {
+                        event_index,
+                        cue: Cue::IdealSeekPoint,
+                    } => *event_index == at_track_index,
+                    _ => false,
+                });
+                let seek_anchor = self.timeline_cues.iter().find_map(|c| match c {
+                    TimelineCue {
+                        event_index,
+                        cue: Cue::Seek(anchor),
+                    } => match *event_index == at_track_index {
+                        true => Some(*anchor),
+                        false => None,
+                    },
+                    _ => None,
+                });
+                match is_ideal_point || seek_anchor.is_some() {
+                    true => Some(EventAction::LoopCue {
+                        is_ideal_point,
+                        seek_anchor,
+                    }),
+                    false => None,
+                }
+            }
             _ => None,
         }
     }
@@ -204,7 +268,7 @@ impl MidiSource {
                     return;
                 }
 
-                Self::note_event_from_midi_event(next_event)
+                self.note_event_from_midi_event(self.next_event_index - 1, next_event)
             };
             self.on_event_reached(&reached_note_event);
         }

@@ -24,7 +24,10 @@ pub use source::{
     envelope::Envelope,
     fader::Fader,
     font::{SoundFont, SoundFontBuilder},
-    midi::{cue::TimelineCue, MidiSource, MidiSourceBuilder},
+    midi::{
+        cue::{Cue, TimelineCue},
+        MidiSource, MidiSourceBuilder,
+    },
     mixer::MixerSource,
     noise::LfsrNoiseSource,
     one_shot::OneShotSource,
