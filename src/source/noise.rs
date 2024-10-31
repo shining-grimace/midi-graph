@@ -1,6 +1,6 @@
 use crate::{
-    consts, util, BufferConsumer, BufferConsumerNode, ControlEvent, Error, Node, NodeEvent,
-    NoteEvent,
+    consts, util, BroadcastControl, BufferConsumer, BufferConsumerNode, Error, Node,
+    NodeControlEvent, NodeEvent, NoteEvent,
 };
 
 pub struct LfsrNoiseSource {
@@ -72,6 +72,9 @@ impl Node for LfsrNoiseSource {
 
     fn on_event(&mut self, event: &NodeEvent) {
         match event {
+            NodeEvent::Broadcast(BroadcastControl::NotesOff) => {
+                self.is_on = false;
+            }
             NodeEvent::Note { note, event } => match event {
                 NoteEvent::NoteOn { vel } => {
                     self.is_on = true;
@@ -85,16 +88,19 @@ impl Node for LfsrNoiseSource {
                     self.is_on = false;
                 }
             },
-            NodeEvent::Control {
+            NodeEvent::NodeControl {
                 node_id,
-                event: ControlEvent::Volume(volume),
+                event: NodeControlEvent::Volume(volume),
             } => {
                 if *node_id != self.node_id {
                     return;
                 }
                 self.peak_amplitude = *volume;
             }
-            _ => {}
+            NodeEvent::NodeControl {
+                node_id: _,
+                event: _,
+            } => {}
         }
     }
 

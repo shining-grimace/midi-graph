@@ -75,8 +75,20 @@ impl NoteRange {
 
 #[derive(Clone, Debug)]
 pub enum NodeEvent {
-    Note { note: u8, event: NoteEvent },
-    Control { node_id: u64, event: ControlEvent },
+    Broadcast(BroadcastControl),
+    Note {
+        note: u8,
+        event: NoteEvent,
+    },
+    NodeControl {
+        node_id: u64,
+        event: NodeControlEvent,
+    },
+}
+
+#[derive(PartialEq, Copy, Clone, Debug)]
+pub enum BroadcastControl {
+    NotesOff,
 }
 
 #[derive(PartialEq, Copy, Clone, Debug)]
@@ -86,7 +98,7 @@ pub enum NoteEvent {
 }
 
 #[derive(Clone, Debug)]
-pub enum ControlEvent {
+pub enum NodeControlEvent {
     MixerBalance(f32),
     Volume(f32),
     Fade { from: f32, to: f32, seconds: f32 },

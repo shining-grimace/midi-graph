@@ -1,5 +1,6 @@
 use crate::{
-    consts, BufferConsumer, BufferConsumerNode, ControlEvent, Error, Node, NodeEvent, NoteEvent,
+    consts, BroadcastControl, BufferConsumer, BufferConsumerNode, Error, Node, NodeControlEvent,
+    NodeEvent, NoteEvent,
 };
 use hound::{SampleFormat, WavSpec};
 use soundfont::data::{sample::SampleLink, SampleHeader};
@@ -105,6 +106,9 @@ impl Node for OneShotSource {
 
     fn on_event(&mut self, event: &NodeEvent) {
         match event {
+            NodeEvent::Broadcast(BroadcastControl::NotesOff) => {
+                self.data_position = self.source_data.len();
+            }
             NodeEvent::Note { note: _, event } => match event {
                 NoteEvent::NoteOn { vel: _ } => {
                     self.data_position = 0;
@@ -113,16 +117,19 @@ impl Node for OneShotSource {
                     self.data_position = self.source_data.len();
                 }
             },
-            NodeEvent::Control {
+            NodeEvent::NodeControl {
                 node_id,
-                event: ControlEvent::Volume(volume),
+                event: NodeControlEvent::Volume(volume),
             } => {
                 if *node_id != self.node_id {
                     return;
                 }
                 self.volume = *volume;
             }
-            _ => {}
+            NodeEvent::NodeControl {
+                node_id: _,
+                event: _,
+            } => {}
         }
     }
 

@@ -1,4 +1,4 @@
-use crate::{consts, BufferConsumer, BufferConsumerNode, ControlEvent, Error, Node, NodeEvent};
+use crate::{consts, BufferConsumer, BufferConsumerNode, Error, Node, NodeControlEvent, NodeEvent};
 
 pub struct Fader {
     node_id: u64,
@@ -37,9 +37,9 @@ impl Node for Fader {
 
     fn on_event(&mut self, event: &NodeEvent) {
         match event {
-            NodeEvent::Control {
+            NodeEvent::NodeControl {
                 node_id,
-                event: ControlEvent::Fade { from, to, seconds },
+                event: NodeControlEvent::Fade { from, to, seconds },
             } => {
                 if *node_id == self.node_id {
                     self.from_volume = *from;

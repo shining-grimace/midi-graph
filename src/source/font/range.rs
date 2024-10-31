@@ -55,11 +55,16 @@ impl Node for RangeData {
 
     fn on_event(&mut self, event: &NodeEvent) {
         match event {
+            NodeEvent::Broadcast(_) => {
+                for source in self.consumers.iter_mut() {
+                    source.on_event(event);
+                }
+            }
             NodeEvent::Note { note, event } => match event {
                 NoteEvent::NoteOn { vel } => self.turn_note_on(*note, *vel),
                 NoteEvent::NoteOff { vel } => self.turn_note_off(*note, *vel),
             },
-            NodeEvent::Control { .. } => {
+            NodeEvent::NodeControl { .. } => {
                 for consumer in self.consumers.iter_mut() {
                     consumer.on_event(event);
                 }

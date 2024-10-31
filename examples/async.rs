@@ -3,7 +3,7 @@ extern crate midi_graph;
 use cpal::traits::StreamTrait;
 use crossbeam_channel::Sender;
 use midi_graph::{
-    AsyncEventReceiver, BaseMixer, ControlEvent, Fader, MixerSource, NodeEvent, NoteEvent,
+    AsyncEventReceiver, BaseMixer, Fader, MixerSource, NodeControlEvent, NodeEvent, NoteEvent,
     NoteRange, SawtoothWaveSource, SoundFontBuilder, SquareWaveSource, TriangleWaveSource,
 };
 use std::{thread::sleep, time::Duration};
@@ -47,17 +47,17 @@ fn main() {
             sleep(Duration::from_millis(100));
             send_or_log(
                 &mut sender,
-                &NodeEvent::Control {
+                &NodeEvent::NodeControl {
                     node_id: MIXER_NODE_ID,
-                    event: ControlEvent::MixerBalance(0.625),
+                    event: NodeControlEvent::MixerBalance(0.625),
                 },
             );
             sleep(Duration::from_millis(100));
             send_or_log(
                 &mut sender,
-                &NodeEvent::Control {
+                &NodeEvent::NodeControl {
                     node_id: MIXER_NODE_ID,
-                    event: ControlEvent::MixerBalance(0.375),
+                    event: NodeControlEvent::MixerBalance(0.375),
                 },
             );
         }
@@ -71,9 +71,9 @@ fn main() {
         );
         send_or_log(
             &mut sender,
-            &NodeEvent::Control {
+            &NodeEvent::NodeControl {
                 node_id: FADER_NODE_ID,
-                event: ControlEvent::Fade {
+                event: NodeControlEvent::Fade {
                     from: 0.0,
                     to: 1.0,
                     seconds: 1.0,

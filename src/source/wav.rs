@@ -1,5 +1,5 @@
 use crate::{
-    consts, util, BufferConsumer, BufferConsumerNode, ControlEvent, Error, LoopRange, Node,
+    consts, util, BufferConsumer, BufferConsumerNode, Error, LoopRange, Node, NodeControlEvent,
     NodeEvent, NoteEvent,
 };
 use hound::{SampleFormat, WavSpec};
@@ -204,9 +204,9 @@ impl Node for WavSource {
                     self.is_on = false;
                 }
             },
-            NodeEvent::Control {
+            NodeEvent::NodeControl {
                 node_id,
-                event: ControlEvent::Volume(volume),
+                event: NodeControlEvent::Volume(volume),
             } => {
                 if *node_id != self.node_id {
                     return;
