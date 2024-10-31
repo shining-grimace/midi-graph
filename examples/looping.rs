@@ -3,7 +3,7 @@ extern crate midi_graph;
 use cpal::traits::StreamTrait;
 use crossbeam_channel::Sender;
 use midi_graph::{
-    AsyncEventReceiver, BaseMixer, Config, FontSource, MidiDataSource, MidiSource,
+    AsyncEventReceiver, BaseMixer, Config, FontSource, MidiData, MidiDataSource, MidiSource,
     NodeControlEvent, NodeEvent, RangeSource, SoundSource,
 };
 use std::{collections::HashMap, thread::sleep, time::Duration};
@@ -13,11 +13,15 @@ const MIDI_FILE: &'static str = "resources/LoopingMidi.mid";
 const NOISE_CHANNEL: usize = 0;
 const LEAD_CHANNEL: usize = 1;
 
-const FADER_NODE_ID: u64 = 100;
+const MIDI_NODE_ID: u64 = 100;
+const FADER_NODE_ID: u64 = 101;
 
 fn main() {
     let config = Config {
-        midi: MidiDataSource::FilePath(MIDI_FILE.to_owned()),
+        midi: MidiData {
+            node_id: Some(MIDI_NODE_ID),
+            source: MidiDataSource::FilePath(MIDI_FILE.to_owned()),
+        },
         channels: HashMap::from([
             (
                 NOISE_CHANNEL,
@@ -67,8 +71,16 @@ fn main() {
                 },
             },
         );
+        sleep(Duration::from_secs(12));
+        send_or_log(
+            &mut sender,
+            &NodeEvent::NodeControl {
+                node_id: MIDI_NODE_ID,
+                event: NodeControlEvent::SeekWhenIdeal { to_anchor: Some(1) },
+            },
+        );
     });
-    sleep(Duration::from_secs(20));
+    sleep(Duration::from_secs(30));
     stream.pause().expect("Could not pause the stream");
 }
 

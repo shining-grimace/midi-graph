@@ -16,7 +16,7 @@ const SOUNDFONT_1_CHANNEL: usize = 1;
 fn main() {
     let font_0 = soundfont_from_file(SF2_FILE, 0).unwrap();
     let font_1 = soundfont_from_file(SF2_FILE, 0).unwrap();
-    let midi = midi_builder_from_file(MIDI_FILE)
+    let midi = midi_builder_from_file(None, MIDI_FILE)
         .unwrap()
         .add_channel_font(SOUNDFONT_0_CHANNEL, font_0)
         .add_channel_font(SOUNDFONT_1_CHANNEL, font_1)

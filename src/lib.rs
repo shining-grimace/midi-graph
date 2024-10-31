@@ -16,7 +16,7 @@ mod file;
 mod mix;
 mod source;
 
-pub use config::{Config, FontSource, Loop, MidiDataSource, RangeSource, SoundSource};
+pub use config::{Config, FontSource, Loop, MidiData, MidiDataSource, RangeSource, SoundSource};
 pub use error::Error;
 pub use mix::base::BaseMixer;
 pub use source::{

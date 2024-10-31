@@ -11,7 +11,7 @@ const WAV_FILE: &'static str = "resources/guitar-a2-48k-stereo.wav";
 #[wasm_bindgen_test]
 fn pass() {
     // Test MIDI file
-    let midi_builder = midi_builder_from_bytes(MIDI_FILE);
+    let midi_builder = midi_builder_from_bytes(None, MIDI_FILE);
     assert!(midi_builder.is_ok());
 
     // Test wav file

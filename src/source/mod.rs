@@ -102,6 +102,7 @@ pub enum NodeControlEvent {
     MixerBalance(f32),
     Volume(f32),
     Fade { from: f32, to: f32, seconds: f32 },
+    SeekWhenIdeal { to_anchor: Option<u32> },
     Unknown,
 }
 

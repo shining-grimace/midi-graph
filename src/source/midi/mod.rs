@@ -3,7 +3,7 @@ pub mod util;
 
 use crate::{
     consts, BroadcastControl, BufferConsumer, BufferConsumerNode, Config, Cue, Error,
-    MidiDataSource, Node, NodeEvent, NoteEvent, SoundFont, TimelineCue,
+    MidiDataSource, Node, NodeControlEvent, NodeEvent, NoteEvent, SoundFont, TimelineCue,
 };
 use midly::{MetaMessage, MidiMessage, Smf, TrackEvent, TrackEventKind};
 use std::cell::RefCell;
@@ -24,6 +24,7 @@ enum EventAction {
 }
 
 pub struct MidiSourceBuilder {
+    node_id: Option<u64>,
     smf: Smf<'static>,
     track_no: usize,
     timeline_cues: Vec<TimelineCue>,
@@ -33,7 +34,7 @@ pub struct MidiSourceBuilder {
 impl MidiSourceBuilder {
     /// Capture a non-static Smf, extracting MIDI event that contain text strings.
     /// Do not call to_static() on the Smf object before passing it in here!
-    pub fn new<'a>(smf: Smf<'a>) -> Result<Self, Error> {
+    pub fn new<'a>(node_id: Option<u64>, smf: Smf<'a>) -> Result<Self, Error> {
         #[cfg(debug_assertions)]
         log::log_loaded_midi(&smf);
 
@@ -44,6 +45,7 @@ impl MidiSourceBuilder {
             println!("WARNING: MIDI: Only the first track containing notes will be used");
         }
         Ok(Self {
+            node_id,
             smf: static_smf,
             track_no,
             timeline_cues,
@@ -58,6 +60,7 @@ impl MidiSourceBuilder {
 
     pub fn build(self) -> Result<MidiSource, Error> {
         MidiSource::new(
+            self.node_id,
             self.smf,
             self.track_no,
             self.timeline_cues,
@@ -71,6 +74,7 @@ pub struct MidiSource {
     node_id: u64,
     track_no: usize,
     timeline_cues: Vec<TimelineCue>,
+    queued_ideal_seek: Option<u32>,
     channel_sources: HashMap<usize, Box<dyn Node + Send + 'static>>,
     has_finished: bool,
     samples_per_tick: f64,
@@ -80,6 +84,7 @@ pub struct MidiSource {
 
 impl MidiSource {
     fn new(
+        node_id: Option<u64>,
         smf: Smf<'static>,
         track_no: usize,
         timeline_cues: Vec<TimelineCue>,
@@ -101,9 +106,10 @@ impl MidiSource {
 
         Ok(Self {
             smf: RefCell::new(smf),
-            node_id: <Self as Node>::new_node_id(),
+            node_id: node_id.unwrap_or_else(|| <Self as Node>::new_node_id()),
             track_no,
             timeline_cues,
+            queued_ideal_seek: None,
             channel_sources,
             has_finished: false,
             samples_per_tick,
@@ -113,14 +119,36 @@ impl MidiSource {
     }
 
     pub fn from_config(config: Config) -> Result<Self, Error> {
-        let mut midi_builder = match config.midi {
-            MidiDataSource::FilePath(file) => crate::util::midi_builder_from_file(file.as_str())?,
+        let mut midi_builder = match config.midi.source {
+            MidiDataSource::FilePath(file) => {
+                crate::util::midi_builder_from_file(config.midi.node_id, file.as_str())?
+            }
         };
         for (channel, font_source) in config.channels.iter() {
             let soundfont = SoundFont::from_config(font_source)?;
             midi_builder = midi_builder.add_channel_font(*channel, soundfont);
         }
         midi_builder.build()
+    }
+
+    fn seek_to_anchor(&mut self, anchor: u32) {
+        if let Some(index) = self.timeline_cues.iter().find_map(|c| match c {
+            TimelineCue {
+                event_index,
+                cue: Cue::Anchor(a),
+            } => match *a == anchor {
+                true => Some(*event_index),
+                false => None,
+            },
+            _ => None,
+        }) {
+            self.event_ticks_progress = 0;
+            self.next_event_index = index + 1;
+            let broadcast_cutoff = NodeEvent::Broadcast(BroadcastControl::NotesOff);
+            for (_, source) in self.channel_sources.iter_mut() {
+                source.on_event(&broadcast_cutoff);
+            }
+        };
     }
 
     fn on_event_reached(&mut self, event: &Option<EventAction>) {
@@ -137,27 +165,13 @@ impl MidiSource {
                 seek_anchor,
             }) => {
                 if let Some(anchor) = seek_anchor {
-                    if let Some(index) = self.timeline_cues.iter().find_map(|c| match c {
-                        TimelineCue {
-                            event_index,
-                            cue: Cue::Anchor(a),
-                        } => match *a == *anchor {
-                            true => Some(*event_index),
-                            false => None,
-                        },
-                        _ => None,
-                    }) {
-                        self.event_ticks_progress = 0;
-                        self.next_event_index = index + 1;
-                        let broadcast_cutoff = NodeEvent::Broadcast(BroadcastControl::NotesOff);
-                        for (_, source) in self.channel_sources.iter_mut() {
-                            source.on_event(&broadcast_cutoff);
-                        }
-                    };
+                    self.seek_to_anchor(*anchor);
                     return;
                 }
                 if *is_ideal_point {
-                    println!("WARNING: MIDI: Ideal cue point '?' not yet implemented");
+                    if let Some(anchor) = self.queued_ideal_seek {
+                        self.seek_to_anchor(anchor);
+                    }
                 }
             }
         }
@@ -283,6 +297,18 @@ impl Node for MidiSource {
     }
 
     fn on_event(&mut self, event: &NodeEvent) {
+        match event {
+            NodeEvent::NodeControl {
+                node_id,
+                event: NodeControlEvent::SeekWhenIdeal { to_anchor },
+            } => {
+                if *node_id == self.node_id {
+                    self.queued_ideal_seek = *to_anchor;
+                    return;
+                }
+            }
+            _ => {}
+        }
         for (_, source) in self.channel_sources.iter_mut() {
             source.on_event(event);
         }

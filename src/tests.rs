@@ -10,7 +10,7 @@ const WAV_FILE: &'static str = "resources/guitar-a2-48k-stereo.wav";
 
 #[test]
 fn can_decode_midi_file() {
-    let midi_builder = midi_builder_from_file(MIDI_FILE);
+    let midi_builder = midi_builder_from_file(None, MIDI_FILE);
     assert!(midi_builder.is_ok());
 }
 
@@ -22,7 +22,7 @@ fn can_decode_wav_file() {
 
 #[test]
 fn can_play_square_stream() {
-    let midi = midi_builder_from_file(MIDI_FILE)
+    let midi = midi_builder_from_file(None, MIDI_FILE)
         .unwrap()
         .add_channel_font(
             0,
@@ -51,7 +51,7 @@ fn can_play_square_stream() {
 
 #[test]
 fn can_play_wav_stream() {
-    let midi = midi_builder_from_file(MIDI_FILE)
+    let midi = midi_builder_from_file(None, MIDI_FILE)
         .unwrap()
         .add_channel_font(
             0,

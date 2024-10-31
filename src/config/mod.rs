@@ -39,8 +39,15 @@ const fn default_balance() -> f32 {
 
 #[derive(Deserialize)]
 pub struct Config {
-    pub midi: MidiDataSource,
+    pub midi: MidiData,
     pub channels: HashMap<usize, FontSource>,
+}
+
+#[derive(Deserialize)]
+pub struct MidiData {
+    #[serde(default = "none_id")]
+    pub node_id: Option<u64>,
+    pub source: MidiDataSource,
 }
 
 #[derive(Deserialize)]

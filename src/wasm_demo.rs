@@ -7,7 +7,7 @@ const MIDI_FILE: &'static [u8] = include_bytes!("../resources/dansenapolitaine.m
 
 #[wasm_bindgen]
 pub fn play_stream() {
-    let midi_source = midi_builder_from_bytes(MIDI_FILE)
+    let midi_source = midi_builder_from_bytes(None, MIDI_FILE)
         .unwrap()
         .add_channel_source(0, Box::new(SquareWaveSource::new(None, 0.25, 0.125)))
         .build()

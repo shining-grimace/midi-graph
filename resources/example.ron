@@ -1,5 +1,5 @@
 (
-    midi: FilePath("resources/sample-in-c.mid"),
+    midi: MidiData( source: FilePath("resources/sample-in-c.mid")),
     channels: {
         0: Ranges([
             ( lower: 0, upper: 50, source: Envelope(

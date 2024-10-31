@@ -43,7 +43,7 @@ fn main() {
         )
         .unwrap()
         .build();
-    let midi = midi_builder_from_file(MIDI_FILE)
+    let midi = midi_builder_from_file(None, MIDI_FILE)
         .unwrap()
         .add_channel_font(TRIANGLE_CHANNEL, triangle_font)
         .add_channel_font(SQUARE_CHANNEL, square_font)
