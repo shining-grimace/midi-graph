@@ -5,6 +5,7 @@ pub mod font;
 pub mod midi;
 pub mod mixer;
 pub mod noise;
+pub mod null;
 pub mod one_shot;
 pub mod sawtooth;
 pub mod square;

@@ -30,6 +30,7 @@ pub use source::{
     },
     mixer::MixerSource,
     noise::LfsrNoiseSource,
+    null::NullSource,
     one_shot::OneShotSource,
     sawtooth::SawtoothWaveSource,
     square::SquareWaveSource,
