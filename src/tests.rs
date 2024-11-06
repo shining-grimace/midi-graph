@@ -2,7 +2,6 @@ use crate::{
     util::{midi_builder_from_file, wav_from_file},
     BaseMixer, NoteRange, SoundFontBuilder, SquareWaveSource,
 };
-use cpal::traits::StreamTrait;
 use std::time::Duration;
 
 const MIDI_FILE: &'static str = "resources/sample-in-c.mid";
@@ -36,17 +35,10 @@ fn can_play_square_stream() {
         )
         .build()
         .unwrap();
-    let mixer = BaseMixer::from_consumer(Box::new(midi));
-    let stream = mixer.open_stream();
-    assert!(stream.is_ok());
-
-    let stream = stream.unwrap();
-    let playback = stream.play();
-    assert!(playback.is_ok());
+    let mixer = BaseMixer::start_with(Box::new(midi));
+    assert!(mixer.is_ok());
 
     std::thread::sleep(Duration::from_secs(3));
-    let pause = stream.pause();
-    assert!(pause.is_ok());
 }
 
 #[test]
@@ -65,16 +57,8 @@ fn can_play_wav_stream() {
         )
         .build()
         .unwrap();
-    let mixer = BaseMixer::from_consumer(Box::new(midi));
-
-    let stream = mixer.open_stream();
-    assert!(stream.is_ok());
-
-    let stream = stream.unwrap();
-    let playback = stream.play();
-    assert!(playback.is_ok());
+    let mixer = BaseMixer::start_with(Box::new(midi));
+    assert!(mixer.is_ok());
 
     std::thread::sleep(Duration::from_secs(3));
-    let pause = stream.pause();
-    assert!(pause.is_ok());
 }

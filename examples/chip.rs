@@ -1,6 +1,5 @@
 extern crate midi_graph;
 
-use cpal::traits::StreamTrait;
 use midi_graph::{
     util::midi_builder_from_file, BaseMixer, LfsrNoiseSource, MixerSource, NoteRange,
     SawtoothWaveSource, SoundFontBuilder, SquareWaveSource, TriangleWaveSource,
@@ -50,9 +49,6 @@ fn main() {
         .add_channel_font(NOISE_CHANNEL, noise_font)
         .build()
         .unwrap();
-    let mixer = BaseMixer::from_consumer(Box::new(midi));
-    let stream = mixer.open_stream().expect("Could not open stream");
-    stream.play().expect("Could not play the stream");
+    let _mixer = BaseMixer::start_with(Box::new(midi)).expect("Could not open stream");
     std::thread::sleep(Duration::from_secs(16));
-    stream.pause().expect("Could not pause the stream");
 }

@@ -1,6 +1,5 @@
 extern crate midi_graph;
 
-use cpal::traits::StreamTrait;
 use crossbeam_channel::Sender;
 use midi_graph::{
     AsyncEventReceiver, BaseMixer, Config, FontSource, MidiData, MidiDataSource, MidiSource,
@@ -55,9 +54,7 @@ fn main() {
     };
     let main_tree = MidiSource::from_config(config).unwrap();
     let (mut sender, receiver) = AsyncEventReceiver::new(None, Box::new(main_tree));
-    let mixer = BaseMixer::from_consumer(Box::new(receiver));
-    let stream = mixer.open_stream().expect("Could not open stream");
-    stream.play().expect("Could not play the stream");
+    let mixer = BaseMixer::start_with(Box::new(receiver)).expect("Could not start stream");
     std::thread::spawn(move || {
         sleep(Duration::from_millis(500));
         send_or_log(
@@ -81,7 +78,6 @@ fn main() {
         );
     });
     sleep(Duration::from_secs(30));
-    stream.pause().expect("Could not pause the stream");
 }
 
 fn send_or_log(sender: &mut Sender<NodeEvent>, event: &NodeEvent) {

@@ -6,7 +6,8 @@ pub enum Error {
     Midly(midly::Error),
     Hound(hound::Error),
     Soundfont(soundfont::error::ParseError),
-    Cpal(cpal::BuildStreamError),
+    CpalBuild(cpal::BuildStreamError),
+    CpalPlay(cpal::PlayStreamError),
     NoDevice,
 }
 
@@ -19,7 +20,8 @@ impl std::fmt::Display for Error {
             Error::Midly(e) => e.fmt(fmt),
             Error::Hound(e) => e.fmt(fmt),
             Error::Soundfont(e) => fmt.write_fmt(format_args!("{:?}", e)),
-            Error::Cpal(e) => e.fmt(fmt),
+            Error::CpalBuild(e) => e.fmt(fmt),
+            Error::CpalPlay(e) => e.fmt(fmt),
             Error::NoDevice => "No audio device available".fmt(fmt),
         }
     }
@@ -57,6 +59,12 @@ impl From<soundfont::error::ParseError> for Error {
 
 impl From<cpal::BuildStreamError> for Error {
     fn from(value: cpal::BuildStreamError) -> Self {
-        Error::Cpal(value)
+        Error::CpalBuild(value)
+    }
+}
+
+impl From<cpal::PlayStreamError> for Error {
+    fn from(value: cpal::PlayStreamError) -> Self {
+        Error::CpalPlay(value)
     }
 }
