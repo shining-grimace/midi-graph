@@ -20,7 +20,7 @@ pub use config::{Config, FontSource, Loop, MidiData, MidiDataSource, RangeSource
 pub use error::Error;
 pub use mix::base::BaseMixer;
 pub use source::{
-    async_receiver::AsyncEventReceiver,
+    async_receiver::{AsyncEventReceiver, EventChannel},
     envelope::Envelope,
     fader::Fader,
     font::{SoundFont, SoundFontBuilder},
