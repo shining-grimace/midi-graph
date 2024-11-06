@@ -7,7 +7,7 @@ const RON_FILE: &'static str = "resources/example.ron";
 
 fn main() {
     let config = config_from_file(RON_FILE).unwrap();
-    let midi = MidiSource::from_config(config).unwrap();
-    let mixer = BaseMixer::start_with(Box::new(midi)).expect("Could not open stream");
+    let midi = MidiSource::from_config(&config).unwrap();
+    let _mixer = BaseMixer::start_with(Box::new(midi)).expect("Could not open stream");
     std::thread::sleep(Duration::from_secs(16));
 }

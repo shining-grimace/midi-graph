@@ -52,9 +52,9 @@ fn main() {
             ),
         ]),
     };
-    let main_tree = MidiSource::from_config(config).unwrap();
+    let main_tree = MidiSource::from_config(&config).unwrap();
     let (mut sender, receiver) = AsyncEventReceiver::new(None, Box::new(main_tree));
-    let mixer = BaseMixer::start_with(Box::new(receiver)).expect("Could not start stream");
+    let _mixer = BaseMixer::start_with(Box::new(receiver)).expect("Could not start stream");
     std::thread::spawn(move || {
         sleep(Duration::from_millis(500));
         send_or_log(

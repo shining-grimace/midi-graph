@@ -118,8 +118,8 @@ impl MidiSource {
         })
     }
 
-    pub fn from_config(config: Config) -> Result<Self, Error> {
-        let mut midi_builder = match config.midi.source {
+    pub fn from_config(config: &Config) -> Result<Self, Error> {
+        let mut midi_builder = match &config.midi.source {
             MidiDataSource::FilePath(file) => {
                 crate::util::midi_builder_from_file(config.midi.node_id, file.as_str())?
             }
