@@ -164,14 +164,15 @@ impl MidiSource {
                 is_ideal_point,
                 seek_anchor,
             }) => {
-                if let Some(anchor) = seek_anchor {
-                    self.seek_to_anchor(*anchor);
-                    return;
-                }
                 if *is_ideal_point {
                     if let Some(anchor) = self.queued_ideal_seek {
                         self.seek_to_anchor(anchor);
+                        return;
                     }
+                }
+                if let Some(anchor) = seek_anchor {
+                    self.seek_to_anchor(*anchor);
+                    return;
                 }
             }
         }
