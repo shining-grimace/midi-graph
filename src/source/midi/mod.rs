@@ -132,6 +132,7 @@ impl MidiSource {
     }
 
     fn seek_to_anchor(&mut self, anchor: u32) {
+        self.queued_ideal_seek = None;
         if let Some(index) = self.timeline_cues.iter().find_map(|c| match c {
             TimelineCue {
                 event_index,
