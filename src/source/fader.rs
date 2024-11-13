@@ -17,7 +17,7 @@ impl Fader {
         consumer: Box<dyn BufferConsumerNode + Send + 'static>,
     ) -> Self {
         Self {
-            node_id: node_id.unwrap_or_else(|| <Self as Node>::new_node_id()),
+            node_id: node_id.unwrap_or_else(<Self as Node>::new_node_id),
             duration_seconds: 0.0,
             from_volume: initial_volume,
             to_volume: initial_volume,
@@ -36,20 +36,18 @@ impl Node for Fader {
     }
 
     fn on_event(&mut self, event: &NodeEvent) {
-        match event {
-            NodeEvent::NodeControl {
-                node_id,
-                event: NodeControlEvent::Fade { from, to, seconds },
-            } => {
-                if *node_id == self.node_id {
-                    self.from_volume = *from;
-                    self.to_volume = *to;
-                    self.duration_seconds = *seconds;
-                    self.progress_seconds = 0.0;
-                    return;
-                }
+        if let NodeEvent::NodeControl {
+            node_id,
+            event: NodeControlEvent::Fade { from, to, seconds },
+        } = event
+        {
+            if *node_id == self.node_id {
+                self.from_volume = *from;
+                self.to_volume = *to;
+                self.duration_seconds = *seconds;
+                self.progress_seconds = 0.0;
+                return;
             }
-            _ => {}
         }
         self.consumer.on_event(event);
     }
@@ -60,8 +58,8 @@ impl Node for Fader {
             .fill_buffer(self.intermediate_buffer.as_mut_slice());
 
         if self.progress_seconds >= self.duration_seconds {
-            for i in 0..buffer.len() {
-                buffer[i] += self.intermediate_buffer[i] * self.to_volume;
+            for (i, data) in buffer.iter_mut().enumerate() {
+                *data += self.intermediate_buffer[i] * self.to_volume;
             }
             return;
         }
@@ -81,8 +79,8 @@ impl Node for Fader {
             buffer[2 * i + 1] += self.intermediate_buffer[2 * i + 1] * volume;
         }
 
-        for i in (2 * samples_to_fade)..buffer.len() {
-            buffer[i] += self.intermediate_buffer[i] * self.to_volume;
+        for (i, data) in buffer.iter_mut().enumerate().skip(2 * samples_to_fade) {
+            *data += self.intermediate_buffer[i] * self.to_volume;
         }
 
         self.progress_seconds = (self.progress_seconds

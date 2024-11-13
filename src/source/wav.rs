@@ -32,12 +32,11 @@ impl WavSource {
             }
         };
         let sample_offset = header.start as usize;
-        let loop_range = Some(LoopRange::new_frame_range(
+        let loop_range = LoopRange::new_frame_range(
             (header.loop_start as usize - sample_offset) / source_channel_count,
             (header.loop_end as usize - sample_offset) / source_channel_count,
-        ));
+        );
         Self::validate_loop_range(&data, source_channel_count, &loop_range)?;
-        let loop_range = loop_range.unwrap();
         Ok(Self::new(
             None,
             header.sample_rate,
@@ -59,7 +58,9 @@ impl WavSource {
         node_id: Option<u64>,
     ) -> Result<Self, Error> {
         Self::validate_spec(&spec)?;
-        Self::validate_loop_range(&data, spec.channels as usize, &loop_range)?;
+        if let Some(range) = &loop_range {
+            Self::validate_loop_range(&data, spec.channels as usize, range)?;
+        }
         let loop_range = match loop_range {
             Some(range) => range,
             None => LoopRange::new_frame_range(0, usize::MAX / spec.channels as usize),
@@ -84,7 +85,7 @@ impl WavSource {
     ) -> Self {
         let playback_scale = consts::PLAYBACK_SAMPLE_RATE as f64 / sample_rate as f64;
         Self {
-            node_id: node_id.unwrap_or_else(|| <Self as Node>::new_node_id()),
+            node_id: node_id.unwrap_or_else(<Self as Node>::new_node_id),
             is_on: false,
             source_note,
             source_channel_count: channels,
@@ -109,20 +110,17 @@ impl WavSource {
     }
 
     fn validate_loop_range(
-        data: &Vec<f32>,
+        data: &[f32],
         channel_count: usize,
-        loop_range: &Option<LoopRange>,
+        loop_range: &LoopRange,
     ) -> Result<(), Error> {
-        let Some(range) = loop_range else {
-            return Ok(());
-        };
         let frames_in_data = data.len() / channel_count;
         let range_makes_sense =
-            range.start_frame <= frames_in_data || range.end_frame > frames_in_data;
+            loop_range.start_frame <= frames_in_data || loop_range.end_frame > frames_in_data;
         if !range_makes_sense {
             return Err(Error::User(format!(
                 "Invalid sample loop range: {} to {}",
-                range.start_frame, range.end_frame
+                loop_range.start_frame, loop_range.end_frame
             )));
         }
         Ok(())
@@ -235,7 +233,7 @@ impl Node for WavSource {
         assert_eq!(buffer.len() % consts::CHANNEL_COUNT, 0);
 
         let mut remaining_buffer = &mut buffer[0..];
-        while remaining_buffer.len() > 0 {
+        while !remaining_buffer.is_empty() {
             if self.data_position >= self.source_data.len() {
                 self.is_on = false;
                 return;

@@ -39,7 +39,7 @@ impl Envelope {
         let release_gradient =
             (0.0 - sustain_multiplier) / (release_time * consts::PLAYBACK_SAMPLE_RATE as f32);
         Self {
-            node_id: node_id.unwrap_or_else(|| <Self as Node>::new_node_id()),
+            node_id: node_id.unwrap_or_else(<Self as Node>::new_node_id),
             attack_gradient,
             decay_gradient,
             sustain_multiplier,
@@ -108,9 +108,9 @@ impl Node for Envelope {
         let buffer_size = buffer.len();
         let samples_in_buffer = buffer_size / consts::CHANNEL_COUNT;
 
-        let mut intermediate_slice = &mut self.intermediate_buffer[0..buffer_size];
+        let intermediate_slice = &mut self.intermediate_buffer[0..buffer_size];
         intermediate_slice.fill(0.0);
-        self.consumer.fill_buffer(&mut intermediate_slice);
+        self.consumer.fill_buffer(intermediate_slice);
 
         let mut samples_available = samples_in_buffer;
         while samples_available > 0 {

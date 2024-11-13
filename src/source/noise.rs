@@ -35,7 +35,7 @@ impl LfsrNoiseSource {
             / (shifts_per_rotation * rotations_per_second_a440)
             / (rotations_per_second_requested / rotations_per_second_a440);
         Self {
-            node_id: node_id.unwrap_or_else(|| <Self as Node>::new_node_id()),
+            node_id: node_id.unwrap_or_else(<Self as Node>::new_node_id),
             is_on: false,
             note_of_16_shifts,
             current_note: 0,
@@ -123,7 +123,7 @@ impl Node for LfsrNoiseSource {
 
         let mut current_value = self.value();
         for i in (0..size).step_by(consts::CHANNEL_COUNT) {
-            stretched_progress = stretched_progress + 1.0;
+            stretched_progress += 1.0;
             if stretched_progress >= pitch_cycle_samples {
                 stretched_progress -= pitch_cycle_samples;
                 self.shift();

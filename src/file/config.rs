@@ -9,6 +9,6 @@ pub fn config_from_file(file_name: &str) -> Result<Config, Error> {
 }
 
 pub fn config_from_bytes(bytes: &[u8]) -> Result<Config, Error> {
-    let config = from_bytes(&bytes)?;
+    let config = from_bytes(bytes)?;
     Ok(config)
 }

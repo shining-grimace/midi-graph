@@ -31,7 +31,7 @@ impl AsyncEventReceiver {
     ) -> (EventChannel, Self) {
         let (sender, receiver) = unbounded();
         let async_receiver = AsyncEventReceiver {
-            node_id: node_id.unwrap_or_else(|| <Self as Node>::new_node_id()),
+            node_id: node_id.unwrap_or_else(<Self as Node>::new_node_id),
             receiver,
             consumer,
         };

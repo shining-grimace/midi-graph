@@ -33,7 +33,7 @@ pub fn wav_from_bytes(
 
 pub fn wav_from_i16_samples(
     header: &SampleHeader,
-    source_data: &Vec<i16>,
+    source_data: &[i16],
 ) -> Result<WavSource, Error> {
     let mut data: Vec<f32> = vec![0.0; source_data.len()];
     for (i, sample) in source_data.iter().enumerate() {
@@ -62,7 +62,7 @@ pub fn one_shot_from_bytes(
 
 pub fn one_shot_from_i16_samples(
     header: &SampleHeader,
-    source_data: &Vec<i16>,
+    source_data: &[i16],
 ) -> Result<OneShotSource, Error> {
     let mut data: Vec<f32> = vec![0.0; source_data.len()];
     for (i, sample) in source_data.iter().enumerate() {

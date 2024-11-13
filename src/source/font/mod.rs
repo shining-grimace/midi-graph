@@ -14,6 +14,12 @@ pub struct SoundFontBuilder {
     ranges: Vec<RangeData>,
 }
 
+impl Default for SoundFontBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SoundFontBuilder {
     pub fn new() -> Self {
         Self { ranges: vec![] }
@@ -103,10 +109,7 @@ impl SoundFont {
                 base_note,
                 looping,
             } => {
-                let loop_range = match looping {
-                    Some(range) => Some(LoopRange::from_config(range)),
-                    None => None,
-                };
+                let loop_range = looping.as_ref().map(LoopRange::from_config);
                 Box::new(wav_from_file(
                     path.as_str(),
                     *base_note,

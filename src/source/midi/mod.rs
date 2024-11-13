@@ -34,7 +34,7 @@ pub struct MidiSourceBuilder {
 impl MidiSourceBuilder {
     /// Capture a non-static Smf, extracting MIDI event that contain text strings.
     /// Do not call to_static() on the Smf object before passing it in here!
-    pub fn new<'a>(node_id: Option<u64>, smf: Smf<'a>) -> Result<Self, Error> {
+    pub fn new(node_id: Option<u64>, smf: Smf) -> Result<Self, Error> {
         #[cfg(debug_assertions)]
         log::log_loaded_midi(&smf);
 
@@ -94,19 +94,14 @@ impl MidiSource {
         let mut channel_sources: HashMap<usize, Box<dyn Node + Send + 'static>> = HashMap::new();
 
         for (channel, font) in channel_fonts.into_iter() {
-            channel_sources
-                .insert(channel, Box::new(font))
-                .and_then(|_| {
-                    println!(
-                        "WARNING: MIDI: Channel specified again will overwrite previous value"
-                    );
-                    Some(())
-                });
+            if channel_sources.insert(channel, Box::new(font)).is_some() {
+                println!("WARNING: MIDI: Channel specified again will overwrite previous value");
+            }
         }
 
         Ok(Self {
             smf: RefCell::new(smf),
-            node_id: node_id.unwrap_or_else(|| <Self as Node>::new_node_id()),
+            node_id: node_id.unwrap_or_else(<Self as Node>::new_node_id),
             track_no,
             timeline_cues,
             queued_ideal_seek: None,
@@ -173,7 +168,6 @@ impl MidiSource {
                 }
                 if let Some(anchor) = seek_anchor {
                     self.seek_to_anchor(*anchor);
-                    return;
                 }
             }
         }
@@ -299,17 +293,15 @@ impl Node for MidiSource {
     }
 
     fn on_event(&mut self, event: &NodeEvent) {
-        match event {
-            NodeEvent::NodeControl {
-                node_id,
-                event: NodeControlEvent::SeekWhenIdeal { to_anchor },
-            } => {
-                if *node_id == self.node_id {
-                    self.queued_ideal_seek = *to_anchor;
-                    return;
-                }
+        if let NodeEvent::NodeControl {
+            node_id,
+            event: NodeControlEvent::SeekWhenIdeal { to_anchor },
+        } = event
+        {
+            if *node_id == self.node_id {
+                self.queued_ideal_seek = *to_anchor;
+                return;
             }
-            _ => {}
         }
         for (_, source) in self.channel_sources.iter_mut() {
             source.on_event(event);

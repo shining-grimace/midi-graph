@@ -16,7 +16,7 @@ pub struct TriangleWaveSource {
 impl TriangleWaveSource {
     pub fn new(node_id: Option<u64>, amplitude: f32) -> Self {
         Self {
-            node_id: node_id.unwrap_or_else(|| <Self as Node>::new_node_id()),
+            node_id: node_id.unwrap_or_else(<Self as Node>::new_node_id),
             is_on: false,
             current_note: 0,
             current_amplitude: 0.0,
@@ -86,7 +86,7 @@ impl Node for TriangleWaveSource {
         assert_eq!(consts::CHANNEL_COUNT, 2);
 
         for i in (0..size).step_by(consts::CHANNEL_COUNT) {
-            stretched_progress = stretched_progress + 1.0;
+            stretched_progress += 1.0;
             if stretched_progress >= pitch_period_samples {
                 stretched_progress -= pitch_period_samples;
             }

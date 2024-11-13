@@ -15,89 +15,81 @@ pub enum Cue {
 }
 
 impl TimelineCue {
-    pub fn from_smf<'a>(smf: &Smf<'a>, track_index: usize) -> Result<Vec<Self>, Error> {
+    pub fn from_smf(smf: &Smf, track_index: usize) -> Result<Vec<Self>, Error> {
         let mut cues = vec![];
         for (event_index, event) in smf.tracks[track_index].iter().enumerate() {
-            match event.kind {
-                TrackEventKind::Meta(MetaMessage::CuePoint(label)) => {
-                    let string = std::str::from_utf8(label).or_else(|_| {
-                        Err(Error::User(
-                            "ERROR: MIDI: Cannot parse event label".to_owned(),
-                        ))
-                    })?;
-                    let length = string.chars().count();
-                    let mut index = 0;
-                    while index < length {
-                        match string.chars().nth(index) {
-                            Some('#') => {
-                                let start_index = index + 1;
-                                let mut end_index = start_index;
-                                while end_index < length {
-                                    if let Some(ch) = string.chars().nth(end_index) {
-                                        if ch.is_numeric() {
-                                            end_index += 1;
-                                            continue;
-                                        }
+            if let TrackEventKind::Meta(MetaMessage::CuePoint(label)) = event.kind {
+                let string = std::str::from_utf8(label)
+                    .map_err(|_| Error::User("ERROR: MIDI: Cannot parse event label".to_owned()))?;
+                let length = string.chars().count();
+                let mut index = 0;
+                while index < length {
+                    match string.chars().nth(index) {
+                        Some('#') => {
+                            let start_index = index + 1;
+                            let mut end_index = start_index;
+                            while end_index < length {
+                                if let Some(ch) = string.chars().nth(end_index) {
+                                    if ch.is_numeric() {
+                                        end_index += 1;
+                                        continue;
                                     }
-                                    break;
                                 }
-                                if end_index == start_index {
-                                    println!("WARNING: MIDI: Cannot parse anchor label");
-                                } else {
-                                    let anchor_index =
-                                        &string[start_index..end_index].parse().or_else(|_| {
-                                            Err(Error::User(
-                                                "Failed parsing anchor index".to_owned(),
-                                            ))
-                                        })?;
-                                    cues.push(TimelineCue {
-                                        event_index,
-                                        cue: Cue::Anchor(*anchor_index),
-                                    });
-                                }
-                                index = end_index;
-                            }
-                            Some('>') => {
-                                let start_index = index + 1;
-                                let mut end_index = start_index;
-                                while end_index < length {
-                                    if let Some(ch) = string.chars().nth(end_index) {
-                                        if ch.is_numeric() {
-                                            end_index += 1;
-                                            continue;
-                                        }
-                                    }
-                                    break;
-                                }
-                                if end_index == start_index {
-                                    println!("WARNING: MIDI: Cannot parse seek label");
-                                } else {
-                                    let anchor_index =
-                                        &string[start_index..end_index].parse().or_else(|_| {
-                                            Err(Error::User("Failed parsing seek index".to_owned()))
-                                        })?;
-                                    cues.push(TimelineCue {
-                                        event_index,
-                                        cue: Cue::Seek(*anchor_index),
-                                    });
-                                }
-                                index = end_index;
-                            }
-                            Some('?') => {
-                                cues.push(TimelineCue {
-                                    event_index,
-                                    cue: Cue::IdealSeekPoint,
-                                });
-                                index += 1;
-                            }
-                            _ => {
-                                println!("WARNING: MIDI: Unknown data in cue point label");
                                 break;
                             }
+                            if end_index == start_index {
+                                println!("WARNING: MIDI: Cannot parse anchor label");
+                            } else {
+                                let anchor_index =
+                                    &string[start_index..end_index].parse().map_err(|_| {
+                                        Error::User("Failed parsing anchor index".to_owned())
+                                    })?;
+                                cues.push(TimelineCue {
+                                    event_index,
+                                    cue: Cue::Anchor(*anchor_index),
+                                });
+                            }
+                            index = end_index;
+                        }
+                        Some('>') => {
+                            let start_index = index + 1;
+                            let mut end_index = start_index;
+                            while end_index < length {
+                                if let Some(ch) = string.chars().nth(end_index) {
+                                    if ch.is_numeric() {
+                                        end_index += 1;
+                                        continue;
+                                    }
+                                }
+                                break;
+                            }
+                            if end_index == start_index {
+                                println!("WARNING: MIDI: Cannot parse seek label");
+                            } else {
+                                let anchor_index =
+                                    &string[start_index..end_index].parse().map_err(|_| {
+                                        Error::User("Failed parsing seek index".to_owned())
+                                    })?;
+                                cues.push(TimelineCue {
+                                    event_index,
+                                    cue: Cue::Seek(*anchor_index),
+                                });
+                            }
+                            index = end_index;
+                        }
+                        Some('?') => {
+                            cues.push(TimelineCue {
+                                event_index,
+                                cue: Cue::IdealSeekPoint,
+                            });
+                            index += 1;
+                        }
+                        _ => {
+                            println!("WARNING: MIDI: Unknown data in cue point label");
+                            break;
                         }
                     }
                 }
-                _ => {}
             }
         }
         Ok(cues)

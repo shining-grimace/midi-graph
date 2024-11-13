@@ -7,7 +7,7 @@ pub struct NullSource {
 impl NullSource {
     pub fn new(node_id: Option<u64>) -> Self {
         Self {
-            node_id: node_id.unwrap_or_else(|| <Self as Node>::new_node_id()),
+            node_id: node_id.unwrap_or_else(<Self as Node>::new_node_id),
         }
     }
 }

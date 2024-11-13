@@ -48,8 +48,8 @@ pub fn soundfont_from_file(file_name: &str, instrument_index: usize) -> Result<S
         let sample_file_offset = sample_chunk_metadata.offset() + sample_header.start as u64;
         let sample_length = sample_header.end as u64 - sample_file_offset;
         let sample_data = load_sample(&mut reader, sample_file_offset, sample_length)?;
-        let note_range = note_range_for_zone(&zone)?;
-        let source = wav_from_i16_samples(&sample_header, &sample_data)?;
+        let note_range = note_range_for_zone(zone)?;
+        let source = wav_from_i16_samples(sample_header, &sample_data)?;
         soundfont_builder = soundfont_builder.add_range(note_range, Box::new(source))?;
     }
     Ok(soundfont_builder.build())
@@ -63,7 +63,7 @@ fn validate_sf2_file(sf2: &SoundFont2) -> Result<(), Error> {
         )));
     }
 
-    if sf2.presets.len() > 0 {
+    if !sf2.presets.is_empty() {
         println!("WARNING: SF2: File has presets; these will be ignored");
     }
     if sf2.instruments.is_empty() {
@@ -88,14 +88,10 @@ fn load_sample(
 
 fn note_range_for_zone(zone: &Zone) -> Result<NoteRange, Error> {
     for generator in zone.gen_list.iter() {
-        match generator.ty {
-            GeneratorType::KeyRange => match generator.amount {
-                GeneratorAmount::Range(range) => {
-                    return Ok(NoteRange::new_inclusive_range(range.low, range.high));
-                }
-                _ => {}
-            },
-            _ => {}
+        if let GeneratorType::KeyRange = generator.ty {
+            if let GeneratorAmount::Range(range) = generator.amount {
+                return Ok(NoteRange::new_inclusive_range(range.low, range.high));
+            }
         }
     }
     Err(Error::User(

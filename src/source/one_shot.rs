@@ -42,7 +42,7 @@ impl OneShotSource {
 
     fn new(node_id: Option<u64>, channels: usize, data: Vec<f32>) -> Self {
         Self {
-            node_id: node_id.unwrap_or_else(|| <Self as Node>::new_node_id()),
+            node_id: node_id.unwrap_or_else(<Self as Node>::new_node_id),
             source_channel_count: channels,
             volume: 1.0,
             data_position: data.len(),
