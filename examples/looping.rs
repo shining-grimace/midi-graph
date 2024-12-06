@@ -2,8 +2,8 @@ extern crate midi_graph;
 
 use crossbeam_channel::Sender;
 use midi_graph::{
-    AsyncEventReceiver, BaseMixer, Config, FontSource, MidiData, MidiDataSource, MidiSource,
-    NodeControlEvent, NodeEvent, RangeSource, SoundSource,
+    AsyncEventReceiver, BaseMixer, FontSource, MidiDataSource, MidiSource, NodeControlEvent,
+    NodeEvent, RangeSource, SoundSource,
 };
 use std::{collections::HashMap, thread::sleep, time::Duration};
 
@@ -16,43 +16,42 @@ const MIDI_NODE_ID: u64 = 100;
 const FADER_NODE_ID: u64 = 101;
 
 fn main() {
-    let config = Config {
-        midi: MidiData {
-            node_id: Some(MIDI_NODE_ID),
-            source: MidiDataSource::FilePath(MIDI_FILE.to_owned()),
-        },
-        channels: HashMap::from([
-            (
-                NOISE_CHANNEL,
-                FontSource::Ranges(vec![RangeSource {
-                    source: SoundSource::Fader {
-                        node_id: Some(FADER_NODE_ID),
-                        initial_volume: 0.0,
-                        source: Box::new(SoundSource::LfsrNoise {
-                            node_id: None,
-                            amplitude: 0.5,
-                            inside_feedback: true,
-                            note_for_16_shifts: 70,
-                        }),
-                    },
-                    lower: 0,
-                    upper: 127,
-                }]),
-            ),
-            (
-                LEAD_CHANNEL,
-                FontSource::Ranges(vec![RangeSource {
-                    source: SoundSource::SawtoothWave {
+    let midi_channels = HashMap::from([
+        (
+            NOISE_CHANNEL,
+            FontSource::Ranges(vec![RangeSource {
+                source: SoundSource::Fader {
+                    node_id: Some(FADER_NODE_ID),
+                    initial_volume: 0.0,
+                    source: Box::new(SoundSource::LfsrNoise {
                         node_id: None,
                         amplitude: 0.5,
-                    },
-                    lower: 0,
-                    upper: 127,
-                }]),
-            ),
-        ]),
-    };
-    let main_tree = MidiSource::from_config(&config).unwrap();
+                        inside_feedback: true,
+                        note_for_16_shifts: 70,
+                    }),
+                },
+                lower: 0,
+                upper: 127,
+            }]),
+        ),
+        (
+            LEAD_CHANNEL,
+            FontSource::Ranges(vec![RangeSource {
+                source: SoundSource::SawtoothWave {
+                    node_id: None,
+                    amplitude: 0.5,
+                },
+                lower: 0,
+                upper: 127,
+            }]),
+        ),
+    ]);
+    let main_tree = MidiSource::from_config(
+        Some(MIDI_NODE_ID),
+        &MidiDataSource::FilePath(MIDI_FILE.to_owned()),
+        &midi_channels,
+    )
+    .expect("Could not create MIDI");
     let (mut sender, receiver) = AsyncEventReceiver::new(None, Box::new(main_tree));
     let _mixer = BaseMixer::start_with(Box::new(receiver)).expect("Could not start stream");
     std::thread::spawn(move || {

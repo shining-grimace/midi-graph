@@ -1,34 +1,36 @@
 (
-    midi: MidiData( source: FilePath("resources/sample-in-c.mid")),
-    channels: {
-        0: Ranges([
-            ( lower: 0, upper: 50, source: Envelope(
-                attack_time: 0.5,
-                decay_time: 1.0,
-                sustain_multiplier: 0.75,
-                release_time: 0.125,
-                source: SquareWave( amplitude: 0.125 )
-            )),
-            ( lower: 51, upper: 255, source: Envelope(
-                source: SawtoothWave( amplitude: 0.1875 ))
-            )
-        ]),
-        1: Ranges([
-            ( lower: 0, upper: 255, source: Envelope(
-                source: SampleFilePath(
-                    path: "resources/guitar-a2-48k-stereo.wav",
-                    base_note: 45,
-                    looping: Some(Loop( start: 2590, end: 6557 )))
-            ))
-        ]),
-        2: Ranges([
-            ( lower: 0, upper: 255, source: Envelope(
-                attack_time: 0.0,
-                decay_time: 0.125,
-                sustain_multiplier: 0.25,
-                release_time: 0.125,
-                source: LfsrNoise( inside_feedback: false )
-            ))
-        ])
-    }
+    root: Midi(
+        source: FilePath("resources/sample-in-c.mid"),
+        channels: {
+            0: Ranges([
+                ( lower: 0, upper: 50, source: Envelope(
+                    attack_time: 0.5,
+                    decay_time: 1.0,
+                    sustain_multiplier: 0.75,
+                    release_time: 0.125,
+                    source: SquareWave( amplitude: 0.125 )
+                )),
+                ( lower: 51, upper: 255, source: Envelope(
+                    source: SawtoothWave( amplitude: 0.1875 ))
+                )
+            ]),
+            1: Ranges([
+                ( lower: 0, upper: 255, source: Envelope(
+                    source: SampleFilePath(
+                        path: "resources/guitar-a2-48k-stereo.wav",
+                        base_note: 45,
+                        looping: Some(Loop( start: 2590, end: 6557 )))
+                ))
+            ]),
+            2: Ranges([
+                ( lower: 0, upper: 255, source: Envelope(
+                    attack_time: 0.0,
+                    decay_time: 0.125,
+                    sustain_multiplier: 0.25,
+                    release_time: 0.125,
+                    source: LfsrNoise( inside_feedback: false )
+                ))
+            ])
+        }
+    )
 )

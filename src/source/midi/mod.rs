@@ -2,7 +2,7 @@ pub mod cue;
 pub mod util;
 
 use crate::{
-    consts, BroadcastControl, BufferConsumer, BufferConsumerNode, Config, Cue, Error,
+    consts, BroadcastControl, BufferConsumer, BufferConsumerNode, Cue, Error, FontSource,
     MidiDataSource, Node, NodeControlEvent, NodeEvent, NoteEvent, SoundFont, TimelineCue,
 };
 use midly::{MetaMessage, MidiMessage, Smf, TrackEvent, TrackEventKind};
@@ -12,6 +12,7 @@ use std::collections::HashMap;
 #[cfg(debug_assertions)]
 use crate::source::log;
 
+#[derive(Debug)]
 enum EventAction {
     ChannelNodeEvent {
         channel: usize,
@@ -113,13 +114,17 @@ impl MidiSource {
         })
     }
 
-    pub fn from_config(config: &Config) -> Result<Self, Error> {
-        let mut midi_builder = match &config.midi.source {
+    pub fn from_config(
+        node_id: Option<u64>,
+        source: &MidiDataSource,
+        channels: &HashMap<usize, FontSource>,
+    ) -> Result<Self, Error> {
+        let mut midi_builder = match source {
             MidiDataSource::FilePath(file) => {
-                crate::util::midi_builder_from_file(config.midi.node_id, file.as_str())?
+                crate::util::midi_builder_from_file(node_id, file.as_str())?
             }
         };
-        for (channel, font_source) in config.channels.iter() {
+        for (channel, font_source) in channels.iter() {
             let soundfont = SoundFont::from_config(font_source)?;
             midi_builder = midi_builder.add_channel_font(*channel, soundfont);
         }

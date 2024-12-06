@@ -16,7 +16,7 @@ mod file;
 mod mix;
 mod source;
 
-pub use config::{Config, FontSource, Loop, MidiData, MidiDataSource, RangeSource, SoundSource};
+pub use config::{Config, FontSource, Loop, MidiDataSource, RangeSource, SoundSource};
 pub use error::Error;
 pub use mix::base::BaseMixer;
 pub use source::{
@@ -46,6 +46,7 @@ pub mod util {
     pub use crate::file::midi::*;
     pub use crate::file::wav::*;
     pub use crate::source::midi::util::*;
+    pub use crate::source::source_from_config;
     pub use crate::source::util::*;
 }
 

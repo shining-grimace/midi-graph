@@ -39,15 +39,7 @@ const fn default_balance() -> f32 {
 
 #[derive(Deserialize)]
 pub struct Config {
-    pub midi: MidiData,
-    pub channels: HashMap<usize, FontSource>,
-}
-
-#[derive(Deserialize)]
-pub struct MidiData {
-    #[serde(default = "none_id")]
-    pub node_id: Option<u64>,
-    pub source: MidiDataSource,
+    pub root: SoundSource,
 }
 
 #[derive(Deserialize)]
@@ -81,6 +73,12 @@ pub struct Loop {
 
 #[derive(Deserialize)]
 pub enum SoundSource {
+    Midi {
+        #[serde(default = "none_id")]
+        node_id: Option<u64>,
+        source: MidiDataSource,
+        channels: HashMap<usize, FontSource>,
+    },
     SquareWave {
         #[serde(default = "none_id")]
         node_id: Option<u64>,

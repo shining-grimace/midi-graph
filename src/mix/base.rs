@@ -1,4 +1,4 @@
-use crate::{consts, Error, Node, NullSource};
+use crate::{consts, BufferConsumerNode, Error, NullSource};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{Stream, StreamConfig};
 use std::sync::{
@@ -7,7 +7,7 @@ use std::sync::{
 };
 
 struct SwappableConsumer {
-    consumer: Arc<AtomicPtr<Box<dyn Node + Send + 'static>>>,
+    consumer: Arc<AtomicPtr<Box<dyn BufferConsumerNode + Send + 'static>>>,
 }
 
 impl Drop for SwappableConsumer {
@@ -22,7 +22,7 @@ impl Drop for SwappableConsumer {
 }
 
 impl SwappableConsumer {
-    pub fn new(consumer: Box<dyn Node + Send + 'static>) -> Self {
+    pub fn new(consumer: Box<dyn BufferConsumerNode + Send + 'static>) -> Self {
         let boxed_consumer = Box::new(consumer);
         let consumer_arc = Arc::new(AtomicPtr::new(Box::into_raw(boxed_consumer)));
         Self {
@@ -30,11 +30,11 @@ impl SwappableConsumer {
         }
     }
 
-    pub fn take_consumer(&self) -> Arc<AtomicPtr<Box<dyn Node + Send + 'static>>> {
+    pub fn take_consumer(&self) -> Arc<AtomicPtr<Box<dyn BufferConsumerNode + Send + 'static>>> {
         Arc::clone(&self.consumer)
     }
 
-    pub fn swap_consumer(&mut self, consumer: Box<dyn Node + Send + 'static>) {
+    pub fn swap_consumer(&mut self, consumer: Box<dyn BufferConsumerNode + Send + 'static>) {
         let boxed_consumer = Box::new(consumer);
         let old_ptr = self
             .consumer
@@ -65,7 +65,9 @@ impl BaseMixer {
         Self::start_with(consumer)
     }
 
-    pub fn start_with(consumer: Box<dyn Node + Send + 'static>) -> Result<Self, Error> {
+    pub fn start_with(
+        consumer: Box<dyn BufferConsumerNode + Send + 'static>,
+    ) -> Result<Self, Error> {
         let swappable = SwappableConsumer::new(consumer);
         let stream = Self::open_stream(swappable.take_consumer())?;
         stream.play()?;
@@ -76,7 +78,7 @@ impl BaseMixer {
     }
 
     fn open_stream(
-        consumer: Arc<AtomicPtr<Box<dyn Node + Send + 'static>>>,
+        consumer: Arc<AtomicPtr<Box<dyn BufferConsumerNode + Send + 'static>>>,
     ) -> Result<Stream, Error> {
         let host = cpal::default_host();
         let device = host.default_output_device().ok_or(Error::NoDevice)?;
@@ -104,7 +106,7 @@ impl BaseMixer {
         Ok(stream)
     }
 
-    pub fn swap_consumer(&mut self, consumer: Box<dyn Node + Send + 'static>) {
+    pub fn swap_consumer(&mut self, consumer: Box<dyn BufferConsumerNode + Send + 'static>) {
         self.consumer.swap_consumer(consumer);
     }
 }
