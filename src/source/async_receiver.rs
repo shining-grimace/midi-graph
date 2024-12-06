@@ -21,13 +21,13 @@ impl DerefMut for EventChannel {
 pub struct AsyncEventReceiver {
     node_id: u64,
     receiver: Receiver<NodeEvent>,
-    consumer: Box<dyn Node + Send + 'static>,
+    consumer: Box<dyn BufferConsumerNode + Send + 'static>,
 }
 
 impl AsyncEventReceiver {
     pub fn new(
         node_id: Option<u64>,
-        consumer: Box<dyn Node + Send + 'static>,
+        consumer: Box<dyn BufferConsumerNode + Send + 'static>,
     ) -> (EventChannel, Self) {
         let (sender, receiver) = unbounded();
         let async_receiver = AsyncEventReceiver {

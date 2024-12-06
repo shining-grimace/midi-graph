@@ -2,7 +2,7 @@ mod range;
 
 use crate::{
     util::{soundfont_from_file, source_from_config},
-    BufferConsumerNode, Error, FontSource, Node, NodeEvent, NoteRange,
+    BufferConsumer, BufferConsumerNode, Error, FontSource, Node, NodeEvent, NoteRange,
 };
 use range::RangeData;
 
@@ -76,6 +76,8 @@ impl SoundFont {
     }
 }
 
+impl BufferConsumerNode for SoundFont {}
+
 impl Node for SoundFont {
     fn get_node_id(&self) -> u64 {
         self.node_id
@@ -91,5 +93,11 @@ impl Node for SoundFont {
         for range_data in self.ranges.iter_mut() {
             range_data.fill_buffer(buffer);
         }
+    }
+}
+
+impl BufferConsumer for SoundFont {
+    fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
+        Err(Error::User("SoundFont cannot be duplicated".to_owned()))
     }
 }
