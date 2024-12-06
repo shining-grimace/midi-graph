@@ -148,3 +148,64 @@ pub enum SoundSource {
         source: Box<SoundSource>,
     },
 }
+
+impl SoundSource {
+    pub const fn stock_square_wave() -> Self {
+        SoundSource::SquareWave {
+            node_id: none_id(),
+            amplitude: default_amplitude(),
+            duty_cycle: default_duty_cycle(),
+        }
+    }
+
+    pub const fn stock_triangle_wave() -> Self {
+        SoundSource::TriangleWave {
+            node_id: none_id(),
+            amplitude: default_amplitude(),
+        }
+    }
+
+    pub const fn stock_sawtooth_wave() -> Self {
+        SoundSource::SawtoothWave {
+            node_id: none_id(),
+            amplitude: default_amplitude(),
+        }
+    }
+
+    pub fn stock_noise_source(inside_feedback_mode: bool) -> Self {
+        SoundSource::LfsrNoise {
+            node_id: none_id(),
+            amplitude: default_amplitude(),
+            inside_feedback: inside_feedback_mode,
+            note_for_16_shifts: default_note_for_16_shifts(),
+        }
+    }
+
+    pub fn stock_envelope(inner: SoundSource) -> Self {
+        SoundSource::Envelope {
+            node_id: none_id(),
+            attack_time: default_attack(),
+            decay_time: default_decay(),
+            sustain_multiplier: default_sustain(),
+            release_time: default_release(),
+            source: Box::new(inner),
+        }
+    }
+
+    pub fn stock_mixer(inner_0: SoundSource, inner_1: SoundSource) -> Self {
+        SoundSource::Mixer {
+            node_id: none_id(),
+            balance: default_balance(),
+            source_0: Box::new(inner_0),
+            source_1: Box::new(inner_1),
+        }
+    }
+
+    pub fn stock_fader(inner: SoundSource) -> Self {
+        SoundSource::Fader {
+            node_id: none_id(),
+            initial_volume: 1.0,
+            source: Box::new(inner),
+        }
+    }
+}
