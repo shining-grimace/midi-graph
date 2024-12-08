@@ -9,18 +9,22 @@ use range::RangeData;
 const SOURCE_CAPACITY: usize = 8;
 
 pub struct SoundFontBuilder {
+    node_id: Option<u64>,
     ranges: Vec<RangeData>,
 }
 
 impl Default for SoundFontBuilder {
     fn default() -> Self {
-        Self::new()
+        Self::new(None)
     }
 }
 
 impl SoundFontBuilder {
-    pub fn new() -> Self {
-        Self { ranges: vec![] }
+    pub fn new(node_id: Option<u64>) -> Self {
+        Self {
+            node_id,
+            ranges: vec![],
+        }
     }
 
     pub fn add_range(
@@ -37,7 +41,7 @@ impl SoundFontBuilder {
     }
 
     pub fn build(self) -> SoundFont {
-        SoundFont::new(self.ranges)
+        SoundFont::new(self.node_id, self.ranges)
     }
 }
 
@@ -47,17 +51,17 @@ pub struct SoundFont {
 }
 
 impl SoundFont {
-    fn new(ranges: Vec<RangeData>) -> Self {
+    fn new(node_id: Option<u64>, ranges: Vec<RangeData>) -> Self {
         Self {
-            node_id: <Self as Node>::new_node_id(),
+            node_id: node_id.unwrap_or_else(<Self as Node>::new_node_id),
             ranges,
         }
     }
 
-    pub fn from_config(config: &FontSource) -> Result<Self, Error> {
+    pub fn from_config(node_id: Option<u64>, config: &FontSource) -> Result<Self, Error> {
         match config {
             FontSource::Ranges(ranges) => {
-                let mut font_builder = SoundFontBuilder::new();
+                let mut font_builder = SoundFontBuilder::new(node_id);
                 for range in ranges {
                     let note_range = NoteRange::new_inclusive_range(range.lower, range.upper);
                     let consumer = source_from_config(&range.source)?;
@@ -69,7 +73,7 @@ impl SoundFont {
                 path,
                 instrument_index,
             } => {
-                let soundfont = soundfont_from_file(path.as_str(), *instrument_index)?;
+                let soundfont = soundfont_from_file(node_id, path.as_str(), *instrument_index)?;
                 Ok(soundfont)
             }
         }

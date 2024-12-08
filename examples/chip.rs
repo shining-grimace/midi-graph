@@ -19,11 +19,11 @@ fn main() {
         Box::new(TriangleWaveSource::new(None, 1.0)),
         Box::new(SawtoothWaveSource::new(None, 0.25)),
     );
-    let triangle_font = SoundFontBuilder::new()
+    let triangle_font = SoundFontBuilder::new(None)
         .add_range(NoteRange::new_full_range(), Box::new(triangle_unison))
         .unwrap()
         .build();
-    let square_font = SoundFontBuilder::new()
+    let square_font = SoundFontBuilder::new(None)
         .add_range(
             NoteRange::new_inclusive_range(0, 50),
             Box::new(SquareWaveSource::new(None, 0.125, 0.5)),
@@ -35,7 +35,7 @@ fn main() {
         )
         .unwrap()
         .build();
-    let noise_font = SoundFontBuilder::new()
+    let noise_font = SoundFontBuilder::new(None)
         .add_range(
             NoteRange::new_full_range(),
             Box::new(LfsrNoiseSource::new(None, 0.25, false, 50)),

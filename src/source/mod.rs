@@ -18,7 +18,7 @@ pub mod log;
 
 use crate::{
     util::{one_shot_from_file, wav_from_file},
-    Error, Loop, RangeSource, SoundSource,
+    Error, Loop, RangeSource, SoundFont, SoundSource,
 };
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -140,6 +140,9 @@ pub fn source_from_config(
             source,
             channels,
         } => Box::new(midi::MidiSource::from_config(*node_id, source, channels)?),
+        SoundSource::Font { node_id, config } => {
+            Box::new(SoundFont::from_config(*node_id, config)?)
+        }
         SoundSource::SquareWave {
             node_id,
             amplitude,

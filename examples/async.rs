@@ -20,7 +20,7 @@ fn main() {
 
     let square_source = SquareWaveSource::new(None, 0.375, 0.25);
     let fader = Fader::new(Some(FADER_NODE_ID), 0.0, Box::new(square_source));
-    let soundfont = SoundFontBuilder::new()
+    let soundfont = SoundFontBuilder::new(None)
         .add_range(
             NoteRange::new_inclusive_range(0, 70),
             Box::new(triangle_unison),

@@ -9,7 +9,11 @@ use std::{
     io::{BufReader, Seek, SeekFrom},
 };
 
-pub fn soundfont_from_file(file_name: &str, instrument_index: usize) -> Result<SoundFont, Error> {
+pub fn soundfont_from_file(
+    node_id: Option<u64>,
+    file_name: &str,
+    instrument_index: usize,
+) -> Result<SoundFont, Error> {
     let file = File::open(file_name)?;
     let mut reader = BufReader::new(file);
     let sf2 = SoundFont2::load(&mut reader)?;
@@ -31,7 +35,7 @@ pub fn soundfont_from_file(file_name: &str, instrument_index: usize) -> Result<S
     #[cfg(debug_assertions)]
     println!("SF2: Using instrument from file: {:?}", &instrument.header);
 
-    let mut soundfont_builder = SoundFontBuilder::new();
+    let mut soundfont_builder = SoundFontBuilder::new(node_id);
     for zone in instrument.zones.iter() {
         let Some(sample_index) = zone.sample() else {
             println!("WARNING: SF2: Sample index not found for instrument zone");

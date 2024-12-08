@@ -14,9 +14,9 @@ const SOUNDFONT_1_CHANNEL: usize = 1;
 const NOISE_CHANNEL: usize = 2;
 
 fn main() {
-    let font_0 = soundfont_from_file(SF2_FILE, 0).unwrap();
-    let font_1 = soundfont_from_file(SF2_FILE, 0).unwrap();
-    let noise_font = SoundFontBuilder::new()
+    let font_0 = soundfont_from_file(None, SF2_FILE, 0).unwrap();
+    let font_1 = soundfont_from_file(None, SF2_FILE, 0).unwrap();
+    let noise_font = SoundFontBuilder::new(None)
         .add_range(
             NoteRange::new_full_range(),
             Box::new(LfsrNoiseSource::new(None, 0.25, false, 50)),

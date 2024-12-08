@@ -125,7 +125,7 @@ impl MidiSource {
             }
         };
         for (channel, font_source) in channels.iter() {
-            let soundfont = SoundFont::from_config(font_source)?;
+            let soundfont = SoundFont::from_config(None, font_source)?;
             midi_builder = midi_builder.add_channel_font(*channel, soundfont);
         }
         midi_builder.build()

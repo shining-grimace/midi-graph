@@ -79,6 +79,11 @@ pub enum SoundSource {
         source: MidiDataSource,
         channels: HashMap<usize, FontSource>,
     },
+    Font {
+        #[serde(default = "none_id")]
+        node_id: Option<u64>,
+        config: FontSource,
+    },
     SquareWave {
         #[serde(default = "none_id")]
         node_id: Option<u64>,
