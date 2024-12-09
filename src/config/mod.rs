@@ -138,6 +138,11 @@ pub enum SoundSource {
         release_time: f32,
         source: Box<SoundSource>,
     },
+    Combiner {
+        #[serde(default = "none_id")]
+        node_id: Option<u64>,
+        sources: Vec<SoundSource>,
+    },
     Mixer {
         #[serde(default = "none_id")]
         node_id: Option<u64>,

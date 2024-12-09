@@ -1,4 +1,5 @@
 pub mod async_receiver;
+pub mod combiner;
 pub mod envelope;
 pub mod fader;
 pub mod font;
@@ -203,6 +204,11 @@ pub fn source_from_config(
                 *release_time,
                 consumer,
             ))
+        }
+        SoundSource::Combiner { node_id, sources } => {
+            let consumers: Result<Vec<Box<dyn BufferConsumerNode + Send + 'static>>, Error> =
+                sources.iter().map(|s| source_from_config(s)).collect();
+            Box::new(combiner::CombinerSource::new(*node_id, consumers?))
         }
         SoundSource::Mixer {
             node_id,
