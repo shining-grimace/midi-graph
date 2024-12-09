@@ -218,4 +218,15 @@ impl SoundSource {
             source: Box::new(inner),
         }
     }
+
+    pub fn stock_full_range_font(source: SoundSource) -> Self {
+        SoundSource::Font {
+            node_id: none_id(),
+            config: FontSource::Ranges(vec![RangeSource {
+                source,
+                lower: 0,
+                upper: 127,
+            }]),
+        }
+    }
 }
