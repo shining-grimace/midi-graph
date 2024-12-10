@@ -2,7 +2,8 @@ mod range;
 
 use crate::{
     util::{soundfont_from_file, source_from_config},
-    BufferConsumer, BufferConsumerNode, Error, FontSource, Node, NodeEvent, NoteRange,
+    BufferConsumer, BufferConsumerNode, Error, EventChannel, FontSource, Node, NodeEvent,
+    NoteRange,
 };
 use range::RangeData;
 
@@ -58,23 +59,28 @@ impl SoundFont {
         }
     }
 
-    pub fn from_config(node_id: Option<u64>, config: &FontSource) -> Result<Self, Error> {
+    pub fn from_config(
+        node_id: Option<u64>,
+        config: &FontSource,
+    ) -> Result<(Vec<EventChannel>, Self), Error> {
         match config {
             FontSource::Ranges(ranges) => {
+                let mut all_channels = vec![];
                 let mut font_builder = SoundFontBuilder::new(node_id);
                 for range in ranges {
                     let note_range = NoteRange::new_inclusive_range(range.lower, range.upper);
-                    let consumer = source_from_config(&range.source)?;
+                    let (channels, consumer) = source_from_config(&range.source)?;
+                    all_channels.extend(channels);
                     font_builder = font_builder.add_range(note_range, consumer)?;
                 }
-                Ok(font_builder.build())
+                Ok((all_channels, font_builder.build()))
             }
             FontSource::Sf2FilePath {
                 path,
                 instrument_index,
             } => {
                 let soundfont = soundfont_from_file(node_id, path.as_str(), *instrument_index)?;
-                Ok(soundfont)
+                Ok((vec![], soundfont))
             }
         }
     }

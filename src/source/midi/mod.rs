@@ -2,8 +2,9 @@ pub mod cue;
 pub mod util;
 
 use crate::{
-    consts, BroadcastControl, BufferConsumer, BufferConsumerNode, Cue, Error, FontSource,
-    MidiDataSource, Node, NodeControlEvent, NodeEvent, NoteEvent, SoundFont, TimelineCue,
+    consts, BroadcastControl, BufferConsumer, BufferConsumerNode, Cue, Error, EventChannel,
+    FontSource, MidiDataSource, Node, NodeControlEvent, NodeEvent, NoteEvent, SoundFont,
+    TimelineCue,
 };
 use midly::{MetaMessage, MidiMessage, Smf, TrackEvent, TrackEventKind};
 use std::cell::RefCell;
@@ -118,17 +119,26 @@ impl MidiSource {
         node_id: Option<u64>,
         source: &MidiDataSource,
         channels: &HashMap<usize, FontSource>,
-    ) -> Result<Self, Error> {
+    ) -> Result<
+        (
+            Vec<EventChannel>,
+            Box<dyn BufferConsumerNode + Send + 'static>,
+        ),
+        Error,
+    > {
         let mut midi_builder = match source {
             MidiDataSource::FilePath(file) => {
                 crate::util::midi_builder_from_file(node_id, file.as_str())?
             }
         };
+        let mut event_channels = vec![];
         for (channel, font_source) in channels.iter() {
-            let soundfont = SoundFont::from_config(None, font_source)?;
+            let (channels, soundfont) = SoundFont::from_config(None, font_source)?;
+            event_channels.extend(channels);
             midi_builder = midi_builder.add_channel_font(*channel, soundfont);
         }
-        midi_builder.build()
+        let source = midi_builder.build()?;
+        Ok((event_channels, Box::new(source)))
     }
 
     fn seek_to_anchor(&mut self, anchor: u32) {

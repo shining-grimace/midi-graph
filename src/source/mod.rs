@@ -19,7 +19,7 @@ pub mod log;
 
 use crate::{
     util::{one_shot_from_file, wav_from_file},
-    Error, Loop, RangeSource, SoundFont, SoundSource,
+    Error, EventChannel, Loop, RangeSource, SoundFont, SoundSource,
 };
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -134,42 +134,65 @@ impl LoopRange {
 
 pub fn source_from_config(
     config: &SoundSource,
-) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
-    let consumer: Box<dyn BufferConsumerNode + Send + 'static> = match config {
+) -> Result<
+    (
+        Vec<EventChannel>,
+        Box<dyn BufferConsumerNode + Send + 'static>,
+    ),
+    Error,
+> {
+    let (event_channels, consumer) = match config {
         SoundSource::Midi {
             node_id,
             source,
             channels,
-        } => Box::new(midi::MidiSource::from_config(*node_id, source, channels)?),
+        } => midi::MidiSource::from_config(*node_id, source, channels)?,
+        SoundSource::EventReceiver { node_id, source } => {
+            let (mut channels, source) = source_from_config(source)?;
+            let (channel, source) = async_receiver::AsyncEventReceiver::new(*node_id, source);
+            channels.push(channel);
+            let source: Box<dyn BufferConsumerNode + Send + 'static> = Box::new(source);
+            (channels, source)
+        }
         SoundSource::Font { node_id, config } => {
-            Box::new(SoundFont::from_config(*node_id, config)?)
+            let (channels, source) = SoundFont::from_config(*node_id, config)?;
+            let source: Box<dyn BufferConsumerNode + Send + 'static> = Box::new(source);
+            (channels, source)
         }
         SoundSource::SquareWave {
             node_id,
             amplitude,
             duty_cycle,
-        } => Box::new(square::SquareWaveSource::new(
-            *node_id,
-            *amplitude,
-            *duty_cycle,
-        )),
+        } => {
+            let source = square::SquareWaveSource::new(*node_id, *amplitude, *duty_cycle);
+            let source: Box<dyn BufferConsumerNode + Send + 'static> = Box::new(source);
+            (vec![], source)
+        }
         SoundSource::TriangleWave { node_id, amplitude } => {
-            Box::new(triangle::TriangleWaveSource::new(*node_id, *amplitude))
+            let source = triangle::TriangleWaveSource::new(*node_id, *amplitude);
+            let source: Box<dyn BufferConsumerNode + Send + 'static> = Box::new(source);
+            (vec![], source)
         }
         SoundSource::SawtoothWave { node_id, amplitude } => {
-            Box::new(sawtooth::SawtoothWaveSource::new(*node_id, *amplitude))
+            let source = sawtooth::SawtoothWaveSource::new(*node_id, *amplitude);
+            let source: Box<dyn BufferConsumerNode + Send + 'static> = Box::new(source);
+            (vec![], source)
         }
         SoundSource::LfsrNoise {
             node_id,
             amplitude,
             inside_feedback,
             note_for_16_shifts,
-        } => Box::new(noise::LfsrNoiseSource::new(
-            *node_id,
-            *amplitude,
-            *inside_feedback,
-            *note_for_16_shifts,
-        )),
+        } => {
+            let source = noise::LfsrNoiseSource::new(
+                *node_id,
+                *amplitude,
+                *inside_feedback,
+                *note_for_16_shifts,
+            );
+            let source: Box<dyn BufferConsumerNode + Send + 'static> = Box::new(source);
+            (vec![], source)
+        }
         SoundSource::SampleFilePath {
             node_id,
             path,
@@ -177,15 +200,14 @@ pub fn source_from_config(
             looping,
         } => {
             let loop_range = looping.as_ref().map(LoopRange::from_config);
-            Box::new(wav_from_file(
-                path.as_str(),
-                *base_note,
-                loop_range,
-                *node_id,
-            )?)
+            let source = wav_from_file(path.as_str(), *base_note, loop_range, *node_id)?;
+            let source: Box<dyn BufferConsumerNode + Send + 'static> = Box::new(source);
+            (vec![], source)
         }
         SoundSource::OneShotFilePath { node_id, path } => {
-            Box::new(one_shot_from_file(path.as_str(), *node_id)?)
+            let source = one_shot_from_file(path.as_str(), *node_id)?;
+            let source: Box<dyn BufferConsumerNode + Send + 'static> = Box::new(source);
+            (vec![], source)
         }
         SoundSource::Envelope {
             node_id,
@@ -195,20 +217,29 @@ pub fn source_from_config(
             release_time,
             source,
         } => {
-            let consumer = source_from_config(source)?;
-            Box::new(envelope::Envelope::from_adsr(
+            let (channels, source) = source_from_config(source)?;
+            let source = envelope::Envelope::from_adsr(
                 *node_id,
                 *attack_time,
                 *decay_time,
                 *sustain_multiplier,
                 *release_time,
-                consumer,
-            ))
+                source,
+            );
+            let source: Box<dyn BufferConsumerNode + Send + 'static> = Box::new(source);
+            (channels, source)
         }
         SoundSource::Combiner { node_id, sources } => {
-            let consumers: Result<Vec<Box<dyn BufferConsumerNode + Send + 'static>>, Error> =
-                sources.iter().map(|s| source_from_config(s)).collect();
-            Box::new(combiner::CombinerSource::new(*node_id, consumers?))
+            let mut event_channels: Vec<EventChannel> = vec![];
+            let mut inner_sources: Vec<Box<dyn BufferConsumerNode + Send + 'static>> = vec![];
+            for source_config in sources.iter() {
+                let (channels, source) = source_from_config(source_config)?;
+                event_channels.extend(channels);
+                inner_sources.push(source);
+            }
+            let source = combiner::CombinerSource::new(*node_id, inner_sources);
+            let source: Box<dyn BufferConsumerNode + Send + 'static> = Box::new(source);
+            (event_channels, source)
         }
         SoundSource::Mixer {
             node_id,
@@ -216,20 +247,23 @@ pub fn source_from_config(
             source_0,
             source_1,
         } => {
-            let consumer_0 = source_from_config(source_0)?;
-            let consumer_1 = source_from_config(source_1)?;
-            Box::new(mixer::MixerSource::new(
-                *node_id, *balance, consumer_0, consumer_1,
-            ))
+            let (mut channels, source_0) = source_from_config(source_0)?;
+            let (more_channels, source_1) = source_from_config(source_1)?;
+            let source = mixer::MixerSource::new(*node_id, *balance, source_0, source_1);
+            channels.extend(more_channels);
+            let source: Box<dyn BufferConsumerNode + Send + 'static> = Box::new(source);
+            (channels, source)
         }
         SoundSource::Fader {
             node_id,
             initial_volume,
             source,
         } => {
-            let consumer = source_from_config(source)?;
-            Box::new(fader::Fader::new(*node_id, *initial_volume, consumer))
+            let (channels, source) = source_from_config(source)?;
+            let source = fader::Fader::new(*node_id, *initial_volume, source);
+            let source: Box<dyn BufferConsumerNode + Send + 'static> = Box::new(source);
+            (channels, source)
         }
     };
-    Ok(consumer)
+    Ok((event_channels, consumer))
 }

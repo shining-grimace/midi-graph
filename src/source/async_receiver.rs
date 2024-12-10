@@ -2,19 +2,22 @@ use crate::{BufferConsumer, BufferConsumerNode, Error, Node, NodeEvent};
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use std::ops::{Deref, DerefMut};
 
-pub struct EventChannel(pub Sender<NodeEvent>);
+pub struct EventChannel {
+    pub for_node_id: u64,
+    pub sender: Sender<NodeEvent>,
+}
 
 impl Deref for EventChannel {
     type Target = Sender<NodeEvent>;
 
     fn deref(&self) -> &Sender<NodeEvent> {
-        &self.0
+        &self.sender
     }
 }
 
 impl DerefMut for EventChannel {
     fn deref_mut(&mut self) -> &mut Sender<NodeEvent> {
-        &mut self.0
+        &mut self.sender
     }
 }
 
@@ -35,7 +38,11 @@ impl AsyncEventReceiver {
             receiver,
             consumer,
         };
-        (EventChannel(sender), async_receiver)
+        let channel = EventChannel {
+            for_node_id: async_receiver.node_id,
+            sender,
+        };
+        (channel, async_receiver)
     }
 }
 

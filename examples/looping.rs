@@ -46,13 +46,13 @@ fn main() {
             }]),
         ),
     ]);
-    let main_tree = MidiSource::from_config(
+    let (_, main_tree) = MidiSource::from_config(
         Some(MIDI_NODE_ID),
         &MidiDataSource::FilePath(MIDI_FILE.to_owned()),
         &midi_channels,
     )
     .expect("Could not create MIDI");
-    let (mut sender, receiver) = AsyncEventReceiver::new(None, Box::new(main_tree));
+    let (mut sender, receiver) = AsyncEventReceiver::new(None, main_tree);
     let _mixer = BaseMixer::start_with(Box::new(receiver)).expect("Could not start stream");
     std::thread::spawn(move || {
         sleep(Duration::from_millis(500));

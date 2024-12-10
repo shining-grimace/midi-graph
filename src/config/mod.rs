@@ -79,6 +79,11 @@ pub enum SoundSource {
         source: MidiDataSource,
         channels: HashMap<usize, FontSource>,
     },
+    EventReceiver {
+        #[serde(default = "none_id")]
+        node_id: Option<u64>,
+        source: Box<SoundSource>,
+    },
     Font {
         #[serde(default = "none_id")]
         node_id: Option<u64>,
@@ -179,6 +184,13 @@ impl SoundSource {
         SoundSource::SawtoothWave {
             node_id: none_id(),
             amplitude: default_amplitude(),
+        }
+    }
+
+    pub fn event_receiver(node_id: Option<u64>, source: SoundSource) -> Self {
+        SoundSource::EventReceiver {
+            node_id,
+            source: Box::new(source),
         }
     }
 
