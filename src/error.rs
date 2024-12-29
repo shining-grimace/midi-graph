@@ -5,7 +5,7 @@ pub enum Error {
     Ron(ron::error::SpannedError),
     Midly(midly::Error),
     Hound(hound::Error),
-    Soundfont(soundfont::error::ParseError),
+    Soundfont(soundfont::Error),
     CpalBuild(cpal::BuildStreamError),
     CpalPlay(cpal::PlayStreamError),
     NoDevice,
@@ -51,8 +51,8 @@ impl From<midly::Error> for Error {
     }
 }
 
-impl From<soundfont::error::ParseError> for Error {
-    fn from(value: soundfont::error::ParseError) -> Self {
+impl From<soundfont::Error> for Error {
+    fn from(value: soundfont::Error) -> Self {
         Error::Soundfont(value)
     }
 }

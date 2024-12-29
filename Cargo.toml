@@ -12,11 +12,10 @@ ron = "0.8.1"
 serde = "1.0.60"
 serde_derive = "1.0"
 hound = "3.5.1"
-soundfont = "0.0.3"
+soundfont = "0.1.0"
 cpal = { version = "0.15.3", features = ["wasm-bindgen"] }
 byteorder = "1.5.0"
-crossbeam-channel = "0.5.13"
+crossbeam-channel = "0.5.14"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = "0.2.84"
-

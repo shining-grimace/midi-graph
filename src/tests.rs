@@ -25,7 +25,7 @@ fn can_play_square_stream() {
         .unwrap()
         .add_channel_font(
             0,
-            SoundFontBuilder::new()
+            SoundFontBuilder::new(None)
                 .add_range(
                     NoteRange::new_full_range(),
                     Box::new(SquareWaveSource::new(None, 0.25, 0.125)),
@@ -47,7 +47,7 @@ fn can_play_wav_stream() {
         .unwrap()
         .add_channel_font(
             0,
-            SoundFontBuilder::new()
+            SoundFontBuilder::new(None)
                 .add_range(
                     NoteRange::new_full_range(),
                     Box::new(wav_from_file(WAV_FILE, 69, None, None).unwrap()),

@@ -2,7 +2,7 @@ use crate::{util::wav_from_i16_samples, Error, NoteRange, SoundFont, SoundFontBu
 use byteorder::{LittleEndian, ReadBytesExt};
 use soundfont::{
     data::{GeneratorAmount, GeneratorType},
-    SoundFont2, Zone,
+    SfEnum, SoundFont2, Zone,
 };
 use std::{
     fs::File,
@@ -49,7 +49,7 @@ pub fn soundfont_from_file(
             continue;
         };
 
-        let sample_file_offset = sample_chunk_metadata.offset() + sample_header.start as u64;
+        let sample_file_offset = sample_chunk_metadata.offset + sample_header.start as u64;
         let sample_length = sample_header.end as u64 - sample_file_offset;
         let sample_data = load_sample(&mut reader, sample_file_offset, sample_length)?;
         let note_range = note_range_for_zone(zone)?;
@@ -92,7 +92,7 @@ fn load_sample(
 
 fn note_range_for_zone(zone: &Zone) -> Result<NoteRange, Error> {
     for generator in zone.gen_list.iter() {
-        if let GeneratorType::KeyRange = generator.ty {
+        if let SfEnum::Value(GeneratorType::KeyRange) = generator.ty {
             if let GeneratorAmount::Range(range) = generator.amount {
                 return Ok(NoteRange::new_inclusive_range(range.low, range.high));
             }

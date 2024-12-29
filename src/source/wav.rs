@@ -3,7 +3,7 @@ use crate::{
     NodeEvent, NoteEvent,
 };
 use hound::{SampleFormat, WavSpec};
-use soundfont::data::{sample::SampleLink, SampleHeader};
+use soundfont::raw::{SampleHeader, SampleLink};
 
 pub struct WavSource {
     node_id: u64,
