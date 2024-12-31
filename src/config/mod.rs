@@ -37,18 +37,18 @@ const fn default_balance() -> f32 {
     0.5
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct Config {
     pub program_no: Option<usize>,
     pub root: SoundSource,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub enum MidiDataSource {
     FilePath(String),
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub enum FontSource {
     Ranges(Vec<RangeSource>),
     Sf2FilePath {
@@ -57,7 +57,7 @@ pub enum FontSource {
     },
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct RangeSource {
     pub source: SoundSource,
     pub lower: u8,
@@ -66,13 +66,13 @@ pub struct RangeSource {
 
 /// Loop range, defined as the inclusive start and exclusive end.
 /// These points are specified in frames, not data points.
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct Loop {
     pub start: usize,
     pub end: usize,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub enum SoundSource {
     Midi {
         #[serde(default = "none_id")]
