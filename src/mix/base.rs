@@ -1,4 +1,6 @@
-use crate::{consts, BufferConsumerNode, Error, NullSource};
+use crate::{
+    consts, util::source_from_config, BufferConsumerNode, Config, Error, EventChannel, NullSource,
+};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{Stream, StreamConfig};
 use std::collections::HashMap;
@@ -42,6 +44,21 @@ impl BaseMixer {
             program_sources: HashMap::new(),
             consumer: swappable,
         })
+    }
+
+    pub fn start_single_program_from_config(
+        config: &Config,
+    ) -> Result<(Vec<EventChannel>, Self), Error> {
+        let (channels, source) = source_from_config(&config.root)?;
+        if let Some(program_no) = &config.program_no {
+            let mut mixer = Self::start_empty()?;
+            mixer.store_program(*program_no, source);
+            mixer.change_program(*program_no)?;
+            Ok((channels, mixer))
+        } else {
+            let mixer = Self::start_single_program(source)?;
+            Ok((channels, mixer))
+        }
     }
 
     // Store a program at a given index.
