@@ -30,7 +30,8 @@ fn main() {
         .unwrap()
         .build();
     let (mut sender, receiver) = AsyncEventReceiver::new(None, Box::new(soundfont));
-    let _mixer = BaseMixer::start_with(Box::new(receiver)).expect("Could not open stream");
+    let _mixer =
+        BaseMixer::start_single_program(Box::new(receiver)).expect("Could not open stream");
     std::thread::spawn(move || {
         sleep(Duration::from_millis(50));
         send_or_log(

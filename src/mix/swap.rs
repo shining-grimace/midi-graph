@@ -32,15 +32,22 @@ impl SwappableConsumer {
         Arc::clone(&self.consumer)
     }
 
-    pub fn swap_consumer(&mut self, consumer: Box<dyn BufferConsumerNode + Send + 'static>) {
+    pub fn swap_consumer(
+        &mut self,
+        consumer: Box<dyn BufferConsumerNode + Send + 'static>,
+    ) -> Option<Box<dyn BufferConsumerNode + Send + 'static>> {
         let boxed_consumer = Box::new(consumer);
         let old_ptr = self
             .consumer
             .swap(Box::into_raw(boxed_consumer), Ordering::SeqCst);
         if !old_ptr.is_null() {
             unsafe {
-                let _ = Box::from_raw(old_ptr); // Drop the old consumer
+                let boxed_consumer: Box<Box<dyn BufferConsumerNode + Send + 'static>> =
+                    Box::from_raw(old_ptr);
+                Some(*boxed_consumer)
             }
+        } else {
+            None
         }
     }
 }

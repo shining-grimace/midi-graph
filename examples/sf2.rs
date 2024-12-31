@@ -31,6 +31,6 @@ fn main() {
         .build()
         .unwrap();
 
-    let _mixer = BaseMixer::start_with(Box::new(midi)).expect("Could not open stream");
+    let _mixer = BaseMixer::start_single_program(Box::new(midi)).expect("Could not open stream");
     std::thread::sleep(Duration::from_secs(16));
 }

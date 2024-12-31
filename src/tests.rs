@@ -35,7 +35,7 @@ fn can_play_square_stream() {
         )
         .build()
         .unwrap();
-    let mixer = BaseMixer::start_with(Box::new(midi));
+    let mixer = BaseMixer::start_single_program(Box::new(midi));
     assert!(mixer.is_ok());
 
     std::thread::sleep(Duration::from_secs(3));
@@ -57,7 +57,7 @@ fn can_play_wav_stream() {
         )
         .build()
         .unwrap();
-    let mixer = BaseMixer::start_with(Box::new(midi));
+    let mixer = BaseMixer::start_single_program(Box::new(midi));
     assert!(mixer.is_ok());
 
     std::thread::sleep(Duration::from_secs(3));
