@@ -1,5 +1,4 @@
 (
-    program_no: Some(17),
     root: Midi(
         source: FilePath("resources/sample-in-c.mid"),
         channels: {

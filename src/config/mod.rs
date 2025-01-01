@@ -39,7 +39,6 @@ const fn default_balance() -> f32 {
 
 #[derive(Deserialize, Clone)]
 pub struct Config {
-    pub program_no: Option<usize>,
     pub root: SoundSource,
 }
 
