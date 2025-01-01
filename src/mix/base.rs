@@ -47,10 +47,11 @@ impl BaseMixer {
     }
 
     pub fn start_single_program_from_config(
+        program_no: Option<usize>,
         config: &Config,
     ) -> Result<(Vec<EventChannel>, Self), Error> {
         let (channels, source) = source_from_config(&config.root)?;
-        if let Some(program_no) = &config.program_no {
+        if let Some(program_no) = &program_no {
             let mut mixer = Self::start_empty()?;
             mixer.store_program(*program_no, source);
             mixer.change_program(*program_no)?;
