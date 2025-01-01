@@ -85,10 +85,7 @@ impl BaseMixer {
     }
 
     pub fn change_program(&mut self, program_no: usize) -> Result<(), Error> {
-        let existing_placeholder_index = self.program_sources.iter().find_map(|(k, v)| match v {
-            &ConsumerCell::Placeholder => Some(*k),
-            _ => None,
-        });
+        let existing_placeholder_index = self.get_current_program_no();
 
         let new_program = match self.program_sources.remove(&program_no) {
             Some(ConsumerCell::Placeholder) => {
@@ -112,6 +109,13 @@ impl BaseMixer {
         }
 
         Ok(())
+    }
+
+    pub fn get_current_program_no(&self) -> Option<usize> {
+        self.program_sources.iter().find_map(|(k, v)| match v {
+            &ConsumerCell::Placeholder => Some(*k),
+            _ => None,
+        })
     }
 
     fn open_stream(
