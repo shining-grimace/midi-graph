@@ -19,7 +19,7 @@ pub fn wav_from_file(
 
 /// Make a WavSource. The source note is a MIDI note, where 69 is A440.
 pub fn wav_from_bytes(
-    bytes: &'static [u8],
+    bytes: &[u8],
     source_note: u8,
     loop_range: Option<LoopRange>,
     node_id: Option<u64>,
@@ -49,10 +49,7 @@ pub fn one_shot_from_file(file_name: &str, node_id: Option<u64>) -> Result<OneSh
     OneShotSource::new_from_data(spec, data, node_id)
 }
 
-pub fn one_shot_from_bytes(
-    bytes: &'static [u8],
-    node_id: Option<u64>,
-) -> Result<OneShotSource, Error> {
+pub fn one_shot_from_bytes(bytes: &[u8], node_id: Option<u64>) -> Result<OneShotSource, Error> {
     let cursor = Cursor::new(bytes);
     let wav = WavReader::new(cursor)?;
     let spec = wav.spec();
