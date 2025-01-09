@@ -6,7 +6,7 @@ use soundfont::{
 };
 use std::{
     fs::File,
-    io::{BufReader, Seek, SeekFrom},
+    io::{BufReader, Cursor, Read, Seek, SeekFrom},
 };
 
 pub fn soundfont_from_file(
@@ -15,7 +15,27 @@ pub fn soundfont_from_file(
     instrument_index: usize,
 ) -> Result<SoundFont, Error> {
     let file = File::open(file_name)?;
-    let mut reader = BufReader::new(file);
+    let reader = BufReader::new(file);
+    soundfont_from_reader(reader, node_id, instrument_index)
+}
+
+pub fn soundfont_from_bytes(
+    node_id: Option<u64>,
+    bytes: &[u8],
+    instrument_index: usize,
+) -> Result<SoundFont, Error> {
+    let cursor = Cursor::new(bytes);
+    soundfont_from_reader(cursor, node_id, instrument_index)
+}
+
+fn soundfont_from_reader<R>(
+    mut reader: R,
+    node_id: Option<u64>,
+    instrument_index: usize,
+) -> Result<SoundFont, Error>
+where
+    R: Read + Seek,
+{
     let sf2 = SoundFont2::load(&mut reader)?;
     validate_sf2_file(&sf2)?;
     #[cfg(debug_assertions)]
@@ -78,11 +98,14 @@ fn validate_sf2_file(sf2: &SoundFont2) -> Result<(), Error> {
     Ok(())
 }
 
-fn load_sample(
-    reader: &mut BufReader<File>,
+fn load_sample<R>(
+    reader: &mut R,
     sample_position: u64,
     sample_length: u64,
-) -> Result<Vec<i16>, Error> {
+) -> Result<Vec<i16>, Error>
+where
+    R: Read + Seek,
+{
     let byte_size = std::mem::size_of::<i16>();
     reader.seek(SeekFrom::Start(sample_position * byte_size as u64))?;
     let mut sample_data = vec![0i16; sample_length as usize];

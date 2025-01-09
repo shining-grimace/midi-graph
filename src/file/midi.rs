@@ -6,8 +6,7 @@ pub fn midi_builder_from_file(
     file_name: &str,
 ) -> Result<MidiSourceBuilder, Error> {
     let bytes = std::fs::read(file_name)?;
-    let midi_builder = midi_builder_from_bytes(node_id, &bytes)?;
-    Ok(midi_builder)
+    midi_builder_from_bytes(node_id, &bytes)
 }
 
 pub fn midi_builder_from_bytes(
