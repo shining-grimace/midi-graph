@@ -1,7 +1,7 @@
 extern crate midi_graph;
 
 use midi_graph::{
-    util::midi_builder_from_file, BaseMixer, LfsrNoiseSource, NoteRange, SoundFont,
+    util::midi_builder_from_file, BaseMixer, BufferConsumerNode, LfsrNoiseSource, NoteRange,
     SoundFontBuilder, SquareWaveSource, TriangleWaveSource,
 };
 use std::time::Duration;
@@ -13,45 +13,51 @@ const PROGRAM_0: usize = 0;
 const PROGRAM_1: usize = 7;
 
 fn main() {
-    fn square_font() -> SoundFont {
-        SoundFontBuilder::new(None)
-            .add_range(
-                NoteRange::new_full_range(),
-                Box::new(SquareWaveSource::new(None, 0.125, 0.0625)),
-            )
-            .unwrap()
-            .build()
+    fn square_font() -> Box<dyn BufferConsumerNode + Send + 'static> {
+        Box::new(
+            SoundFontBuilder::new(None)
+                .add_range(
+                    NoteRange::new_full_range(),
+                    Box::new(SquareWaveSource::new(None, 0.125, 0.0625)),
+                )
+                .unwrap()
+                .build(),
+        )
     }
-    fn triangle_font() -> SoundFont {
-        SoundFontBuilder::new(None)
-            .add_range(
-                NoteRange::new_full_range(),
-                Box::new(TriangleWaveSource::new(None, 1.0)),
-            )
-            .unwrap()
-            .build()
+    fn triangle_font() -> Box<dyn BufferConsumerNode + Send + 'static> {
+        Box::new(
+            SoundFontBuilder::new(None)
+                .add_range(
+                    NoteRange::new_full_range(),
+                    Box::new(TriangleWaveSource::new(None, 1.0)),
+                )
+                .unwrap()
+                .build(),
+        )
     }
-    fn noise_font() -> SoundFont {
-        SoundFontBuilder::new(None)
-            .add_range(
-                NoteRange::new_full_range(),
-                Box::new(LfsrNoiseSource::new(None, 0.25, false, 50)),
-            )
-            .unwrap()
-            .build()
+    fn noise_font() -> Box<dyn BufferConsumerNode + Send + 'static> {
+        Box::new(
+            SoundFontBuilder::new(None)
+                .add_range(
+                    NoteRange::new_full_range(),
+                    Box::new(LfsrNoiseSource::new(None, 0.25, false, 50)),
+                )
+                .unwrap()
+                .build(),
+        )
     }
 
     let program_0 = midi_builder_from_file(None, MIDI_0_FILE)
         .unwrap()
-        .add_channel_font(0, triangle_font())
-        .add_channel_font(1, square_font())
-        .add_channel_font(2, noise_font())
+        .add_channel_source(0, triangle_font())
+        .add_channel_source(1, square_font())
+        .add_channel_source(2, noise_font())
         .build()
         .unwrap();
     let program_1 = midi_builder_from_file(None, MIDI_1_FILE)
         .unwrap()
-        .add_channel_font(0, noise_font())
-        .add_channel_font(1, square_font())
+        .add_channel_source(0, noise_font())
+        .add_channel_source(1, square_font())
         .build()
         .unwrap();
 

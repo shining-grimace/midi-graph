@@ -2,9 +2,8 @@ pub mod cue;
 pub mod util;
 
 use crate::{
-    consts, BroadcastControl, BufferConsumer, BufferConsumerNode, Cue, Error, EventChannel,
-    FontSource, MidiDataSource, Node, NodeControlEvent, NodeEvent, NoteEvent, SoundFont,
-    TimelineCue,
+    consts, BroadcastControl, BufferConsumer, BufferConsumerNode, Cue, Error, Node,
+    NodeControlEvent, NodeEvent, NoteEvent, TimelineCue,
 };
 use midly::{MetaMessage, MidiMessage, Smf, TrackEvent, TrackEventKind};
 use std::cell::RefCell;
@@ -30,7 +29,7 @@ pub struct MidiSourceBuilder {
     smf: Smf<'static>,
     track_no: usize,
     timeline_cues: Vec<TimelineCue>,
-    channel_fonts: HashMap<usize, SoundFont>,
+    channel_sources: HashMap<usize, Box<dyn BufferConsumerNode + Send + 'static>>,
 }
 
 impl MidiSourceBuilder {
@@ -51,12 +50,16 @@ impl MidiSourceBuilder {
             smf: static_smf,
             track_no,
             timeline_cues,
-            channel_fonts: HashMap::new(),
+            channel_sources: HashMap::new(),
         })
     }
 
-    pub fn add_channel_font(mut self, channel: usize, font: SoundFont) -> Self {
-        self.channel_fonts.insert(channel, font);
+    pub fn add_channel_source(
+        mut self,
+        channel: usize,
+        source: Box<dyn BufferConsumerNode + Send + 'static>,
+    ) -> Self {
+        self.channel_sources.insert(channel, source);
         self
     }
 
@@ -66,7 +69,7 @@ impl MidiSourceBuilder {
             self.smf,
             self.track_no,
             self.timeline_cues,
-            self.channel_fonts,
+            self.channel_sources,
         )
     }
 }
@@ -77,7 +80,7 @@ pub struct MidiSource {
     track_no: usize,
     timeline_cues: Vec<TimelineCue>,
     queued_ideal_seek: Option<u32>,
-    channel_sources: HashMap<usize, Box<dyn Node + Send + 'static>>,
+    channel_sources: HashMap<usize, Box<dyn BufferConsumerNode + Send + 'static>>,
     has_finished: bool,
     samples_per_tick: f64,
     next_event_index: usize,
@@ -90,13 +93,14 @@ impl MidiSource {
         smf: Smf<'static>,
         track_no: usize,
         timeline_cues: Vec<TimelineCue>,
-        channel_fonts: HashMap<usize, SoundFont>,
+        channel_sources: HashMap<usize, Box<dyn BufferConsumerNode + Send + 'static>>,
     ) -> Result<Self, Error> {
         let samples_per_tick = util::get_samples_per_tick(&smf)?;
-        let mut channel_sources: HashMap<usize, Box<dyn Node + Send + 'static>> = HashMap::new();
+        let mut sources: HashMap<usize, Box<dyn BufferConsumerNode + Send + 'static>> =
+            HashMap::new();
 
-        for (channel, font) in channel_fonts.into_iter() {
-            if channel_sources.insert(channel, Box::new(font)).is_some() {
+        for (channel, source) in channel_sources.into_iter() {
+            if sources.insert(channel, source).is_some() {
                 println!("WARNING: MIDI: Channel specified again will overwrite previous value");
             }
         }
@@ -107,38 +111,12 @@ impl MidiSource {
             track_no,
             timeline_cues,
             queued_ideal_seek: None,
-            channel_sources,
+            channel_sources: sources,
             has_finished: false,
             samples_per_tick,
             next_event_index: 0,
             event_ticks_progress: 0,
         })
-    }
-
-    pub fn from_config(
-        node_id: Option<u64>,
-        source: &MidiDataSource,
-        channels: &HashMap<usize, FontSource>,
-    ) -> Result<
-        (
-            Vec<EventChannel>,
-            Box<dyn BufferConsumerNode + Send + 'static>,
-        ),
-        Error,
-    > {
-        let mut midi_builder = match source {
-            MidiDataSource::FilePath(file) => {
-                crate::util::midi_builder_from_file(node_id, file.as_str())?
-            }
-        };
-        let mut event_channels = vec![];
-        for (channel, font_source) in channels.iter() {
-            let (channels, soundfont) = SoundFont::from_config(None, font_source)?;
-            event_channels.extend(channels);
-            midi_builder = midi_builder.add_channel_font(*channel, soundfont);
-        }
-        let source = midi_builder.build()?;
-        Ok((event_channels, Box::new(source)))
     }
 
     fn seek_to_anchor(&mut self, anchor: u32) {

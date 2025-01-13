@@ -2,7 +2,7 @@ extern crate midi_graph;
 
 use crossbeam_channel::Sender;
 use midi_graph::{
-    AsyncEventReceiver, BaseMixer, FontSource, MidiDataSource, MidiSource, NodeControlEvent,
+    BaseMixer, FileGraphLoader, FontSource, GraphLoader, MidiDataSource, NodeControlEvent,
     NodeEvent, RangeSource, SoundSource,
 };
 use std::{collections::HashMap, thread::sleep, time::Duration};
@@ -16,46 +16,58 @@ const MIDI_NODE_ID: u64 = 100;
 const FADER_NODE_ID: u64 = 101;
 
 fn main() {
-    let midi_channels = HashMap::from([
-        (
-            NOISE_CHANNEL,
-            FontSource::Ranges(vec![RangeSource {
-                source: SoundSource::Fader {
-                    node_id: Some(FADER_NODE_ID),
-                    initial_volume: 0.0,
-                    source: Box::new(SoundSource::LfsrNoise {
+    let config = SoundSource::EventReceiver {
+        node_id: None,
+        source: Box::new(SoundSource::Midi {
+            node_id: Some(MIDI_NODE_ID),
+            source: MidiDataSource::FilePath(MIDI_FILE.to_owned()),
+            channels: HashMap::from([
+                (
+                    NOISE_CHANNEL,
+                    SoundSource::Font {
                         node_id: None,
-                        amplitude: 0.5,
-                        inside_feedback: true,
-                        note_for_16_shifts: 70,
-                    }),
-                },
-                lower: 0,
-                upper: 127,
-            }]),
-        ),
-        (
-            LEAD_CHANNEL,
-            FontSource::Ranges(vec![RangeSource {
-                source: SoundSource::SawtoothWave {
-                    node_id: None,
-                    amplitude: 0.5,
-                },
-                lower: 0,
-                upper: 127,
-            }]),
-        ),
-    ]);
-    let (_, main_tree) = MidiSource::from_config(
-        Some(MIDI_NODE_ID),
-        &MidiDataSource::FilePath(MIDI_FILE.to_owned()),
-        &midi_channels,
-    )
-    .expect("Could not create MIDI");
-    let (mut sender, receiver) = AsyncEventReceiver::new(None, main_tree);
-    let _mixer =
-        BaseMixer::start_single_program(Box::new(receiver)).expect("Could not start stream");
+                        config: FontSource::Ranges(vec![RangeSource {
+                            source: SoundSource::Fader {
+                                node_id: Some(FADER_NODE_ID),
+                                initial_volume: 0.0,
+                                source: Box::new(SoundSource::LfsrNoise {
+                                    node_id: None,
+                                    amplitude: 0.5,
+                                    inside_feedback: true,
+                                    note_for_16_shifts: 70,
+                                }),
+                            },
+                            lower: 0,
+                            upper: 127,
+                        }]),
+                    },
+                ),
+                (
+                    LEAD_CHANNEL,
+                    SoundSource::Font {
+                        node_id: None,
+                        config: FontSource::Ranges(vec![RangeSource {
+                            source: SoundSource::SawtoothWave {
+                                node_id: None,
+                                amplitude: 0.5,
+                            },
+                            lower: 0,
+                            upper: 127,
+                        }]),
+                    },
+                ),
+            ]),
+        }),
+    };
+    let loader = FileGraphLoader::default();
+    let (mut event_channels, source) = loader
+        .load_source_recursive(&config)
+        .expect("Could not create MIDI");
+    let _mixer = BaseMixer::start_single_program(source).expect("Could not start stream");
     std::thread::spawn(move || {
+        let mut sender = event_channels
+            .first_mut()
+            .expect("The event sender was not found");
         sleep(Duration::from_millis(500));
         send_or_log(
             &mut sender,

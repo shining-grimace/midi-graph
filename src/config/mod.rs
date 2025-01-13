@@ -77,7 +77,7 @@ pub enum SoundSource {
         #[serde(default = "none_id")]
         node_id: Option<u64>,
         source: MidiDataSource,
-        channels: HashMap<usize, FontSource>,
+        channels: HashMap<usize, SoundSource>,
     },
     EventReceiver {
         #[serde(default = "none_id")]

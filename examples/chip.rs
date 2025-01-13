@@ -44,9 +44,9 @@ fn main() {
         .build();
     let midi = midi_builder_from_file(None, MIDI_FILE)
         .unwrap()
-        .add_channel_font(TRIANGLE_CHANNEL, triangle_font)
-        .add_channel_font(SQUARE_CHANNEL, square_font)
-        .add_channel_font(NOISE_CHANNEL, noise_font)
+        .add_channel_source(TRIANGLE_CHANNEL, Box::new(triangle_font))
+        .add_channel_source(SQUARE_CHANNEL, Box::new(square_font))
+        .add_channel_source(NOISE_CHANNEL, Box::new(noise_font))
         .build()
         .unwrap();
     let _mixer = BaseMixer::start_single_program(Box::new(midi)).expect("Could not open stream");

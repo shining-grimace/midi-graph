@@ -1,6 +1,4 @@
-use crate::{
-    consts, util::source_from_config, BufferConsumerNode, Config, Error, EventChannel, NullSource,
-};
+use crate::{consts, BufferConsumerNode, Config, Error, EventChannel, GraphLoader, NullSource};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{Stream, StreamConfig};
 use std::collections::HashMap;
@@ -46,11 +44,12 @@ impl BaseMixer {
         })
     }
 
-    pub fn start_single_program_from_config(
+    pub fn start_single_program_from_config<L: GraphLoader>(
+        loader: &L,
         program_no: Option<usize>,
         config: &Config,
     ) -> Result<(Vec<EventChannel>, Self), Error> {
-        let (channels, source) = source_from_config(&config.root)?;
+        let (channels, source) = loader.load_source_recursive(&config.root)?;
         if let Some(program_no) = &program_no {
             let mut mixer = Self::start_empty()?;
             mixer.store_program(*program_no, source);

@@ -25,9 +25,9 @@ fn main() {
         .build();
     let midi = midi_builder_from_file(None, MIDI_FILE)
         .unwrap()
-        .add_channel_font(SOUNDFONT_0_CHANNEL, font_0)
-        .add_channel_font(SOUNDFONT_1_CHANNEL, font_1)
-        .add_channel_font(NOISE_CHANNEL, noise_font)
+        .add_channel_source(SOUNDFONT_0_CHANNEL, Box::new(font_0))
+        .add_channel_source(SOUNDFONT_1_CHANNEL, Box::new(font_1))
+        .add_channel_source(NOISE_CHANNEL, Box::new(noise_font))
         .build()
         .unwrap();
 

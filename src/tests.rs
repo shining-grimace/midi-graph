@@ -23,15 +23,17 @@ fn can_decode_wav_file() {
 fn can_play_square_stream() {
     let midi = midi_builder_from_file(None, MIDI_FILE)
         .unwrap()
-        .add_channel_font(
+        .add_channel_source(
             0,
-            SoundFontBuilder::new(None)
-                .add_range(
-                    NoteRange::new_full_range(),
-                    Box::new(SquareWaveSource::new(None, 0.25, 0.125)),
-                )
-                .unwrap()
-                .build(),
+            Box::new(
+                SoundFontBuilder::new(None)
+                    .add_range(
+                        NoteRange::new_full_range(),
+                        Box::new(SquareWaveSource::new(None, 0.25, 0.125)),
+                    )
+                    .unwrap()
+                    .build(),
+            ),
         )
         .build()
         .unwrap();
@@ -45,15 +47,17 @@ fn can_play_square_stream() {
 fn can_play_wav_stream() {
     let midi = midi_builder_from_file(None, MIDI_FILE)
         .unwrap()
-        .add_channel_font(
+        .add_channel_source(
             0,
-            SoundFontBuilder::new(None)
-                .add_range(
-                    NoteRange::new_full_range(),
-                    Box::new(wav_from_file(WAV_FILE, 69, None, None).unwrap()),
-                )
-                .unwrap()
-                .build(),
+            Box::new(
+                SoundFontBuilder::new(None)
+                    .add_range(
+                        NoteRange::new_full_range(),
+                        Box::new(wav_from_file(WAV_FILE, 69, None, None).unwrap()),
+                    )
+                    .unwrap()
+                    .build(),
+            ),
         )
         .build()
         .unwrap();
