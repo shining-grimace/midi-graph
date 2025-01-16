@@ -1,7 +1,7 @@
 use crate::{config::SoundSource, BufferConsumerNode, Error, EventChannel, FontSource};
 
 pub trait GraphLoader {
-    fn prepare_source_recursive(&mut self, source: &SoundSource);
+    fn prepare_source_recursive(&mut self, source: &SoundSource) -> Result<(), Error>;
 
     fn load_source_recursive(
         &self,

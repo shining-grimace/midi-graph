@@ -24,7 +24,9 @@ impl FileGraphLoader {
 }
 
 impl GraphLoader for FileGraphLoader {
-    fn prepare_source_recursive(&mut self, _source: &SoundSource) {}
+    fn prepare_source_recursive(&mut self, _source: &SoundSource) -> Result<(), Error> {
+        Ok(())
+    }
 
     fn load_source_recursive(
         &self,
