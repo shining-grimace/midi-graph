@@ -4,7 +4,7 @@ use crate::{
     MixerSource, NoteRange, SawtoothWaveSource, SoundFontBuilder, SoundSource, SquareWaveSource,
     TriangleWaveSource,
 };
-use ron::de::{from_bytes, from_reader};
+use ron::de::from_reader;
 use std::fs::File;
 
 #[derive(Default)]
@@ -14,11 +14,6 @@ impl FileGraphLoader {
     pub fn config_from_file(&self, file_name: &str) -> Result<Config, Error> {
         let file = File::open(file_name)?;
         let config = from_reader(&file)?;
-        Ok(config)
-    }
-
-    pub fn config_from_bytes(&self, bytes: &[u8]) -> Result<Config, Error> {
-        let config = from_bytes(bytes)?;
         Ok(config)
     }
 }

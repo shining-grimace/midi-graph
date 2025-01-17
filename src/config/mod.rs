@@ -1,3 +1,5 @@
+use crate::Error;
+use ron::de::from_bytes;
 use serde_derive::Deserialize;
 use std::collections::HashMap;
 
@@ -40,6 +42,13 @@ const fn default_balance() -> f32 {
 #[derive(Deserialize, Clone)]
 pub struct Config {
     pub root: SoundSource,
+}
+
+impl Config {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Config, Error> {
+        let config = from_bytes(bytes)?;
+        Ok(config)
+    }
 }
 
 #[derive(Deserialize, Clone)]
