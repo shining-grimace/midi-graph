@@ -1,7 +1,4 @@
-use crate::{
-    consts, util, BroadcastControl, BufferConsumer, BufferConsumerNode, Error, Node,
-    NodeControlEvent, NodeEvent, NoteEvent,
-};
+use crate::{consts, util, BroadcastControl, Error, Node, NodeControlEvent, NodeEvent, NoteEvent};
 
 pub struct LfsrNoiseSource {
     node_id: u64,
@@ -63,11 +60,26 @@ impl LfsrNoiseSource {
     }
 }
 
-impl BufferConsumerNode for LfsrNoiseSource {}
-
 impl Node for LfsrNoiseSource {
     fn get_node_id(&self) -> u64 {
         self.node_id
+    }
+
+    fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error> {
+        let inside_feedback = match self.feedback_mask {
+            0x4040 => true,
+            0x4000 => false,
+            _ => {
+                return Err(Error::User("Unexpected feedback mask".to_owned()));
+            }
+        };
+        let source = Self::new(
+            Some(self.node_id),
+            self.peak_amplitude,
+            inside_feedback,
+            self.note_of_16_shifts,
+        );
+        Ok(Box::new(source))
     }
 
     fn on_event(&mut self, event: &NodeEvent) {
@@ -135,24 +147,5 @@ impl Node for LfsrNoiseSource {
 
         self.cycle_progress_samples =
             stretched_progress * self.cycle_samples_a440 / pitch_cycle_samples;
-    }
-}
-
-impl BufferConsumer for LfsrNoiseSource {
-    fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
-        let inside_feedback = match self.feedback_mask {
-            0x4040 => true,
-            0x4000 => false,
-            _ => {
-                return Err(Error::User("Unexpected feedback mask".to_owned()));
-            }
-        };
-        let source = Self::new(
-            Some(self.node_id),
-            self.peak_amplitude,
-            inside_feedback,
-            self.note_of_16_shifts,
-        );
-        Ok(Box::new(source))
     }
 }

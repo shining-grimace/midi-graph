@@ -1,4 +1,4 @@
-use crate::{config::SoundSource, BufferConsumerNode, Error, EventChannel, FontSource};
+use crate::{config::SoundSource, Error, EventChannel, FontSource, Node};
 
 pub trait GraphLoader {
     fn load_source_recursive(
@@ -7,7 +7,7 @@ pub trait GraphLoader {
     ) -> Result<
         (
             Vec<EventChannel>,
-            Box<dyn BufferConsumerNode + Send + 'static>,
+            Box<dyn Node + Send + 'static>,
         ),
         Error,
     >;

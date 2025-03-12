@@ -40,8 +40,7 @@ pub use source::{
     square::SquareWaveSource,
     triangle::TriangleWaveSource,
     wav::WavSource,
-    BroadcastControl, BufferConsumer, BufferConsumerNode, LoopRange, Node, NodeControlEvent,
-    NodeEvent, NoteEvent, NoteRange,
+    BroadcastControl, LoopRange, Node, NodeControlEvent, NodeEvent, NoteEvent, NoteRange,
 };
 
 pub mod util {

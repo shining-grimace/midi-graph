@@ -1,16 +1,13 @@
-use crate::{consts, BufferConsumer, BufferConsumerNode, Error, Node, NodeEvent};
+use crate::{consts, Error, Node, NodeEvent};
 
 pub struct CombinerSource {
     node_id: u64,
-    consumers: Vec<Box<dyn BufferConsumerNode + Send + 'static>>,
+    consumers: Vec<Box<dyn Node + Send + 'static>>,
     intermediate_buffer: Vec<f32>,
 }
 
 impl CombinerSource {
-    pub fn new(
-        node_id: Option<u64>,
-        consumers: Vec<Box<dyn BufferConsumerNode + Send + 'static>>,
-    ) -> Self {
+    pub fn new(node_id: Option<u64>, consumers: Vec<Box<dyn Node + Send + 'static>>) -> Self {
         Self {
             node_id: node_id.unwrap_or_else(<Self as Node>::new_node_id),
             consumers,
@@ -19,11 +16,16 @@ impl CombinerSource {
     }
 }
 
-impl BufferConsumerNode for CombinerSource {}
-
 impl Node for CombinerSource {
     fn get_node_id(&self) -> u64 {
         self.node_id
+    }
+
+    fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error> {
+        let consumers: Result<Vec<Box<dyn Node + Send + 'static>>, Error> =
+            self.consumers.iter().map(|c| c.duplicate()).collect();
+        let combiner = Self::new(Some(self.node_id), consumers?);
+        Ok(Box::new(combiner))
     }
 
     fn on_event(&mut self, event: &NodeEvent) {
@@ -45,14 +47,5 @@ impl Node for CombinerSource {
                 buffer[index + 1] += intermediate_slice[index + 1];
             }
         }
-    }
-}
-
-impl BufferConsumer for CombinerSource {
-    fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
-        let consumers: Result<Vec<Box<dyn BufferConsumerNode + Send + 'static>>, Error> =
-            self.consumers.iter().map(|c| c.duplicate()).collect();
-        let combiner = Self::new(Some(self.node_id), consumers?);
-        Ok(Box::new(combiner))
     }
 }

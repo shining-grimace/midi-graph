@@ -1,6 +1,6 @@
 mod range;
 
-use crate::{BufferConsumer, BufferConsumerNode, Error, Node, NodeEvent, NoteRange};
+use crate::{Error, Node, NodeEvent, NoteRange};
 use range::RangeData;
 
 const SOURCE_CAPACITY: usize = 8;
@@ -27,7 +27,7 @@ impl SoundFontBuilder {
     pub fn add_range(
         mut self,
         range: NoteRange,
-        consumer: Box<dyn BufferConsumerNode + Send + 'static>,
+        consumer: Box<dyn Node + Send + 'static>,
     ) -> Result<Self, Error> {
         let mut consumers = Vec::new();
         for _ in 0..SOURCE_CAPACITY {
@@ -56,11 +56,13 @@ impl SoundFont {
     }
 }
 
-impl BufferConsumerNode for SoundFont {}
-
 impl Node for SoundFont {
     fn get_node_id(&self) -> u64 {
         self.node_id
+    }
+
+    fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error> {
+        Err(Error::User("SoundFont cannot be duplicated".to_owned()))
     }
 
     fn on_event(&mut self, event: &NodeEvent) {
@@ -73,11 +75,5 @@ impl Node for SoundFont {
         for range_data in self.ranges.iter_mut() {
             range_data.fill_buffer(buffer);
         }
-    }
-}
-
-impl BufferConsumer for SoundFont {
-    fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
-        Err(Error::User("SoundFont cannot be duplicated".to_owned()))
     }
 }

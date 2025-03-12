@@ -1,17 +1,14 @@
-use crate::{BufferConsumer, BufferConsumerNode, Error, Node, NodeEvent, NoteEvent, NoteRange};
+use crate::{Error, Node, NodeEvent, NoteEvent, NoteRange};
 
 pub struct RangeData {
     node_id: u64,
     pub range: NoteRange,
     pub next_on_index: usize,
-    pub consumers: Vec<Box<dyn BufferConsumerNode + Send + 'static>>,
+    pub consumers: Vec<Box<dyn Node + Send + 'static>>,
 }
 
 impl RangeData {
-    pub fn new(
-        range: NoteRange,
-        consumers: Vec<Box<dyn BufferConsumerNode + Send + 'static>>,
-    ) -> Self {
+    pub fn new(range: NoteRange, consumers: Vec<Box<dyn Node + Send + 'static>>) -> Self {
         Self {
             node_id: <Self as Node>::new_node_id(),
             range,
@@ -46,11 +43,23 @@ impl RangeData {
     }
 }
 
-impl BufferConsumerNode for RangeData {}
-
 impl Node for RangeData {
     fn get_node_id(&self) -> u64 {
         self.node_id
+    }
+
+    fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error> {
+        let mut consumers = vec![];
+        for consumer in self.consumers.iter() {
+            consumers.push(consumer.duplicate()?);
+        }
+        let source = Self {
+            node_id: self.node_id,
+            range: self.range.clone(),
+            next_on_index: 0,
+            consumers,
+        };
+        Ok(Box::new(source))
     }
 
     fn on_event(&mut self, event: &NodeEvent) {
@@ -76,21 +85,5 @@ impl Node for RangeData {
         for consumer in self.consumers.iter_mut() {
             consumer.fill_buffer(buffer);
         }
-    }
-}
-
-impl BufferConsumer for RangeData {
-    fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
-        let mut consumers = vec![];
-        for consumer in self.consumers.iter() {
-            consumers.push(consumer.duplicate()?);
-        }
-        let source = Self {
-            node_id: self.node_id,
-            range: self.range.clone(),
-            next_on_index: 0,
-            consumers,
-        };
-        Ok(Box::new(source))
     }
 }

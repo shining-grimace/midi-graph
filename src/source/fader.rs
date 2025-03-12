@@ -1,4 +1,4 @@
-use crate::{consts, BufferConsumer, BufferConsumerNode, Error, Node, NodeControlEvent, NodeEvent};
+use crate::{consts, Error, Node, NodeControlEvent, NodeEvent};
 
 pub struct Fader {
     node_id: u64,
@@ -6,7 +6,7 @@ pub struct Fader {
     from_volume: f32,
     to_volume: f32,
     progress_seconds: f32,
-    consumer: Box<dyn BufferConsumerNode + Send + 'static>,
+    consumer: Box<dyn Node + Send + 'static>,
     intermediate_buffer: Vec<f32>,
 }
 
@@ -14,7 +14,7 @@ impl Fader {
     pub fn new(
         node_id: Option<u64>,
         initial_volume: f32,
-        consumer: Box<dyn BufferConsumerNode + Send + 'static>,
+        consumer: Box<dyn Node + Send + 'static>,
     ) -> Self {
         Self {
             node_id: node_id.unwrap_or_else(<Self as Node>::new_node_id),
@@ -28,11 +28,23 @@ impl Fader {
     }
 }
 
-impl BufferConsumerNode for Fader {}
-
 impl Node for Fader {
     fn get_node_id(&self) -> u64 {
         self.node_id
+    }
+
+    fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error> {
+        let consumer = self.consumer.duplicate()?;
+        let fader = Self {
+            node_id: self.node_id,
+            duration_seconds: self.duration_seconds,
+            from_volume: self.from_volume,
+            to_volume: self.to_volume,
+            progress_seconds: self.progress_seconds,
+            consumer,
+            intermediate_buffer: vec![0.0; consts::BUFFER_SIZE * consts::CHANNEL_COUNT],
+        };
+        Ok(Box::new(fader))
     }
 
     fn on_event(&mut self, event: &NodeEvent) {
@@ -87,21 +99,5 @@ impl Node for Fader {
             + ((buffer.len() / consts::CHANNEL_COUNT) as f32)
                 / consts::PLAYBACK_SAMPLE_RATE as f32)
             .min(self.duration_seconds);
-    }
-}
-
-impl BufferConsumer for Fader {
-    fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
-        let consumer = self.consumer.duplicate()?;
-        let fader = Self {
-            node_id: self.node_id,
-            duration_seconds: self.duration_seconds,
-            from_volume: self.from_volume,
-            to_volume: self.to_volume,
-            progress_seconds: self.progress_seconds,
-            consumer,
-            intermediate_buffer: vec![0.0; consts::BUFFER_SIZE * consts::CHANNEL_COUNT],
-        };
-        Ok(Box::new(fader))
     }
 }

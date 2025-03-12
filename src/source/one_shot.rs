@@ -1,7 +1,4 @@
-use crate::{
-    consts, BroadcastControl, BufferConsumer, BufferConsumerNode, Error, Node, NodeControlEvent,
-    NodeEvent, NoteEvent,
-};
+use crate::{consts, BroadcastControl, Error, Node, NodeControlEvent, NodeEvent, NoteEvent};
 use hound::{SampleFormat, WavSpec};
 use soundfont::raw::{SampleHeader, SampleLink};
 
@@ -97,11 +94,18 @@ impl OneShotSource {
     }
 }
 
-impl BufferConsumerNode for OneShotSource {}
-
 impl Node for OneShotSource {
     fn get_node_id(&self) -> u64 {
         self.node_id
+    }
+
+    fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error> {
+        let source = Self::new(
+            Some(self.node_id),
+            self.source_channel_count,
+            self.source_data.clone(),
+        );
+        Ok(Box::new(source))
     }
 
     fn on_event(&mut self, event: &NodeEvent) {
@@ -165,16 +169,5 @@ impl Node for OneShotSource {
             }
             _ => {}
         }
-    }
-}
-
-impl BufferConsumer for OneShotSource {
-    fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
-        let source = Self::new(
-            Some(self.node_id),
-            self.source_channel_count,
-            self.source_data.clone(),
-        );
-        Ok(Box::new(source))
     }
 }

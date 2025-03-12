@@ -2,8 +2,7 @@ pub mod cue;
 pub mod util;
 
 use crate::{
-    consts, BroadcastControl, BufferConsumer, BufferConsumerNode, Cue, Error, Node,
-    NodeControlEvent, NodeEvent, NoteEvent, TimelineCue,
+    consts, BroadcastControl, Cue, Error, Node, NodeControlEvent, NodeEvent, NoteEvent, TimelineCue,
 };
 use midly::{MetaMessage, MidiMessage, Smf, TrackEvent, TrackEventKind};
 use std::cell::RefCell;
@@ -29,7 +28,7 @@ pub struct MidiSourceBuilder {
     smf: Smf<'static>,
     track_no: usize,
     timeline_cues: Vec<TimelineCue>,
-    channel_sources: HashMap<usize, Box<dyn BufferConsumerNode + Send + 'static>>,
+    channel_sources: HashMap<usize, Box<dyn Node + Send + 'static>>,
 }
 
 impl MidiSourceBuilder {
@@ -57,7 +56,7 @@ impl MidiSourceBuilder {
     pub fn add_channel_source(
         mut self,
         channel: usize,
-        source: Box<dyn BufferConsumerNode + Send + 'static>,
+        source: Box<dyn Node + Send + 'static>,
     ) -> Self {
         self.channel_sources.insert(channel, source);
         self
@@ -80,7 +79,7 @@ pub struct MidiSource {
     track_no: usize,
     timeline_cues: Vec<TimelineCue>,
     queued_ideal_seek: Option<u32>,
-    channel_sources: HashMap<usize, Box<dyn BufferConsumerNode + Send + 'static>>,
+    channel_sources: HashMap<usize, Box<dyn Node + Send + 'static>>,
     has_finished: bool,
     samples_per_tick: f64,
     next_event_index: usize,
@@ -93,11 +92,10 @@ impl MidiSource {
         smf: Smf<'static>,
         track_no: usize,
         timeline_cues: Vec<TimelineCue>,
-        channel_sources: HashMap<usize, Box<dyn BufferConsumerNode + Send + 'static>>,
+        channel_sources: HashMap<usize, Box<dyn Node + Send + 'static>>,
     ) -> Result<Self, Error> {
         let samples_per_tick = util::get_samples_per_tick(&smf)?;
-        let mut sources: HashMap<usize, Box<dyn BufferConsumerNode + Send + 'static>> =
-            HashMap::new();
+        let mut sources: HashMap<usize, Box<dyn Node + Send + 'static>> = HashMap::new();
 
         for (channel, source) in channel_sources.into_iter() {
             if sources.insert(channel, source).is_some() {
@@ -278,11 +276,13 @@ impl MidiSource {
     }
 }
 
-impl BufferConsumerNode for MidiSource {}
-
 impl Node for MidiSource {
     fn get_node_id(&self) -> u64 {
         self.node_id
+    }
+
+    fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error> {
+        Err(Error::User("MidiSource cannot be duplicated".to_owned()))
     }
 
     fn on_event(&mut self, event: &NodeEvent) {
@@ -303,11 +303,5 @@ impl Node for MidiSource {
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) {
         self.fill_all_channels(buffer);
-    }
-}
-
-impl BufferConsumer for MidiSource {
-    fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
-        Err(Error::User("MidiSource cannot be duplicated".to_owned()))
     }
 }

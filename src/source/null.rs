@@ -1,4 +1,4 @@
-use crate::{BufferConsumer, BufferConsumerNode, Error, Node, NodeEvent};
+use crate::{Error, Node, NodeEvent};
 
 pub struct NullSource {
     node_id: u64,
@@ -12,21 +12,17 @@ impl NullSource {
     }
 }
 
-impl BufferConsumerNode for NullSource {}
-
 impl Node for NullSource {
     fn get_node_id(&self) -> u64 {
         self.node_id
     }
 
-    fn on_event(&mut self, _event: &NodeEvent) {}
-
-    fn fill_buffer(&mut self, _buffer: &mut [f32]) {}
-}
-
-impl BufferConsumer for NullSource {
-    fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
+    fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error> {
         let source = Self::new(Some(self.node_id));
         Ok(Box::new(source))
     }
+
+    fn on_event(&mut self, _event: &NodeEvent) {}
+
+    fn fill_buffer(&mut self, _buffer: &mut [f32]) {}
 }

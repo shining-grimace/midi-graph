@@ -1,7 +1,4 @@
-use crate::{
-    consts, util, BroadcastControl, BufferConsumer, BufferConsumerNode, Error, Node,
-    NodeControlEvent, NodeEvent, NoteEvent,
-};
+use crate::{consts, util, BroadcastControl, Error, Node, NodeControlEvent, NodeEvent, NoteEvent};
 
 pub struct SawtoothWaveSource {
     node_id: u64,
@@ -27,11 +24,13 @@ impl SawtoothWaveSource {
     }
 }
 
-impl BufferConsumerNode for SawtoothWaveSource {}
-
 impl Node for SawtoothWaveSource {
     fn get_node_id(&self) -> u64 {
         self.node_id
+    }
+
+    fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error> {
+        Ok(Box::new(Self::new(Some(self.node_id), self.peak_amplitude)))
     }
 
     fn on_event(&mut self, event: &NodeEvent) {
@@ -98,11 +97,5 @@ impl Node for SawtoothWaveSource {
 
         self.cycle_progress_samples =
             stretched_progress * self.period_samples_a440 / pitch_period_samples;
-    }
-}
-
-impl BufferConsumer for SawtoothWaveSource {
-    fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
-        Ok(Box::new(Self::new(Some(self.node_id), self.peak_amplitude)))
     }
 }

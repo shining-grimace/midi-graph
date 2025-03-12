@@ -1,4 +1,4 @@
-use crate::{consts, BufferConsumerNode, Config, Error, EventChannel, GraphLoader, NullSource};
+use crate::{consts, Config, Error, EventChannel, GraphLoader, Node, NullSource};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{Stream, StreamConfig};
 use std::collections::HashMap;
@@ -8,7 +8,7 @@ use std::sync::{
 };
 
 enum ConsumerCell {
-    Source(Box<dyn BufferConsumerNode + Send + 'static>),
+    Source(Box<dyn Node + Send + 'static>),
     Placeholder,
 }
 
@@ -31,9 +31,7 @@ impl BaseMixer {
         Self::start_single_program(consumer)
     }
 
-    pub fn start_single_program(
-        consumer: Box<dyn BufferConsumerNode + Send + 'static>,
-    ) -> Result<Self, Error> {
+    pub fn start_single_program(consumer: Box<dyn Node + Send + 'static>) -> Result<Self, Error> {
         let swappable = super::swap::SwappableConsumer::new(consumer);
         let stream = Self::open_stream(swappable.take_consumer())?;
         stream.play()?;
@@ -66,7 +64,7 @@ impl BaseMixer {
     pub fn store_program(
         &mut self,
         program_no: usize,
-        program: Box<dyn BufferConsumerNode + Send + 'static>,
+        program: Box<dyn Node + Send + 'static>,
     ) -> bool {
         // A program is already at this index and is currently being played; it will be discarded
         if matches!(
@@ -118,7 +116,7 @@ impl BaseMixer {
     }
 
     fn open_stream(
-        consumer: Arc<AtomicPtr<Box<dyn BufferConsumerNode + Send + 'static>>>,
+        consumer: Arc<AtomicPtr<Box<dyn Node + Send + 'static>>>,
     ) -> Result<Stream, Error> {
         let host = cpal::default_host();
         let device = host.default_output_device().ok_or(Error::NoDevice)?;

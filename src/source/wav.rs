@@ -1,7 +1,4 @@
-use crate::{
-    consts, util, BufferConsumer, BufferConsumerNode, Error, LoopRange, Node, NodeControlEvent,
-    NodeEvent, NoteEvent,
-};
+use crate::{consts, util, Error, LoopRange, Node, NodeControlEvent, NodeEvent, NoteEvent};
 use hound::{SampleFormat, WavSpec};
 use soundfont::raw::{SampleHeader, SampleLink};
 
@@ -180,11 +177,26 @@ impl WavSource {
     }
 }
 
-impl BufferConsumerNode for WavSource {}
-
 impl Node for WavSource {
     fn get_node_id(&self) -> u64 {
         self.node_id
+    }
+
+    fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error> {
+        let sample_rate = (consts::PLAYBACK_SAMPLE_RATE as f64 / self.playback_scale) as u32;
+        let loop_range = LoopRange::new_frame_range(
+            self.loop_start_data_position / self.source_channel_count,
+            self.loop_end_data_position / self.source_channel_count,
+        );
+        let source = Self::new(
+            Some(self.node_id),
+            sample_rate,
+            self.source_channel_count,
+            self.source_note,
+            loop_range,
+            self.source_data.clone(),
+        );
+        Ok(Box::new(source))
     }
 
     fn on_event(&mut self, event: &NodeEvent) {
@@ -266,24 +278,5 @@ impl Node for WavSource {
                 return;
             }
         }
-    }
-}
-
-impl BufferConsumer for WavSource {
-    fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
-        let sample_rate = (consts::PLAYBACK_SAMPLE_RATE as f64 / self.playback_scale) as u32;
-        let loop_range = LoopRange::new_frame_range(
-            self.loop_start_data_position / self.source_channel_count,
-            self.loop_end_data_position / self.source_channel_count,
-        );
-        let source = Self::new(
-            Some(self.node_id),
-            sample_rate,
-            self.source_channel_count,
-            self.source_note,
-            loop_range,
-            self.source_data.clone(),
-        );
-        Ok(Box::new(source))
     }
 }

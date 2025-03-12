@@ -1,7 +1,4 @@
-use crate::{
-    consts, util, BroadcastControl, BufferConsumer, BufferConsumerNode, Error, Node,
-    NodeControlEvent, NodeEvent, NoteEvent,
-};
+use crate::{consts, util, BroadcastControl, Error, Node, NodeControlEvent, NodeEvent, NoteEvent};
 
 pub struct SquareWaveSource {
     node_id: u64,
@@ -29,11 +26,14 @@ impl SquareWaveSource {
     }
 }
 
-impl BufferConsumerNode for SquareWaveSource {}
-
 impl Node for SquareWaveSource {
     fn get_node_id(&self) -> u64 {
         self.node_id
+    }
+
+    fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error> {
+        let source = Self::new(Some(self.node_id), self.peak_amplitude, self.duty_cycle);
+        Ok(Box::new(source))
     }
 
     fn on_event(&mut self, event: &NodeEvent) {
@@ -103,12 +103,5 @@ impl Node for SquareWaveSource {
 
         self.cycle_progress_samples =
             stretched_progress * self.period_samples_a440 / pitch_period_samples;
-    }
-}
-
-impl BufferConsumer for SquareWaveSource {
-    fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
-        let source = Self::new(Some(self.node_id), self.peak_amplitude, self.duty_cycle);
-        Ok(Box::new(source))
     }
 }

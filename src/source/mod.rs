@@ -25,6 +25,7 @@ static NEXT_ID: AtomicU64 = AtomicU64::new(START_GENERATED_NODE_IDS);
 
 pub trait Node {
     fn get_node_id(&self) -> u64;
+    fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error>;
     fn on_event(&mut self, event: &NodeEvent);
     fn fill_buffer(&mut self, buffer: &mut [f32]);
 
@@ -35,12 +36,6 @@ pub trait Node {
         NEXT_ID.fetch_add(1, Ordering::Relaxed)
     }
 }
-
-pub trait BufferConsumer {
-    fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error>;
-}
-
-pub trait BufferConsumerNode: BufferConsumer + Node {}
 
 #[derive(Clone)]
 pub struct NoteRange {

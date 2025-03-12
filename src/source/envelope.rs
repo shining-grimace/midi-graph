@@ -1,6 +1,4 @@
-use crate::{
-    consts, BroadcastControl, BufferConsumer, BufferConsumerNode, Error, Node, NodeEvent, NoteEvent,
-};
+use crate::{consts, BroadcastControl, Error, Node, NodeEvent, NoteEvent};
 
 const PEAK_AMPLITUDE: f32 = 1.0;
 
@@ -18,7 +16,7 @@ pub struct Envelope {
     decay_gradient: f32,
     sustain_multiplier: f32,
     release_gradient: f32,
-    consumer: Box<dyn BufferConsumerNode + Send + 'static>,
+    consumer: Box<dyn Node + Send + 'static>,
     intermediate_buffer: Vec<f32>,
     mode: EnvelopeMode,
     samples_progress_in_mode: isize,
@@ -31,7 +29,7 @@ impl Envelope {
         decay_time: f32,
         sustain_multiplier: f32,
         release_time: f32,
-        consumer: Box<dyn BufferConsumerNode + Send + 'static>,
+        consumer: Box<dyn Node + Send + 'static>,
     ) -> Self {
         let attack_gradient = PEAK_AMPLITUDE / (attack_time * consts::PLAYBACK_SAMPLE_RATE as f32);
         let decay_gradient = (sustain_multiplier - PEAK_AMPLITUDE)
@@ -73,11 +71,25 @@ impl Envelope {
     }
 }
 
-impl BufferConsumerNode for Envelope {}
-
 impl Node for Envelope {
     fn get_node_id(&self) -> u64 {
         self.node_id
+    }
+
+    fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error> {
+        let consumer = self.consumer.duplicate()?;
+        let envelope = Self {
+            node_id: self.node_id,
+            attack_gradient: self.attack_gradient,
+            decay_gradient: self.decay_gradient,
+            sustain_multiplier: self.sustain_multiplier,
+            release_gradient: self.release_gradient,
+            consumer,
+            intermediate_buffer: vec![0.0; consts::BUFFER_SIZE * consts::CHANNEL_COUNT],
+            mode: EnvelopeMode::Attack,
+            samples_progress_in_mode: 0,
+        };
+        Ok(Box::new(envelope))
     }
 
     fn on_event(&mut self, event: &NodeEvent) {
@@ -190,23 +202,5 @@ impl Node for Envelope {
             };
             samples_available -= samples_to_fill;
         }
-    }
-}
-
-impl BufferConsumer for Envelope {
-    fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
-        let consumer = self.consumer.duplicate()?;
-        let envelope = Self {
-            node_id: self.node_id,
-            attack_gradient: self.attack_gradient,
-            decay_gradient: self.decay_gradient,
-            sustain_multiplier: self.sustain_multiplier,
-            release_gradient: self.release_gradient,
-            consumer,
-            intermediate_buffer: vec![0.0; consts::BUFFER_SIZE * consts::CHANNEL_COUNT],
-            mode: EnvelopeMode::Attack,
-            samples_progress_in_mode: 0,
-        };
-        Ok(Box::new(envelope))
     }
 }

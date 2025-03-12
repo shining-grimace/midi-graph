@@ -1,11 +1,11 @@
-use crate::BufferConsumerNode;
+use crate::Node;
 use std::sync::{
     atomic::{AtomicPtr, Ordering},
     Arc,
 };
 
 pub struct SwappableConsumer {
-    consumer: Arc<AtomicPtr<Box<dyn BufferConsumerNode + Send + 'static>>>,
+    consumer: Arc<AtomicPtr<Box<dyn Node + Send + 'static>>>,
 }
 
 impl Drop for SwappableConsumer {
@@ -20,7 +20,7 @@ impl Drop for SwappableConsumer {
 }
 
 impl SwappableConsumer {
-    pub fn new(consumer: Box<dyn BufferConsumerNode + Send + 'static>) -> Self {
+    pub fn new(consumer: Box<dyn Node + Send + 'static>) -> Self {
         let boxed_consumer = Box::new(consumer);
         let consumer_arc = Arc::new(AtomicPtr::new(Box::into_raw(boxed_consumer)));
         Self {
@@ -28,22 +28,21 @@ impl SwappableConsumer {
         }
     }
 
-    pub fn take_consumer(&self) -> Arc<AtomicPtr<Box<dyn BufferConsumerNode + Send + 'static>>> {
+    pub fn take_consumer(&self) -> Arc<AtomicPtr<Box<dyn Node + Send + 'static>>> {
         Arc::clone(&self.consumer)
     }
 
     pub fn swap_consumer(
         &mut self,
-        consumer: Box<dyn BufferConsumerNode + Send + 'static>,
-    ) -> Option<Box<dyn BufferConsumerNode + Send + 'static>> {
+        consumer: Box<dyn Node + Send + 'static>,
+    ) -> Option<Box<dyn Node + Send + 'static>> {
         let boxed_consumer = Box::new(consumer);
         let old_ptr = self
             .consumer
             .swap(Box::into_raw(boxed_consumer), Ordering::SeqCst);
         if !old_ptr.is_null() {
             unsafe {
-                let boxed_consumer: Box<Box<dyn BufferConsumerNode + Send + 'static>> =
-                    Box::from_raw(old_ptr);
+                let boxed_consumer: Box<Box<dyn Node + Send + 'static>> = Box::from_raw(old_ptr);
                 Some(*boxed_consumer)
             }
         } else {

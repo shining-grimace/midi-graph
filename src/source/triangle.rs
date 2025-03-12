@@ -1,7 +1,4 @@
-use crate::{
-    consts, util, BroadcastControl, BufferConsumer, BufferConsumerNode, Error, Node,
-    NodeControlEvent, NodeEvent, NoteEvent,
-};
+use crate::{consts, util, BroadcastControl, Error, Node, NodeControlEvent, NodeEvent, NoteEvent};
 
 pub struct TriangleWaveSource {
     node_id: u64,
@@ -27,11 +24,13 @@ impl TriangleWaveSource {
     }
 }
 
-impl BufferConsumerNode for TriangleWaveSource {}
-
 impl Node for TriangleWaveSource {
     fn get_node_id(&self) -> u64 {
         self.node_id
+    }
+
+    fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error> {
+        Ok(Box::new(Self::new(Some(self.node_id), self.peak_amplitude)))
     }
 
     fn on_event(&mut self, event: &NodeEvent) {
@@ -101,11 +100,5 @@ impl Node for TriangleWaveSource {
 
         self.cycle_progress_samples =
             stretched_progress * self.period_samples_a440 / pitch_period_samples;
-    }
-}
-
-impl BufferConsumer for TriangleWaveSource {
-    fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
-        Ok(Box::new(Self::new(Some(self.node_id), self.peak_amplitude)))
     }
 }

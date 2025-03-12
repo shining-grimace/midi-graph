@@ -1,10 +1,10 @@
-use crate::{consts, BufferConsumer, BufferConsumerNode, Error, Node, NodeControlEvent, NodeEvent};
+use crate::{consts, Error, Node, NodeControlEvent, NodeEvent};
 
 pub struct MixerSource {
     node_id: u64,
     balance: f32,
-    consumer_0: Box<dyn BufferConsumerNode + Send + 'static>,
-    consumer_1: Box<dyn BufferConsumerNode + Send + 'static>,
+    consumer_0: Box<dyn Node + Send + 'static>,
+    consumer_1: Box<dyn Node + Send + 'static>,
     intermediate_buffer: Vec<f32>,
 }
 
@@ -12,8 +12,8 @@ impl MixerSource {
     pub fn new(
         node_id: Option<u64>,
         balance: f32,
-        consumer_0: Box<dyn BufferConsumerNode + Send + 'static>,
-        consumer_1: Box<dyn BufferConsumerNode + Send + 'static>,
+        consumer_0: Box<dyn Node + Send + 'static>,
+        consumer_1: Box<dyn Node + Send + 'static>,
     ) -> Self {
         Self {
             node_id: node_id.unwrap_or_else(<Self as Node>::new_node_id),
@@ -25,11 +25,16 @@ impl MixerSource {
     }
 }
 
-impl BufferConsumerNode for MixerSource {}
-
 impl Node for MixerSource {
     fn get_node_id(&self) -> u64 {
         self.node_id
+    }
+
+    fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error> {
+        let consumer_0 = self.consumer_0.duplicate()?;
+        let consumer_1 = self.consumer_1.duplicate()?;
+        let mixer = Self::new(Some(self.node_id), self.balance, consumer_0, consumer_1);
+        Ok(Box::new(mixer))
     }
 
     fn on_event(&mut self, event: &NodeEvent) {
@@ -66,14 +71,5 @@ impl Node for MixerSource {
             buffer[index] += self.balance * intermediate_slice[index];
             buffer[index + 1] += self.balance * intermediate_slice[index + 1];
         }
-    }
-}
-
-impl BufferConsumer for MixerSource {
-    fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
-        let consumer_0 = self.consumer_0.duplicate()?;
-        let consumer_1 = self.consumer_1.duplicate()?;
-        let mixer = Self::new(Some(self.node_id), self.balance, consumer_0, consumer_1);
-        Ok(Box::new(mixer))
     }
 }

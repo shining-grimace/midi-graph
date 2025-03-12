@@ -1,4 +1,4 @@
-use crate::{BufferConsumer, BufferConsumerNode, Error, Node, NodeEvent};
+use crate::{Error, Node, NodeEvent};
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use std::ops::{Deref, DerefMut};
 
@@ -24,13 +24,13 @@ impl DerefMut for EventChannel {
 pub struct AsyncEventReceiver {
     node_id: u64,
     receiver: Receiver<NodeEvent>,
-    consumer: Box<dyn BufferConsumerNode + Send + 'static>,
+    consumer: Box<dyn Node + Send + 'static>,
 }
 
 impl AsyncEventReceiver {
     pub fn new(
         node_id: Option<u64>,
-        consumer: Box<dyn BufferConsumerNode + Send + 'static>,
+        consumer: Box<dyn Node + Send + 'static>,
     ) -> (EventChannel, Self) {
         let (sender, receiver) = unbounded();
         let async_receiver = AsyncEventReceiver {
@@ -46,11 +46,15 @@ impl AsyncEventReceiver {
     }
 }
 
-impl BufferConsumerNode for AsyncEventReceiver {}
-
 impl Node for AsyncEventReceiver {
     fn get_node_id(&self) -> u64 {
         self.node_id
+    }
+
+    fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error> {
+        Err(Error::User(
+            "AsyncEventReceiver cannot be duplicated".to_owned(),
+        ))
     }
 
     fn on_event(&mut self, _event: &NodeEvent) {}
@@ -60,13 +64,5 @@ impl Node for AsyncEventReceiver {
             self.consumer.on_event(&event);
         }
         self.consumer.fill_buffer(buffer);
-    }
-}
-
-impl BufferConsumer for AsyncEventReceiver {
-    fn duplicate(&self) -> Result<Box<dyn BufferConsumerNode + Send + 'static>, Error> {
-        Err(Error::User(
-            "AsyncEventReceiver cannot be duplicated".to_owned(),
-        ))
     }
 }
