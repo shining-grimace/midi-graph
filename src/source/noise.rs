@@ -148,4 +148,14 @@ impl Node for LfsrNoiseSource {
         self.cycle_progress_samples =
             stretched_progress * self.cycle_samples_a440 / pitch_cycle_samples;
     }
+
+    fn replace_children(
+        &mut self,
+        children: &[Box<dyn Node + Send + 'static>],
+    ) -> Result<(), Error> {
+        match children.is_empty() {
+            true => Ok(()),
+            false => Err(Error::User("LfsrNoiseSource cannot have children".to_owned()))
+        }
+    }
 }

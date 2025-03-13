@@ -101,4 +101,14 @@ impl Node for TriangleWaveSource {
         self.cycle_progress_samples =
             stretched_progress * self.period_samples_a440 / pitch_period_samples;
     }
+
+    fn replace_children(
+        &mut self,
+        children: &[Box<dyn Node + Send + 'static>],
+    ) -> Result<(), Error> {
+        match children.is_empty() {
+            true => Ok(()),
+            false => Err(Error::User("TriangleWaveSource cannot have children".to_owned()))
+        }
+    }
 }

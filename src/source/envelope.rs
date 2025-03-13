@@ -203,4 +203,15 @@ impl Node for Envelope {
             samples_available -= samples_to_fill;
         }
     }
+
+    fn replace_children(
+        &mut self,
+        children: &[Box<dyn Node + Send + 'static>],
+    ) -> Result<(), Error> {
+        if children.len() != 1 {
+            return Err(Error::User("Envelope requires one child".to_owned()));
+        }
+        self.consumer = children[0].duplicate()?;
+        Ok(())
+    }
 }

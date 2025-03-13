@@ -86,4 +86,18 @@ impl Node for RangeData {
             consumer.fill_buffer(buffer);
         }
     }
+
+    fn replace_children(
+        &mut self,
+        children: &[Box<dyn Node + Send + 'static>],
+    ) -> Result<(), Error> {
+        if children.is_empty() {
+            return Err(Error::User("RangeData must have children".to_owned()));
+        }
+        self.consumers = children.iter()
+            .map(|child| child.duplicate())
+            .collect::<Result<Vec<Box<dyn Node + Send + 'static>>, Error>>()?;
+        self.next_on_index = 0;
+        Ok(())
+    }
 }

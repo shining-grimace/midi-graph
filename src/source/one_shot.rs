@@ -170,4 +170,14 @@ impl Node for OneShotSource {
             _ => {}
         }
     }
+
+    fn replace_children(
+        &mut self,
+        children: &[Box<dyn Node + Send + 'static>],
+    ) -> Result<(), Error> {
+        match children.is_empty() {
+            true => Ok(()),
+            false => Err(Error::User("OneShotSource cannot have children".to_owned()))
+        }
+    }
 }

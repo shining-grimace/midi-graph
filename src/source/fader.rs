@@ -100,4 +100,15 @@ impl Node for Fader {
                 / consts::PLAYBACK_SAMPLE_RATE as f32)
             .min(self.duration_seconds);
     }
+
+    fn replace_children(
+        &mut self,
+        children: &[Box<dyn Node + Send + 'static>],
+    ) -> Result<(), Error> {
+        if children.len() != 1 {
+            return Err(Error::User("Fader requires one child".to_owned()));
+        }
+        self.consumer = children[0].duplicate()?;
+        Ok(())
+    }
 }

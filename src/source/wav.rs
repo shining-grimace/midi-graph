@@ -279,4 +279,13 @@ impl Node for WavSource {
             }
         }
     }
+
+    fn replace_children(
+        &mut self,
+        children: &[Box<dyn Node + Send + 'static>],) -> Result<(), Error> {
+        match children.is_empty() {
+            true => Ok(()),
+            false => Err(Error::User("WavSource cannot have children".to_owned()))
+        }
+    }
 }

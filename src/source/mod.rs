@@ -28,6 +28,10 @@ pub trait Node {
     fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error>;
     fn on_event(&mut self, event: &NodeEvent);
     fn fill_buffer(&mut self, buffer: &mut [f32]);
+    fn replace_children(
+        &mut self,
+        children: &[Box<dyn Node + Send + 'static>],
+    ) -> Result<(), Error>;
 
     fn new_node_id() -> u64
     where

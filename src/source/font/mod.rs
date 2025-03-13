@@ -76,4 +76,11 @@ impl Node for SoundFont {
             range_data.fill_buffer(buffer);
         }
     }
+
+    fn replace_children(
+        &mut self,
+        _children: &[Box<dyn Node + Send + 'static>],
+    ) -> Result<(), Error> {
+        Err(Error::User("SoundFont does not support replacing its children".to_owned()))
+    }
 }

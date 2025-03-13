@@ -65,4 +65,17 @@ impl Node for AsyncEventReceiver {
         }
         self.consumer.fill_buffer(buffer);
     }
+
+    fn replace_children(
+        &mut self,
+        children: &[Box<dyn Node + Send + 'static>],
+    ) -> Result<(), Error> {
+        if children.len() != 1 {
+            return Err(Error::User(
+                "AsyncEventReceiver requires one child".to_owned(),
+            ));
+        }
+        self.consumer = children[0].duplicate()?;
+        Ok(())
+    }
 }

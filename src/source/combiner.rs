@@ -48,4 +48,14 @@ impl Node for CombinerSource {
             }
         }
     }
+
+    fn replace_children(
+        &mut self,
+        children: &[Box<dyn Node + Send + 'static>],
+    ) -> Result<(), Error> {
+        self.consumers = children.iter()
+            .map(|child| child.duplicate())
+            .collect::<Result<Vec<Box<dyn Node + Send + 'static>>, Error>>()?;
+        Ok(())
+    }
 }

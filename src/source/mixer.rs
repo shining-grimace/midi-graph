@@ -72,4 +72,16 @@ impl Node for MixerSource {
             buffer[index + 1] += self.balance * intermediate_slice[index + 1];
         }
     }
+
+    fn replace_children(
+        &mut self,
+        children: &[Box<dyn Node + Send + 'static>],
+    ) -> Result<(), Error> {
+        if children.len() != 2 {
+            return Err(Error::User("Mixer requires two children".to_owned()));
+        }
+        self.consumer_0 = children[0].duplicate()?;
+        self.consumer_1 = children[1].duplicate()?;
+        Ok(())
+    }
 }

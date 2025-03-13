@@ -304,4 +304,11 @@ impl Node for MidiSource {
     fn fill_buffer(&mut self, buffer: &mut [f32]) {
         self.fill_all_channels(buffer);
     }
+
+    fn replace_children(
+        &mut self,
+        _children: &[Box<dyn Node + Send + 'static>],
+    ) -> Result<(), Error> {
+        Err(Error::User("MidiSource does not support replacing its children".to_owned()))
+    }
 }
