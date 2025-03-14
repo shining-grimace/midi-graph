@@ -99,6 +99,10 @@ impl Node for OneShotSource {
         self.node_id
     }
 
+    fn set_node_id(&mut self, node_id: u64) {
+        self.node_id = node_id;
+    }
+
     fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error> {
         let source = Self::new(
             Some(self.node_id),

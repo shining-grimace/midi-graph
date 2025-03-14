@@ -281,6 +281,10 @@ impl Node for MidiSource {
         self.node_id
     }
 
+    fn set_node_id(&mut self, node_id: u64) {
+        self.node_id = node_id;
+    }
+
     fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error> {
         Err(Error::User("MidiSource cannot be duplicated".to_owned()))
     }

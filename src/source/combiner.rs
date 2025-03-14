@@ -21,6 +21,10 @@ impl Node for CombinerSource {
         self.node_id
     }
 
+    fn set_node_id(&mut self, node_id: u64) {
+        self.node_id = node_id;
+    }
+
     fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error> {
         let consumers: Result<Vec<Box<dyn Node + Send + 'static>>, Error> =
             self.consumers.iter().map(|c| c.duplicate()).collect();

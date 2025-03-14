@@ -30,6 +30,10 @@ impl Node for MixerSource {
         self.node_id
     }
 
+    fn set_node_id(&mut self, node_id: u64) {
+        self.node_id = node_id;
+    }
+
     fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error> {
         let consumer_0 = self.consumer_0.duplicate()?;
         let consumer_1 = self.consumer_1.duplicate()?;

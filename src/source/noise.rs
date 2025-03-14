@@ -65,6 +65,10 @@ impl Node for LfsrNoiseSource {
         self.node_id
     }
 
+    fn set_node_id(&mut self, node_id: u64) {
+        self.node_id = node_id;
+    }
+
     fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error> {
         let inside_feedback = match self.feedback_mask {
             0x4040 => true,
