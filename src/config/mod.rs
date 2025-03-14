@@ -1,6 +1,6 @@
 use crate::Error;
 use ron::de::from_bytes;
-use serde_derive::Deserialize;
+use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 const fn none_id() -> Option<u64> {
@@ -51,12 +51,12 @@ impl Config {
     }
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub enum MidiDataSource {
     FilePath(String),
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub enum FontSource {
     Ranges(Vec<RangeSource>),
     Sf2FilePath {
@@ -65,7 +65,7 @@ pub enum FontSource {
     },
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct RangeSource {
     pub source: SoundSource,
     pub lower: u8,
@@ -74,13 +74,13 @@ pub struct RangeSource {
 
 /// Loop range, defined as the inclusive start and exclusive end.
 /// These points are specified in frames, not data points.
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct Loop {
     pub start: usize,
     pub end: usize,
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub enum SoundSource {
     Midi {
         #[serde(default = "none_id")]
