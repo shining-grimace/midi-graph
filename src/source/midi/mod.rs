@@ -53,6 +53,22 @@ impl MidiSourceBuilder {
         })
     }
 
+    /// Set up a builder using ready-to-go properties, but without any channel sources assigned
+    fn new_from_prepared_data(
+        node_id: Option<u64>,
+        smf: Smf<'static>,
+        track_no: usize,
+        timeline_cues: Vec<TimelineCue>,
+    ) -> Self {
+        Self {
+            node_id,
+            smf,
+            track_no,
+            timeline_cues,
+            channel_sources: HashMap::new(),
+        }
+    }
+
     pub fn add_channel_source(
         mut self,
         channel: usize,
@@ -115,6 +131,15 @@ impl MidiSource {
             next_event_index: 0,
             event_ticks_progress: 0,
         })
+    }
+
+    pub fn duplicate_without_sources(&self) -> MidiSourceBuilder {
+        MidiSourceBuilder::new_from_prepared_data(
+            Some(self.node_id),
+            self.smf.borrow().clone(),
+            self.track_no,
+            self.timeline_cues.clone(),
+        )
     }
 
     fn seek_to_anchor(&mut self, anchor: u32) {
@@ -313,6 +338,8 @@ impl Node for MidiSource {
         &mut self,
         _children: &[Box<dyn Node + Send + 'static>],
     ) -> Result<(), Error> {
-        Err(Error::User("MidiSource does not support replacing its children".to_owned()))
+        Err(Error::User(
+            "MidiSource does not support replacing its children".to_owned(),
+        ))
     }
 }
