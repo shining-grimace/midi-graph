@@ -2,8 +2,11 @@ extern crate midi_graph;
 
 use crossbeam_channel::Sender;
 use midi_graph::{
-    AsyncEventReceiver, BaseMixer, Fader, MixerSource, NodeControlEvent, NodeEvent, NoteEvent,
-    NoteRange, SawtoothWaveSource, SoundFontBuilder, SquareWaveSource, TriangleWaveSource,
+    effect::{AsyncEventReceiver, Fader},
+    font::SoundFontBuilder,
+    generator::{SawtoothWaveSource, SquareWaveSource, TriangleWaveSource},
+    group::MixerSource,
+    BaseMixer, NodeControlEvent, NodeEvent, NoteEvent, NoteRange,
 };
 use std::{thread::sleep, time::Duration};
 

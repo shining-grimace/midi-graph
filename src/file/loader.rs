@@ -1,8 +1,10 @@
 use crate::{
-    util, AsyncEventReceiver, CombinerSource, Config, Envelope, Error, EventChannel, Fader,
-    FontSource, GraphLoader, LfsrNoiseSource, LoopRange, MidiDataSource, MixerSource, Node,
-    NoteRange, SawtoothWaveSource, SoundFontBuilder, SoundSource, SquareWaveSource,
-    TriangleWaveSource,
+    effect::{AsyncEventReceiver, Envelope, EventChannel, Fader},
+    font::SoundFontBuilder,
+    generator::{LfsrNoiseSource, SawtoothWaveSource, SquareWaveSource, TriangleWaveSource},
+    group::{CombinerSource, MixerSource},
+    util, Config, Error, FontSource, GraphLoader, LoopRange, MidiDataSource, Node, NoteRange,
+    SoundSource
 };
 use ron::de::from_reader;
 use std::fs::File;

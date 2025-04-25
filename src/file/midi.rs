@@ -1,4 +1,4 @@
-use crate::{Error, MidiSourceBuilder};
+use crate::{Error, midi::MidiSourceBuilder};
 use midly::Smf;
 
 pub fn midi_builder_from_file(

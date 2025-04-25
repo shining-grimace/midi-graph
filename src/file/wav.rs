@@ -1,4 +1,4 @@
-use crate::{Error, LoopRange, OneShotSource, WavSource};
+use crate::{Error, LoopRange, generator::{OneShotSource, WavSource}};
 use hound::WavReader;
 use soundfont::data::SampleHeader;
 

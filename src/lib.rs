@@ -15,40 +15,61 @@ mod error;
 mod file;
 mod loader;
 mod mix;
-mod source;
+mod node;
 
 pub use config::{Config, FontSource, Loop, MidiDataSource, RangeSource, SoundSource};
 pub use error::Error;
 pub use file::loader::FileGraphLoader;
 pub use loader::GraphLoader;
 pub use mix::base::BaseMixer;
-pub use source::{
-    async_receiver::{AsyncEventReceiver, EventChannel},
-    combiner::CombinerSource,
-    envelope::Envelope,
-    fader::Fader,
-    font::{SoundFont, SoundFontBuilder},
-    midi::{
-        cue::{Cue, TimelineCue},
-        MidiSource, MidiSourceBuilder,
-    },
-    mixer::MixerSource,
-    noise::LfsrNoiseSource,
-    null::NullSource,
-    one_shot::OneShotSource,
-    sawtooth::SawtoothWaveSource,
-    square::SquareWaveSource,
-    triangle::TriangleWaveSource,
-    wav::WavSource,
+pub use node::{
     BroadcastControl, LoopRange, Node, NodeControlEvent, NodeEvent, NoteEvent, NoteRange,
 };
+
+pub mod effect {
+    pub use crate::node::effect::{
+        async_receiver::{AsyncEventReceiver, EventChannel},
+        envelope::Envelope,
+        fader::Fader
+    };
+}
+
+pub mod font {
+    pub use crate::node::font::{SoundFont, SoundFontBuilder};
+}
+
+pub mod generator {
+    pub use crate::node::generator::{
+        noise::LfsrNoiseSource,
+        null::NullSource,
+        one_shot::OneShotSource,
+        sawtooth::SawtoothWaveSource,
+        square::SquareWaveSource,
+        triangle::TriangleWaveSource,
+        wav::WavSource
+    };
+}
+
+pub mod group {
+    pub use crate::node::group::{
+        combiner::CombinerSource,
+        mixer::MixerSource
+    };
+}
+
+pub mod midi {
+    pub use crate::node::midi::{
+        cue::{Cue, TimelineCue},
+        MidiSource, MidiSourceBuilder,
+    };
+}
 
 pub mod util {
     pub use crate::file::font::*;
     pub use crate::file::midi::*;
     pub use crate::file::wav::*;
-    pub use crate::source::midi::util::*;
-    pub use crate::source::util::*;
+    pub use crate::node::midi::util::*;
+    pub use crate::node::util::*;
 }
 
 pub mod consts {

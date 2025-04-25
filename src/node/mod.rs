@@ -1,18 +1,10 @@
-pub mod async_receiver;
-pub mod combiner;
-pub mod envelope;
-pub mod fader;
+
+pub mod effect;
 pub mod font;
+pub mod generator;
+pub mod group;
 pub mod midi;
-pub mod mixer;
-pub mod noise;
-pub mod null;
-pub mod one_shot;
-pub mod sawtooth;
-pub mod square;
-pub mod triangle;
 pub mod util;
-pub mod wav;
 
 #[cfg(debug_assertions)]
 pub mod log;

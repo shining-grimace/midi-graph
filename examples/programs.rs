@@ -1,8 +1,10 @@
 extern crate midi_graph;
 
 use midi_graph::{
-    util::midi_builder_from_file, BaseMixer, LfsrNoiseSource, Node, NoteRange, SoundFontBuilder,
-    SquareWaveSource, TriangleWaveSource,
+    font::SoundFontBuilder,
+    generator::{LfsrNoiseSource, SquareWaveSource, TriangleWaveSource},
+    util::midi_builder_from_file,
+    BaseMixer, Node, NoteRange,
 };
 use std::time::Duration;
 

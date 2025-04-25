@@ -1,4 +1,8 @@
-use crate::{util::wav_from_i16_samples, Error, NoteRange, SoundFont, SoundFontBuilder};
+use crate::{
+    file::wav::wav_from_i16_samples,
+    node::font::{SoundFont, SoundFontBuilder},
+    Error, NoteRange
+};
 use byteorder::{LittleEndian, ReadBytesExt};
 use soundfont::{
     data::{GeneratorAmount, GeneratorType},

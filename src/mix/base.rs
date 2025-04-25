@@ -1,4 +1,6 @@
-use crate::{consts, Config, Error, EventChannel, GraphLoader, Node, NullSource};
+use crate::{
+    consts, effect::EventChannel, generator::NullSource, Config, Error, GraphLoader, Node,
+};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{Stream, StreamConfig};
 use std::collections::HashMap;
@@ -86,15 +88,17 @@ impl BaseMixer {
 
         let new_program = match self.program_sources.remove(&program_no) {
             Some(ConsumerCell::Placeholder) => {
-                return Err(Error::User(
-                    format!("Cannot change program: program no. {} is already playing", program_no)
-                ))
+                return Err(Error::User(format!(
+                    "Cannot change program: program no. {} is already playing",
+                    program_no
+                )))
             }
             Some(ConsumerCell::Source(program)) => program,
             None => {
-                return Err(Error::User(
-                    format!("Cannot change program: nothing is stored for program no. {}", program_no),
-                ))
+                return Err(Error::User(format!(
+                    "Cannot change program: nothing is stored for program no. {}",
+                    program_no
+                )))
             }
         };
 

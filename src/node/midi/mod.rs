@@ -2,14 +2,16 @@ pub mod cue;
 pub mod util;
 
 use crate::{
-    consts, BroadcastControl, Cue, Error, Node, NodeControlEvent, NodeEvent, NoteEvent, TimelineCue,
+    consts,
+    midi::{Cue, TimelineCue},
+    BroadcastControl, Error, Node, NodeControlEvent, NodeEvent, NoteEvent,
 };
 use midly::{MetaMessage, MidiMessage, Smf, TrackEvent, TrackEventKind};
 use std::cell::RefCell;
 use std::collections::HashMap;
 
 #[cfg(debug_assertions)]
-use crate::source::log;
+use crate::node::log;
 
 #[derive(Debug)]
 enum EventAction {

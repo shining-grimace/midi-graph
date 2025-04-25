@@ -1,6 +1,8 @@
 use crate::{
+    font::SoundFontBuilder,
+    generator::SquareWaveSource,
     util::{midi_builder_from_file, wav_from_file},
-    BaseMixer, NoteRange, SoundFontBuilder, SquareWaveSource,
+    BaseMixer, NoteRange
 };
 use std::time::Duration;
 
