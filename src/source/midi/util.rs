@@ -53,7 +53,7 @@ fn scan_for_data<T>(smf: &Smf, extractor: fn(&TrackEventKind) -> Option<T>) -> O
 
 pub fn choose_track_index(smf: &Smf) -> Result<usize, Error> {
     if smf.tracks.is_empty() {
-        return Err(Error::User("MIDI: No tracks in MIDI file".to_owned()));
+        return Err(Error::User("No tracks in MIDI file".to_owned()));
     }
     for (i, track) in smf.tracks.iter().enumerate() {
         let any_note_on_events = track.iter().any(|event| {
@@ -73,6 +73,6 @@ pub fn choose_track_index(smf: &Smf) -> Result<usize, Error> {
         }
     }
     Err(Error::User(
-        "MIDI: No tracks found with key on events".to_owned(),
+        "MIDI file does not have any tracks with NoteOn events".to_owned(),
     ))
 }

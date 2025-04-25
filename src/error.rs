@@ -1,6 +1,8 @@
+
 #[derive(Debug)]
 pub enum Error {
     User(String),
+    Internal(String),
     Io(std::io::Error),
     Ron(ron::error::SpannedError),
     Midly(midly::Error),
@@ -15,6 +17,7 @@ impl std::fmt::Display for Error {
     fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Error::User(e) => e.fmt(fmt),
+            Error::Internal(e) => e.fmt(fmt),
             Error::Io(e) => e.fmt(fmt),
             Error::Ron(e) => e.fmt(fmt),
             Error::Midly(e) => e.fmt(fmt),

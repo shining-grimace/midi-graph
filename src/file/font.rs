@@ -44,10 +44,10 @@ where
     let sample_chunk_metadata = &sf2
         .sample_data
         .smpl
-        .ok_or_else(|| Error::User("Cannot read SF2 sample header".to_owned()))?;
+        .ok_or_else(|| Error::User("There was no sample header in the SF2 file".to_owned()))?;
     let Some(instrument) = sf2.instruments.get(instrument_index) else {
         return Err(Error::User(format!(
-            "Index {} out of bounds ({} instruments in SF2 file)",
+            "Index {} is out of bounds ({} instruments in the SF2 file)",
             instrument_index,
             sf2.instruments.len()
         )));
@@ -82,7 +82,7 @@ where
 fn validate_sf2_file(sf2: &SoundFont2) -> Result<(), Error> {
     if sf2.info.version.major != 2 {
         return Err(Error::User(format!(
-            "ERROR: SF2: Unsupported SF2 file version: {}",
+            "Unsupported SF2 file version {}; only version 2 is supported",
             sf2.info.version.major
         )));
     }
@@ -92,7 +92,7 @@ fn validate_sf2_file(sf2: &SoundFont2) -> Result<(), Error> {
     }
     if sf2.instruments.is_empty() {
         return Err(Error::User(
-            "ERROR: SF2: File has no instruments".to_owned(),
+            "The SF2 file has no instruments".to_owned(),
         ));
     }
     Ok(())
@@ -122,7 +122,7 @@ fn note_range_for_zone(zone: &Zone) -> Result<NoteRange, Error> {
         }
     }
     Err(Error::User(
-        "SF2: No key range found in instrument zone".to_owned(),
+        "No key range found in an instrument zone in the SF2 file".to_owned(),
     ))
 }
 

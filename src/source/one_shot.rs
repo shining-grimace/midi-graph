@@ -17,7 +17,7 @@ impl OneShotSource {
             SampleLink::MonoSample => 1,
             _ => {
                 return Err(Error::User(format!(
-                    "SF2: Unsupported sample type: {:?}",
+                    "Unsupported sample type for SF2 files: {:?}",
                     header.sample_type
                 )));
             }
@@ -58,7 +58,7 @@ impl OneShotSource {
         match header.sample_type {
             SampleLink::MonoSample => Ok(()),
             _ => Err(Error::User(format!(
-                "SF2: Unsupported sample type: {:?}",
+                "Unsupported sample type for SF2 files: {:?}",
                 header.sample_type
             ))),
         }
@@ -67,25 +67,25 @@ impl OneShotSource {
     fn validate_spec(spec: &WavSpec) -> Result<(), Error> {
         if spec.channels == 0 || spec.channels > 2 {
             return Err(Error::User(format!(
-                "{} channels is not supported",
+                "{} channels is not supported for WAV files (only 1 or 2 is supported)",
                 spec.channels
             )));
         }
         if spec.sample_format != SampleFormat::Float {
             return Err(Error::User(format!(
-                "Sample format {:?} is not supported",
+                "Sample format {:?} is not supported for WAV files (only 32-bit float is supported)",
                 spec.sample_format
             )));
         }
         if spec.bits_per_sample != 32 {
             return Err(Error::User(format!(
-                "{} bits per sample is not supported",
+                "{} bits per sample is not supported for WAV files (only 32-bit float is supported)",
                 spec.bits_per_sample
             )));
         }
         if spec.sample_rate as usize != consts::PLAYBACK_SAMPLE_RATE {
             println!(
-                "WARNING: SF2: Sample rate {} should match playback rate of {}",
+                "WARNING: (WAV) Sample rate {} should match playback rate of {}",
                 spec.sample_rate,
                 consts::PLAYBACK_SAMPLE_RATE
             );

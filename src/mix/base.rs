@@ -86,12 +86,14 @@ impl BaseMixer {
 
         let new_program = match self.program_sources.remove(&program_no) {
             Some(ConsumerCell::Placeholder) => {
-                return Err(Error::User("That program is already playing".to_owned()))
+                return Err(Error::User(
+                    format!("Cannot change program: program no. {} is already playing", program_no)
+                ))
             }
             Some(ConsumerCell::Source(program)) => program,
             None => {
                 return Err(Error::User(
-                    "There is no program stored at that index".to_owned(),
+                    format!("Cannot change program: nothing is stored for program no. {}", program_no),
                 ))
             }
         };

@@ -19,8 +19,9 @@ impl TimelineCue {
         let mut cues = vec![];
         for (event_index, event) in smf.tracks[track_index].iter().enumerate() {
             if let TrackEventKind::Meta(MetaMessage::CuePoint(label)) = event.kind {
-                let string = std::str::from_utf8(label)
-                    .map_err(|_| Error::User("ERROR: MIDI: Cannot parse event label".to_owned()))?;
+                let string = std::str::from_utf8(label).map_err(|_| {
+                    Error::Internal(format!("Cannot parse event label in MIDI data"))
+                })?;
                 let length = string.chars().count();
                 let mut index = 0;
                 while index < length {
@@ -42,7 +43,10 @@ impl TimelineCue {
                             } else {
                                 let anchor_index =
                                     &string[start_index..end_index].parse().map_err(|_| {
-                                        Error::User("Failed parsing anchor index".to_owned())
+                                        Error::User(format!(
+                                            "Failed parsing anchor index in label {}",
+                                            string
+                                        ))
                                     })?;
                                 cues.push(TimelineCue {
                                     event_index,
@@ -68,7 +72,10 @@ impl TimelineCue {
                             } else {
                                 let anchor_index =
                                     &string[start_index..end_index].parse().map_err(|_| {
-                                        Error::User("Failed parsing seek index".to_owned())
+                                        Error::User(format!(
+                                            "Failed parsing seek index in label {}",
+                                            string
+                                        ))
                                     })?;
                                 cues.push(TimelineCue {
                                     event_index,

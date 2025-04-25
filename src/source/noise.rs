@@ -74,7 +74,9 @@ impl Node for LfsrNoiseSource {
             0x4040 => true,
             0x4000 => false,
             _ => {
-                return Err(Error::User("Unexpected feedback mask".to_owned()));
+                return Err(Error::Internal(
+                    format!("MidiGraph: Unexpected feedback mask {}", self.feedback_mask)
+                ));
             }
         };
         let source = Self::new(

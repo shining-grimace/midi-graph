@@ -23,7 +23,7 @@ impl WavSource {
             SampleLink::MonoSample => 1,
             _ => {
                 return Err(Error::User(format!(
-                    "SF2: Unsupported sample type: {:?}",
+                    "Unsupported sample type {:?} in SF2 file (only mono is supported)",
                     header.sample_type
                 )));
             }
@@ -100,7 +100,7 @@ impl WavSource {
         match header.sample_type {
             SampleLink::MonoSample => Ok(()),
             _ => Err(Error::User(format!(
-                "SF2: Unsupported sample type: {:?}",
+                "Unsupported sample type {:?} in SF2 file (only mono is supported)",
                 header.sample_type
             ))),
         }
@@ -126,19 +126,19 @@ impl WavSource {
     fn validate_spec(spec: &WavSpec) -> Result<(), Error> {
         if spec.channels == 0 || spec.channels > 2 {
             return Err(Error::User(format!(
-                "{} channels is not supported",
+                "{} channels is not supported in WAV file (only 1 or 2 is supported)",
                 spec.channels
             )));
         }
         if spec.sample_format != SampleFormat::Float {
             return Err(Error::User(format!(
-                "Sample format {:?} is not supported",
+                "Sample format {:?} is not supported in WAV file (only 32-bit float is supported)",
                 spec.sample_format
             )));
         }
         if spec.bits_per_sample != 32 {
             return Err(Error::User(format!(
-                "{} bits per sample is not supported",
+                "{} bits per sample is not supported in WAV files (only 32-bit float is supported)",
                 spec.bits_per_sample
             )));
         }
