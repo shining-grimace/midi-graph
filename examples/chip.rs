@@ -3,7 +3,7 @@ extern crate midi_graph;
 use midi_graph::{
     font::SoundFontBuilder,
     generator::{LfsrNoiseSource, SawtoothWaveSource, SquareWaveSource, TriangleWaveSource},
-    group::MixerSource,
+    group::{MixerSource, Polyphony},
     util::midi_builder_from_file,
     BaseMixer, NoteRange,
 };
@@ -16,12 +16,17 @@ const SQUARE_CHANNEL: usize = 1;
 const NOISE_CHANNEL: usize = 2;
 
 fn main() {
-    let triangle_unison = MixerSource::new(
+    let triangle_unison = Polyphony::new(
         None,
-        0.5,
-        Box::new(TriangleWaveSource::new(None, 1.0)),
-        Box::new(SawtoothWaveSource::new(None, 0.25)),
-    );
+        4,
+        Box::new(MixerSource::new(
+            None,
+            0.5,
+            Box::new(TriangleWaveSource::new(None, 1.0)),
+            Box::new(SawtoothWaveSource::new(None, 0.25)),
+        )),
+    )
+    .unwrap();
     let triangle_font = SoundFontBuilder::new(None)
         .add_range(NoteRange::new_full_range(), Box::new(triangle_unison))
         .unwrap()

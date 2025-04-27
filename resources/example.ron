@@ -3,12 +3,14 @@
         source: FilePath("resources/sample-in-c.mid"),
         channels: {
             0: Font(config: Ranges([
-                ( lower: 0, upper: 50, source: Envelope(
-                    attack_time: 0.5,
-                    decay_time: 1.0,
-                    sustain_multiplier: 0.75,
-                    release_time: 0.125,
-                    source: SquareWave( amplitude: 0.125 )
+                ( lower: 0, upper: 50, source: Polyphony(
+                    max_voices: 4,
+                    source: Envelope(
+                        attack_time: 0.5,
+                        decay_time: 1.0,
+                        sustain_multiplier: 0.75,
+                        release_time: 0.125,
+                        source: SquareWave( amplitude: 0.125 ))
                 )),
                 ( lower: 51, upper: 255, source: Envelope(
                     source: SawtoothWave( amplitude: 0.1875 ))

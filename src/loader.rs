@@ -45,6 +45,11 @@ pub trait GraphLoader {
                 yield_source(source_0);
                 yield_source(source_1);
             }
+            SoundSource::Polyphony {
+                source, ..
+            } => {
+                yield_source(source);
+            }
             SoundSource::Fader { source, .. } => {
                 yield_source(source);
             }

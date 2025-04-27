@@ -1,7 +1,8 @@
 use crate::{
     file::wav::wav_from_i16_samples,
+    group::Polyphony,
     node::font::{SoundFont, SoundFontBuilder},
-    Error, NoteRange
+    Error, Node, NoteRange,
 };
 use byteorder::{LittleEndian, ReadBytesExt};
 use soundfont::{
@@ -17,25 +18,28 @@ pub fn soundfont_from_file(
     node_id: Option<u64>,
     file_name: &str,
     instrument_index: usize,
+    polyphony_voices: usize,
 ) -> Result<SoundFont, Error> {
     let file = File::open(file_name)?;
     let reader = BufReader::new(file);
-    soundfont_from_reader(reader, node_id, instrument_index)
+    soundfont_from_reader(reader, node_id, instrument_index, polyphony_voices)
 }
 
 pub fn soundfont_from_bytes(
     node_id: Option<u64>,
     bytes: &[u8],
     instrument_index: usize,
+    polyphony_voices: usize,
 ) -> Result<SoundFont, Error> {
     let cursor = Cursor::new(bytes);
-    soundfont_from_reader(cursor, node_id, instrument_index)
+    soundfont_from_reader(cursor, node_id, instrument_index, polyphony_voices)
 }
 
 fn soundfont_from_reader<R>(
     mut reader: R,
     node_id: Option<u64>,
     instrument_index: usize,
+    polyphony_voices: usize,
 ) -> Result<SoundFont, Error>
 where
     R: Read + Seek,
@@ -78,7 +82,16 @@ where
         let sample_data = load_sample(&mut reader, sample_file_offset, sample_length)?;
         let note_range = note_range_for_zone(zone)?;
         let source = wav_from_i16_samples(sample_header, &sample_data)?;
-        soundfont_builder = soundfont_builder.add_range(note_range, Box::new(source))?;
+
+        let polyphony: Box<dyn Node + Send + 'static> = match polyphony_voices {
+            0 | 1 => {
+                let polyphony = Polyphony::new(None, polyphony_voices, Box::new(source))?;
+                Box::new(polyphony)
+            }
+            _ => Box::new(source),
+        };
+
+        soundfont_builder = soundfont_builder.add_range(note_range, polyphony)?;
     }
     Ok(soundfont_builder.build())
 }
@@ -95,9 +108,7 @@ fn validate_sf2_file(sf2: &SoundFont2) -> Result<(), Error> {
         println!("WARNING: SF2: File has presets; these will be ignored");
     }
     if sf2.instruments.is_empty() {
-        return Err(Error::User(
-            "The SF2 file has no instruments".to_owned(),
-        ));
+        return Err(Error::User("The SF2 file has no instruments".to_owned()));
     }
     Ok(())
 }

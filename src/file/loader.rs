@@ -2,9 +2,9 @@ use crate::{
     effect::{AsyncEventReceiver, Envelope, EventChannel, Fader},
     font::SoundFontBuilder,
     generator::{LfsrNoiseSource, SawtoothWaveSource, SquareWaveSource, TriangleWaveSource},
-    group::{CombinerSource, MixerSource},
+    group::{CombinerSource, MixerSource, Polyphony},
     util, Config, Error, FontSource, GraphLoader, LoopRange, MidiDataSource, Node, NoteRange,
-    SoundSource
+    SoundSource,
 };
 use ron::de::from_reader;
 use std::fs::File;
@@ -69,9 +69,14 @@ impl GraphLoader for FileGraphLoader {
                 FontSource::Sf2FilePath {
                     path,
                     instrument_index,
+                    polyphony_voices,
                 } => {
-                    let source =
-                        util::soundfont_from_file(*node_id, path.as_str(), *instrument_index)?;
+                    let source = util::soundfont_from_file(
+                        *node_id,
+                        path.as_str(),
+                        *instrument_index,
+                        *polyphony_voices,
+                    )?;
                     let source: Box<dyn Node + Send + 'static> = Box::new(source);
                     (vec![], source)
                 }
@@ -168,6 +173,16 @@ impl GraphLoader for FileGraphLoader {
                 let (more_channels, source_1) = self.load_source_recursive(source_1)?;
                 let source = MixerSource::new(*node_id, *balance, source_0, source_1);
                 channels.extend(more_channels);
+                let source: Box<dyn Node + Send + 'static> = Box::new(source);
+                (channels, source)
+            }
+            SoundSource::Polyphony {
+                node_id,
+                max_voices,
+                source,
+            } => {
+                let (channels, source) = self.load_source_recursive(source)?;
+                let source = Polyphony::new(*node_id, *max_voices, source)?;
                 let source: Box<dyn Node + Send + 'static> = Box::new(source);
                 (channels, source)
             }

@@ -53,7 +53,8 @@ pub mod generator {
 pub mod group {
     pub use crate::node::group::{
         combiner::CombinerSource,
-        mixer::MixerSource
+        mixer::MixerSource,
+        polyphony::Polyphony
     };
 }
 

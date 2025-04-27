@@ -7,6 +7,10 @@ const fn none_id() -> Option<u64> {
     None
 }
 
+const fn default_soundfont_polyphony_voices() -> usize {
+    1
+}
+
 const fn default_amplitude() -> f32 {
     0.5
 }
@@ -39,6 +43,10 @@ const fn default_balance() -> f32 {
     0.5
 }
 
+const fn default_max_voices() -> usize {
+    4
+}
+
 #[derive(Deserialize, Clone)]
 pub struct Config {
     pub root: SoundSource,
@@ -62,6 +70,8 @@ pub enum FontSource {
     Sf2FilePath {
         path: String,
         instrument_index: usize,
+        #[serde(default = "default_soundfont_polyphony_voices")]
+        polyphony_voices: usize
     },
 }
 
@@ -165,6 +175,13 @@ pub enum SoundSource {
         source_0: Box<SoundSource>,
         source_1: Box<SoundSource>,
     },
+    Polyphony {
+        #[serde(default = "none_id")]
+        node_id: Option<u64>,
+        #[serde(default = "default_max_voices")]
+        max_voices: usize,
+        source: Box<SoundSource>,
+    },
     Fader {
         #[serde(default = "none_id")]
         node_id: Option<u64>,
@@ -229,6 +246,14 @@ impl SoundSource {
             balance: default_balance(),
             source_0: Box::new(inner_0),
             source_1: Box::new(inner_1),
+        }
+    }
+
+    pub fn stock_polyphony(inner: SoundSource) -> Self {
+        SoundSource::Polyphony {
+            node_id: none_id(),
+            max_voices: default_max_voices(),
+            source: Box::new(inner)
         }
     }
 
