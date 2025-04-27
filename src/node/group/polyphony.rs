@@ -19,7 +19,6 @@ impl Polyphony {
             )));
         }
         let mut consumers = (0..(max_voices - 1))
-            .into_iter()
             .map(|_| consumer.duplicate())
             .collect::<Result<Vec<Box<dyn Node + Send + 'static>>, Error>>()?;
         consumers.push(consumer);
@@ -94,7 +93,6 @@ impl Node for Polyphony {
         }
 
         self.consumers = (0..(self.consumers.len()))
-            .into_iter()
             .map(|_| children[0].duplicate())
             .collect::<Result<Vec<Box<dyn Node + Send + 'static>>, Error>>()?;
         self.next_on_index = 0;

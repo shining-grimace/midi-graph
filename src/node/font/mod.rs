@@ -1,4 +1,3 @@
-
 use crate::{Error, Node, NodeEvent, NoteRange};
 
 pub struct SoundFontBuilder {
@@ -63,13 +62,10 @@ impl Node for SoundFont {
 
     fn on_event(&mut self, event: &NodeEvent) {
         for (range, ref mut consumer) in self.ranges.iter_mut() {
-            match event {
-                NodeEvent::Note { note, .. } => {
-                    if !range.contains(*note) {
-                        continue;
-                    }
+            if let NodeEvent::Note { note, .. } = event {
+                if !range.contains(*note) {
+                    continue;
                 }
-                _ => {}
             }
             consumer.on_event(event);
         }

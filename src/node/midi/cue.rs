@@ -20,7 +20,7 @@ impl TimelineCue {
         for (event_index, event) in smf.tracks[track_index].iter().enumerate() {
             if let TrackEventKind::Meta(MetaMessage::CuePoint(label)) = event.kind {
                 let string = std::str::from_utf8(label).map_err(|_| {
-                    Error::Internal(format!("Cannot parse event label in MIDI data"))
+                    Error::Internal("Cannot parse event label in MIDI data".to_owned())
                 })?;
                 let length = string.chars().count();
                 let mut index = 0;
@@ -39,7 +39,7 @@ impl TimelineCue {
                                 break;
                             }
                             if end_index == start_index {
-                                println!("WARNING: MIDI: Cannot parse anchor label");
+                                println!("WARNING: MIDI: Cannot parse anchor in label {}", string);
                             } else {
                                 let anchor_index =
                                     &string[start_index..end_index].parse().map_err(|_| {
