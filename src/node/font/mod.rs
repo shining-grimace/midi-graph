@@ -61,7 +61,7 @@ impl Node for SoundFont {
     }
 
     fn on_event(&mut self, event: &NodeEvent) {
-        for (range, ref mut consumer) in self.ranges.iter_mut() {
+        for (range, consumer) in self.ranges.iter_mut() {
             if let NodeEvent::Note { note, .. } = event {
                 if !range.contains(*note) {
                     continue;
@@ -72,7 +72,7 @@ impl Node for SoundFont {
     }
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) {
-        for (_, ref mut consumer) in self.ranges.iter_mut() {
+        for (_, consumer) in self.ranges.iter_mut() {
             consumer.fill_buffer(buffer);
         }
     }
