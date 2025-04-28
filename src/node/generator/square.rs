@@ -1,9 +1,12 @@
-use crate::{consts, util, BroadcastControl, Error, Node, NodeControlEvent, NodeEvent, NoteEvent};
+use crate::{
+    Balance, BroadcastControl, Error, Node, NodeControlEvent, NodeEvent, NoteEvent, consts, util,
+};
 
 pub struct SquareWaveSource {
     node_id: u64,
     is_on: bool,
     current_note: u8,
+    balance: Balance,
     current_amplitude: f32,
     cycle_progress_samples: f32,
     period_samples_a440: f32,
@@ -12,11 +15,12 @@ pub struct SquareWaveSource {
 }
 
 impl SquareWaveSource {
-    pub fn new(node_id: Option<u64>, amplitude: f32, duty_cycle: f32) -> Self {
+    pub fn new(node_id: Option<u64>, balance: Balance, amplitude: f32, duty_cycle: f32) -> Self {
         Self {
             node_id: node_id.unwrap_or_else(<Self as Node>::new_node_id),
             is_on: false,
             current_note: 0,
+            balance,
             current_amplitude: 0.0,
             cycle_progress_samples: 0.0,
             period_samples_a440: consts::PLAYBACK_SAMPLE_RATE as f32 / 440.0,
@@ -36,7 +40,12 @@ impl Node for SquareWaveSource {
     }
 
     fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error> {
-        let source = Self::new(Some(self.node_id), self.peak_amplitude, self.duty_cycle);
+        let source = Self::new(
+            Some(self.node_id),
+            self.balance,
+            self.peak_amplitude,
+            self.duty_cycle,
+        );
         Ok(Box::new(source))
     }
 
@@ -58,19 +67,20 @@ impl Node for SquareWaveSource {
                     self.is_on = false;
                 }
             },
-            NodeEvent::NodeControl {
-                node_id,
-                event: NodeControlEvent::Volume(volume),
-            } => {
+            NodeEvent::NodeControl { node_id, event } => {
                 if *node_id != self.node_id {
                     return;
                 }
-                self.peak_amplitude = *volume;
+                match event {
+                    NodeControlEvent::SourceBalance(balance) => {
+                        self.balance = *balance;
+                    }
+                    NodeControlEvent::Volume(volume) => {
+                        self.peak_amplitude = *volume;
+                    }
+                    _ => {}
+                }
             }
-            NodeEvent::NodeControl {
-                node_id: _,
-                event: _,
-            } => {}
         }
     }
 
@@ -91,6 +101,11 @@ impl Node for SquareWaveSource {
         #[cfg(debug_assertions)]
         assert_eq!(consts::CHANNEL_COUNT, 2);
 
+        let (write_left, write_right) = match self.balance {
+            Balance::Both => (true, true),
+            Balance::Left => (true, false),
+            Balance::Right => (false, true),
+        };
         for i in (0..size).step_by(consts::CHANNEL_COUNT) {
             stretched_progress += 1.0;
             if stretched_progress >= pitch_period_samples {
@@ -101,8 +116,12 @@ impl Node for SquareWaveSource {
                 true => self.current_amplitude,
                 false => -self.current_amplitude,
             };
-            buffer[i] += amplitude;
-            buffer[i + 1] += amplitude;
+            if write_left {
+                buffer[i] += amplitude;
+            }
+            if write_right {
+                buffer[i + 1] += amplitude;
+            }
         }
 
         self.cycle_progress_samples =
@@ -115,7 +134,9 @@ impl Node for SquareWaveSource {
     ) -> Result<(), Error> {
         match children.is_empty() {
             true => Ok(()),
-            false => Err(Error::User("SquareWaveSource cannot have children".to_owned()))
+            false => Err(Error::User(
+                "SquareWaveSource cannot have children".to_owned(),
+            )),
         }
     }
 }

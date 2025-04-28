@@ -1,17 +1,24 @@
-use crate::{consts, BroadcastControl, Error, Node, NodeControlEvent, NodeEvent, NoteEvent};
+use crate::{
+    Balance, BroadcastControl, Error, Node, NodeControlEvent, NodeEvent, NoteEvent, consts,
+};
 use hound::{SampleFormat, WavSpec};
 use soundfont::raw::{SampleHeader, SampleLink};
 
 pub struct OneShotSource {
     node_id: u64,
     source_channel_count: usize,
+    balance: Balance,
     volume: f32,
     data_position: usize,
     source_data: Vec<f32>,
 }
 
 impl OneShotSource {
-    pub fn new_from_raw_sf2_data(header: &SampleHeader, data: Vec<f32>) -> Result<Self, Error> {
+    pub fn new_from_raw_sf2_data(
+        header: &SampleHeader,
+        balance: Balance,
+        data: Vec<f32>,
+    ) -> Result<Self, Error> {
         Self::validate_header(header)?;
         let source_channel_count = match header.sample_type {
             SampleLink::MonoSample => 1,
@@ -22,7 +29,7 @@ impl OneShotSource {
                 )));
             }
         };
-        Ok(Self::new(None, source_channel_count, data))
+        Ok(Self::new(None, source_channel_count, balance, data))
     }
 
     /// Make a new OneShotSource holding the given sample data.
@@ -30,17 +37,19 @@ impl OneShotSource {
     /// The note is a MIDI key, where A440 is 69.
     pub fn new_from_data(
         spec: WavSpec,
+        balance: Balance,
         data: Vec<f32>,
         node_id: Option<u64>,
     ) -> Result<Self, Error> {
         Self::validate_spec(&spec)?;
-        Ok(Self::new(node_id, spec.channels as usize, data))
+        Ok(Self::new(node_id, spec.channels as usize, balance, data))
     }
 
-    fn new(node_id: Option<u64>, channels: usize, data: Vec<f32>) -> Self {
+    fn new(node_id: Option<u64>, channels: usize, balance: Balance, data: Vec<f32>) -> Self {
         Self {
             node_id: node_id.unwrap_or_else(<Self as Node>::new_node_id),
             source_channel_count: channels,
+            balance,
             volume: 1.0,
             data_position: data.len(),
             source_data: data,
@@ -107,6 +116,7 @@ impl Node for OneShotSource {
         let source = Self::new(
             Some(self.node_id),
             self.source_channel_count,
+            self.balance,
             self.source_data.clone(),
         );
         Ok(Box::new(source))
@@ -125,19 +135,20 @@ impl Node for OneShotSource {
                     self.data_position = self.source_data.len();
                 }
             },
-            NodeEvent::NodeControl {
-                node_id,
-                event: NodeControlEvent::Volume(volume),
-            } => {
+            NodeEvent::NodeControl { node_id, event } => {
                 if *node_id != self.node_id {
                     return;
                 }
-                self.volume = *volume;
+                match event {
+                    NodeControlEvent::SourceBalance(balance) => {
+                        self.balance = *balance;
+                    }
+                    NodeControlEvent::Volume(volume) => {
+                        self.volume = *volume;
+                    }
+                    _ => {}
+                }
             }
-            NodeEvent::NodeControl {
-                node_id: _,
-                event: _,
-            } => {}
         }
     }
 
@@ -157,10 +168,19 @@ impl Node for OneShotSource {
         match self.source_channel_count {
             1 => {
                 let src_data_points = (buffer.len() / 2).min(src.len());
+                let (write_left, write_right) = match self.balance {
+                    Balance::Both => (true, true),
+                    Balance::Left => (true, false),
+                    Balance::Right => (false, true),
+                };
                 for src_data_index in 0..src_data_points {
                     let sample = src[src_data_index] * self.volume;
-                    buffer[src_data_index * 2] += sample;
-                    buffer[src_data_index * 2 + 1] += sample;
+                    if write_left {
+                        buffer[src_data_index * 2] += sample;
+                    }
+                    if write_right {
+                        buffer[src_data_index * 2 + 1] += sample;
+                    }
                 }
                 self.data_position += src_data_points;
             }
@@ -181,7 +201,7 @@ impl Node for OneShotSource {
     ) -> Result<(), Error> {
         match children.is_empty() {
             true => Ok(()),
-            false => Err(Error::User("OneShotSource cannot have children".to_owned()))
+            false => Err(Error::User("OneShotSource cannot have children".to_owned())),
         }
     }
 }

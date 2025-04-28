@@ -2,7 +2,7 @@ extern crate midi_graph;
 
 use crossbeam_channel::Sender;
 use midi_graph::{
-    BaseMixer, FileGraphLoader, FontSource, GraphLoader, MidiDataSource, NodeControlEvent,
+    Balance, BaseMixer, FileGraphLoader, FontSource, GraphLoader, MidiDataSource, NodeControlEvent,
     NodeEvent, RangeSource, SoundSource,
 };
 use std::{collections::HashMap, thread::sleep, time::Duration};
@@ -32,6 +32,7 @@ fn main() {
                                 initial_volume: 0.0,
                                 source: Box::new(SoundSource::LfsrNoise {
                                     node_id: None,
+                                    balance: Balance::Left,
                                     amplitude: 0.5,
                                     inside_feedback: true,
                                     note_for_16_shifts: 70,
@@ -49,6 +50,7 @@ fn main() {
                         config: FontSource::Ranges(vec![RangeSource {
                             source: SoundSource::SawtoothWave {
                                 node_id: None,
+                                balance: Balance::Right,
                                 amplitude: 0.5,
                             },
                             lower: 0,

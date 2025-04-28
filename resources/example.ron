@@ -19,6 +19,7 @@
             1: Envelope(
                 source: SampleFilePath(
                     path: "resources/guitar-a2-48k-stereo.wav",
+                    balance: Right,
                     base_note: 45,
                     looping: Some(Loop( start: 2590, end: 6557 )))
             ),
@@ -27,7 +28,7 @@
                 decay_time: 0.125,
                 sustain_multiplier: 0.25,
                 release_time: 0.125,
-                source: LfsrNoise( inside_feedback: false )
+                source: LfsrNoise( balance: Left, inside_feedback: false )
             )
         }
     )

@@ -2,7 +2,7 @@ use crate::{
     file::wav::wav_from_i16_samples,
     group::Polyphony,
     node::font::{SoundFont, SoundFontBuilder},
-    Error, Node, NoteRange,
+    Balance, Error, Node, NoteRange,
 };
 use byteorder::{LittleEndian, ReadBytesExt};
 use soundfont::{
@@ -81,7 +81,7 @@ where
         let sample_length = sample_header.end as u64 - sample_file_offset;
         let sample_data = load_sample(&mut reader, sample_file_offset, sample_length)?;
         let note_range = note_range_for_zone(zone)?;
-        let source = wav_from_i16_samples(sample_header, &sample_data)?;
+        let source = wav_from_i16_samples(sample_header, Balance::Both, &sample_data)?;
 
         let polyphony: Box<dyn Node + Send + 'static> = match polyphony_voices {
             0 | 1 => {

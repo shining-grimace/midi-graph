@@ -4,7 +4,7 @@ use midi_graph::{
     font::SoundFontBuilder,
     generator::LfsrNoiseSource,
     util::{midi_builder_from_file, soundfont_from_file},
-    BaseMixer, NoteRange,
+    Balance, BaseMixer, NoteRange,
 };
 use std::time::Duration;
 
@@ -21,7 +21,7 @@ fn main() {
     let noise_font = SoundFontBuilder::new(None)
         .add_range(
             NoteRange::new_full_range(),
-            Box::new(LfsrNoiseSource::new(None, 0.25, false, 50)),
+            Box::new(LfsrNoiseSource::new(None, Balance::Both, 0.25, false, 50)),
         )
         .unwrap()
         .build();

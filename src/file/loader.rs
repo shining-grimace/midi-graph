@@ -1,10 +1,11 @@
 use crate::{
+    Config, Error, FontSource, GraphLoader, LoopRange, MidiDataSource, Node, NoteRange,
+    SoundSource,
     effect::{AsyncEventReceiver, Envelope, EventChannel, Fader},
     font::SoundFontBuilder,
     generator::{LfsrNoiseSource, SawtoothWaveSource, SquareWaveSource, TriangleWaveSource},
     group::{CombinerSource, MixerSource, Polyphony},
-    util, Config, Error, FontSource, GraphLoader, LoopRange, MidiDataSource, Node, NoteRange,
-    SoundSource,
+    util,
 };
 use ron::de::from_reader;
 use std::fs::File;
@@ -83,31 +84,42 @@ impl GraphLoader for FileGraphLoader {
             },
             SoundSource::SquareWave {
                 node_id,
+                balance,
                 amplitude,
                 duty_cycle,
             } => {
-                let source = SquareWaveSource::new(*node_id, *amplitude, *duty_cycle);
+                let source = SquareWaveSource::new(*node_id, *balance, *amplitude, *duty_cycle);
                 let source: Box<dyn Node + Send + 'static> = Box::new(source);
                 (vec![], source)
             }
-            SoundSource::TriangleWave { node_id, amplitude } => {
-                let source = TriangleWaveSource::new(*node_id, *amplitude);
+            SoundSource::TriangleWave {
+                node_id,
+                balance,
+                amplitude,
+            } => {
+                let source = TriangleWaveSource::new(*node_id, *balance, *amplitude);
                 let source: Box<dyn Node + Send + 'static> = Box::new(source);
                 (vec![], source)
             }
-            SoundSource::SawtoothWave { node_id, amplitude } => {
-                let source = SawtoothWaveSource::new(*node_id, *amplitude);
+            SoundSource::SawtoothWave {
+                node_id,
+                balance,
+                amplitude,
+            } => {
+                let source = SawtoothWaveSource::new(*node_id, *balance, *amplitude);
                 let source: Box<dyn Node + Send + 'static> = Box::new(source);
                 (vec![], source)
             }
             SoundSource::LfsrNoise {
                 node_id,
+                balance,
                 amplitude,
                 inside_feedback,
                 note_for_16_shifts,
             } => {
                 let source = LfsrNoiseSource::new(
                     *node_id,
+                    *balance,
                     *amplitude,
                     *inside_feedback,
                     *note_for_16_shifts,
@@ -117,17 +129,19 @@ impl GraphLoader for FileGraphLoader {
             }
             SoundSource::SampleFilePath {
                 node_id,
+                balance,
                 path,
                 base_note,
                 looping,
             } => {
                 let loop_range = looping.as_ref().map(LoopRange::from_config);
-                let source = util::wav_from_file(path.as_str(), *base_note, loop_range, *node_id)?;
+                let source =
+                    util::wav_from_file(path.as_str(), *base_note, loop_range, *balance, *node_id)?;
                 let source: Box<dyn Node + Send + 'static> = Box::new(source);
                 (vec![], source)
             }
-            SoundSource::OneShotFilePath { node_id, path } => {
-                let source = util::one_shot_from_file(path.as_str(), *node_id)?;
+            SoundSource::OneShotFilePath { node_id, balance, path } => {
+                let source = util::one_shot_from_file(path.as_str(), *balance, *node_id)?;
                 let source: Box<dyn Node + Send + 'static> = Box::new(source);
                 (vec![], source)
             }

@@ -1,4 +1,6 @@
-use crate::{consts, util, Error, LoopRange, Node, NodeControlEvent, NodeEvent, NoteEvent};
+use crate::{
+    Balance, Error, LoopRange, Node, NodeControlEvent, NodeEvent, NoteEvent, consts, util,
+};
 use hound::{SampleFormat, WavSpec};
 use soundfont::raw::{SampleHeader, SampleLink};
 
@@ -7,6 +9,7 @@ pub struct WavSource {
     is_on: bool,
     source_note: u8,
     source_channel_count: usize,
+    balance: Balance,
     loop_start_data_position: usize,
     loop_end_data_position: usize,
     data_position: usize,
@@ -17,7 +20,11 @@ pub struct WavSource {
 }
 
 impl WavSource {
-    pub fn new_from_raw_sf2_data(header: &SampleHeader, data: Vec<f32>) -> Result<Self, Error> {
+    pub fn new_from_raw_sf2_data(
+        header: &SampleHeader,
+        balance: Balance,
+        data: Vec<f32>,
+    ) -> Result<Self, Error> {
         Self::validate_header(header)?;
         let source_channel_count = match header.sample_type {
             SampleLink::MonoSample => 1,
@@ -40,6 +47,7 @@ impl WavSource {
             source_channel_count,
             header.origpitch,
             loop_range,
+            balance,
             data,
         ))
     }
@@ -50,6 +58,7 @@ impl WavSource {
     pub fn new_from_data(
         spec: WavSpec,
         source_note: u8,
+        balance: Balance,
         data: Vec<f32>,
         loop_range: Option<LoopRange>,
         node_id: Option<u64>,
@@ -68,6 +77,7 @@ impl WavSource {
             spec.channels as usize,
             source_note,
             loop_range,
+            balance,
             data,
         ))
     }
@@ -78,6 +88,7 @@ impl WavSource {
         channels: usize,
         source_note: u8,
         loop_range: LoopRange,
+        balance: Balance,
         data: Vec<f32>,
     ) -> Self {
         let playback_scale = consts::PLAYBACK_SAMPLE_RATE as f64 / sample_rate as f64;
@@ -86,6 +97,7 @@ impl WavSource {
             is_on: false,
             source_note,
             source_channel_count: channels,
+            balance,
             loop_start_data_position: loop_range.start_frame * channels,
             loop_end_data_position: loop_range.end_frame * channels,
             data_position: data.len(),
@@ -154,16 +166,29 @@ impl WavSource {
     ) -> (usize, usize) {
         let mut src_index = 0;
         let mut dst_index = 0;
+        let (write_left, write_right) = match self.balance {
+            Balance::Both => (true, true),
+            Balance::Left => (true, false),
+            Balance::Right => (false, true),
+        };
         while src_index < src.len() && dst_index < dst.len() {
             match src_channels {
                 1 => {
                     let sample = src[src_index] * self.volume;
-                    dst[dst_index] += sample;
-                    dst[dst_index + 1] += sample;
+                    if write_left {
+                        dst[dst_index] += sample;
+                    }
+                    if write_right {
+                        dst[dst_index + 1] += sample;
+                    }
                 }
                 2 => {
-                    dst[dst_index] += src[src_index] * self.volume;
-                    dst[dst_index + 1] += src[src_index + 1] * self.volume;
+                    if write_left {
+                        dst[dst_index] += src[src_index] * self.volume;
+                    }
+                    if write_right {
+                        dst[dst_index + 1] += src[src_index + 1] * self.volume;
+                    }
                 }
                 _ => {}
             }
@@ -198,6 +223,7 @@ impl Node for WavSource {
             self.source_channel_count,
             self.source_note,
             loop_range,
+            self.balance,
             self.source_data.clone(),
         );
         Ok(Box::new(source))
@@ -205,6 +231,7 @@ impl Node for WavSource {
 
     fn on_event(&mut self, event: &NodeEvent) {
         match event {
+            NodeEvent::Broadcast(_) => {},
             NodeEvent::Note { note, event } => match event {
                 NoteEvent::NoteOn { vel: _ } => {
                     self.is_on = true;
@@ -218,16 +245,20 @@ impl Node for WavSource {
                     self.is_on = false;
                 }
             },
-            NodeEvent::NodeControl {
-                node_id,
-                event: NodeControlEvent::Volume(volume),
-            } => {
+            NodeEvent::NodeControl { node_id, event } => {
                 if *node_id != self.node_id {
                     return;
                 }
-                self.volume = *volume;
+                match event {
+                    NodeControlEvent::SourceBalance(balance) => {
+                        self.balance = *balance;
+                    }
+                    NodeControlEvent::Volume(volume) => {
+                        self.volume = *volume;
+                    }
+                    _ => {}
+                }
             }
-            _ => {}
         }
     }
 
@@ -286,10 +317,11 @@ impl Node for WavSource {
 
     fn replace_children(
         &mut self,
-        children: &[Box<dyn Node + Send + 'static>],) -> Result<(), Error> {
+        children: &[Box<dyn Node + Send + 'static>],
+    ) -> Result<(), Error> {
         match children.is_empty() {
             true => Ok(()),
-            false => Err(Error::User("WavSource cannot have children".to_owned()))
+            false => Err(Error::User("WavSource cannot have children".to_owned())),
         }
     }
 }

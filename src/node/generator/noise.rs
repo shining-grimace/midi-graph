@@ -1,10 +1,11 @@
-use crate::{consts, util, BroadcastControl, Error, Node, NodeControlEvent, NodeEvent, NoteEvent};
+use crate::{consts, util, Balance, BroadcastControl, Error, Node, NodeControlEvent, NodeEvent, NoteEvent};
 
 pub struct LfsrNoiseSource {
     node_id: u64,
     is_on: bool,
     note_of_16_shifts: u8,
     current_note: u8,
+    balance: Balance,
     current_amplitude: f32,
     current_lfsr: u16,
     feedback_mask: u16,
@@ -16,6 +17,7 @@ pub struct LfsrNoiseSource {
 impl LfsrNoiseSource {
     pub fn new(
         node_id: Option<u64>,
+        balance: Balance,
         amplitude: f32,
         inside_feedback: bool,
         note_of_16_shifts: u8,
@@ -36,6 +38,7 @@ impl LfsrNoiseSource {
             is_on: false,
             note_of_16_shifts,
             current_note: 0,
+            balance,
             current_amplitude: 0.0,
             current_lfsr: 0x0001,
             feedback_mask,
@@ -81,6 +84,7 @@ impl Node for LfsrNoiseSource {
         };
         let source = Self::new(
             Some(self.node_id),
+            self.balance,
             self.peak_amplitude,
             inside_feedback,
             self.note_of_16_shifts,
@@ -106,19 +110,20 @@ impl Node for LfsrNoiseSource {
                     self.is_on = false;
                 }
             },
-            NodeEvent::NodeControl {
-                node_id,
-                event: NodeControlEvent::Volume(volume),
-            } => {
+            NodeEvent::NodeControl { node_id, event } => {
                 if *node_id != self.node_id {
                     return;
                 }
-                self.peak_amplitude = *volume;
+                match event {
+                    NodeControlEvent::SourceBalance(balance) => {
+                        self.balance = *balance;
+                    }
+                    NodeControlEvent::Volume(volume) => {
+                        self.peak_amplitude = *volume;
+                    }
+                    _ => {}
+                }
             }
-            NodeEvent::NodeControl {
-                node_id: _,
-                event: _,
-            } => {}
         }
     }
 
@@ -139,16 +144,25 @@ impl Node for LfsrNoiseSource {
         #[cfg(debug_assertions)]
         assert_eq!(consts::CHANNEL_COUNT, 2);
 
-        let mut current_value = self.value();
+        let mut amplitude = self.value();
+        let (write_left, write_right) = match self.balance {
+            Balance::Both => (true, true),
+            Balance::Left => (true, false),
+            Balance::Right => (false, true),
+        };
         for i in (0..size).step_by(consts::CHANNEL_COUNT) {
             stretched_progress += 1.0;
             if stretched_progress >= pitch_cycle_samples {
                 stretched_progress -= pitch_cycle_samples;
                 self.shift();
-                current_value = self.value();
+                amplitude = self.value();
             }
-            buffer[i] += current_value;
-            buffer[i + 1] += current_value;
+            if write_left {
+                buffer[i] += amplitude;
+            }
+            if write_right {
+                buffer[i + 1] += amplitude;
+            }
         }
 
         self.cycle_progress_samples =

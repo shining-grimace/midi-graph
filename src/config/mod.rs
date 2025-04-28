@@ -1,4 +1,4 @@
-use crate::Error;
+use crate::{Balance, Error};
 use ron::de::from_bytes;
 use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -39,7 +39,11 @@ const fn default_release() -> f32 {
     0.125
 }
 
-const fn default_balance() -> f32 {
+const fn default_source_balance() -> Balance {
+    Balance::Both
+}
+
+const fn default_mixer_balance() -> f32 {
     0.5
 }
 
@@ -111,6 +115,8 @@ pub enum SoundSource {
     SquareWave {
         #[serde(default = "none_id")]
         node_id: Option<u64>,
+        #[serde(default = "default_source_balance")]
+        balance: Balance,
         #[serde(default = "default_amplitude")]
         amplitude: f32,
         #[serde(default = "default_duty_cycle")]
@@ -119,18 +125,24 @@ pub enum SoundSource {
     TriangleWave {
         #[serde(default = "none_id")]
         node_id: Option<u64>,
+        #[serde(default = "default_source_balance")]
+        balance: Balance,
         #[serde(default = "default_amplitude")]
         amplitude: f32,
     },
     SawtoothWave {
         #[serde(default = "none_id")]
         node_id: Option<u64>,
+        #[serde(default = "default_source_balance")]
+        balance: Balance,
         #[serde(default = "default_amplitude")]
         amplitude: f32,
     },
     LfsrNoise {
         #[serde(default = "none_id")]
         node_id: Option<u64>,
+        #[serde(default = "default_source_balance")]
+        balance: Balance,
         #[serde(default = "default_amplitude")]
         amplitude: f32,
         inside_feedback: bool,
@@ -140,6 +152,8 @@ pub enum SoundSource {
     SampleFilePath {
         #[serde(default = "none_id")]
         node_id: Option<u64>,
+        #[serde(default = "default_source_balance")]
+        balance: Balance,
         path: String,
         base_note: u8,
         looping: Option<Loop>,
@@ -147,6 +161,8 @@ pub enum SoundSource {
     OneShotFilePath {
         #[serde(default = "none_id")]
         node_id: Option<u64>,
+        #[serde(default = "default_source_balance")]
+        balance: Balance,
         path: String,
     },
     Envelope {
@@ -170,7 +186,7 @@ pub enum SoundSource {
     Mixer {
         #[serde(default = "none_id")]
         node_id: Option<u64>,
-        #[serde(default = "default_balance")]
+        #[serde(default = "default_mixer_balance")]
         balance: f32,
         source_0: Box<SoundSource>,
         source_1: Box<SoundSource>,
@@ -194,6 +210,7 @@ impl SoundSource {
     pub const fn stock_square_wave() -> Self {
         SoundSource::SquareWave {
             node_id: none_id(),
+            balance: Balance::Both,
             amplitude: default_amplitude(),
             duty_cycle: default_duty_cycle(),
         }
@@ -202,6 +219,7 @@ impl SoundSource {
     pub const fn stock_triangle_wave() -> Self {
         SoundSource::TriangleWave {
             node_id: none_id(),
+            balance: Balance::Both,
             amplitude: default_amplitude(),
         }
     }
@@ -209,6 +227,7 @@ impl SoundSource {
     pub const fn stock_sawtooth_wave() -> Self {
         SoundSource::SawtoothWave {
             node_id: none_id(),
+            balance: Balance::Both,
             amplitude: default_amplitude(),
         }
     }
@@ -223,6 +242,7 @@ impl SoundSource {
     pub fn stock_noise_source(inside_feedback_mode: bool) -> Self {
         SoundSource::LfsrNoise {
             node_id: none_id(),
+            balance: Balance::Both,
             amplitude: default_amplitude(),
             inside_feedback: inside_feedback_mode,
             note_for_16_shifts: default_note_for_16_shifts(),
@@ -243,7 +263,7 @@ impl SoundSource {
     pub fn stock_mixer(inner_0: SoundSource, inner_1: SoundSource) -> Self {
         SoundSource::Mixer {
             node_id: none_id(),
-            balance: default_balance(),
+            balance: default_mixer_balance(),
             source_0: Box::new(inner_0),
             source_1: Box::new(inner_1),
         }

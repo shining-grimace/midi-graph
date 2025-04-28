@@ -23,14 +23,14 @@ pub use file::loader::FileGraphLoader;
 pub use loader::GraphLoader;
 pub use mix::base::BaseMixer;
 pub use node::{
-    BroadcastControl, LoopRange, Node, NodeControlEvent, NodeEvent, NoteEvent, NoteRange,
+    Balance, BroadcastControl, LoopRange, Node, NodeControlEvent, NodeEvent, NoteEvent, NoteRange,
 };
 
 pub mod effect {
     pub use crate::node::effect::{
         async_receiver::{AsyncEventReceiver, EventChannel},
         envelope::Envelope,
-        fader::Fader
+        fader::Fader,
     };
 }
 
@@ -40,28 +40,22 @@ pub mod font {
 
 pub mod generator {
     pub use crate::node::generator::{
-        noise::LfsrNoiseSource,
-        null::NullSource,
-        one_shot::OneShotSource,
-        sawtooth::SawtoothWaveSource,
-        square::SquareWaveSource,
-        triangle::TriangleWaveSource,
-        wav::WavSource
+        noise::LfsrNoiseSource, null::NullSource, one_shot::OneShotSource,
+        sawtooth::SawtoothWaveSource, square::SquareWaveSource, triangle::TriangleWaveSource,
+        wav::WavSource,
     };
 }
 
 pub mod group {
     pub use crate::node::group::{
-        combiner::CombinerSource,
-        mixer::MixerSource,
-        polyphony::Polyphony
+        combiner::CombinerSource, mixer::MixerSource, polyphony::Polyphony,
     };
 }
 
 pub mod midi {
     pub use crate::node::midi::{
-        cue::{Cue, TimelineCue},
         MidiSource, MidiSourceBuilder,
+        cue::{Cue, TimelineCue},
     };
 }
 

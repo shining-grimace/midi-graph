@@ -1,9 +1,12 @@
-use crate::{consts, util, BroadcastControl, Error, Node, NodeControlEvent, NodeEvent, NoteEvent};
+use crate::{
+    Balance, BroadcastControl, Error, Node, NodeControlEvent, NodeEvent, NoteEvent, consts, util,
+};
 
 pub struct TriangleWaveSource {
     node_id: u64,
     is_on: bool,
     current_note: u8,
+    balance: Balance,
     current_amplitude: f32,
     cycle_progress_samples: f32,
     period_samples_a440: f32,
@@ -11,11 +14,12 @@ pub struct TriangleWaveSource {
 }
 
 impl TriangleWaveSource {
-    pub fn new(node_id: Option<u64>, amplitude: f32) -> Self {
+    pub fn new(node_id: Option<u64>, balance: Balance, amplitude: f32) -> Self {
         Self {
             node_id: node_id.unwrap_or_else(<Self as Node>::new_node_id),
             is_on: false,
             current_note: 0,
+            balance,
             current_amplitude: 0.0,
             cycle_progress_samples: 0.0,
             period_samples_a440: consts::PLAYBACK_SAMPLE_RATE as f32 / 440.0,
@@ -34,7 +38,11 @@ impl Node for TriangleWaveSource {
     }
 
     fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error> {
-        Ok(Box::new(Self::new(Some(self.node_id), self.peak_amplitude)))
+        Ok(Box::new(Self::new(
+            Some(self.node_id),
+            self.balance,
+            self.peak_amplitude,
+        )))
     }
 
     fn on_event(&mut self, event: &NodeEvent) {
@@ -55,19 +63,20 @@ impl Node for TriangleWaveSource {
                     self.is_on = false;
                 }
             },
-            NodeEvent::NodeControl {
-                node_id,
-                event: NodeControlEvent::Volume(volume),
-            } => {
+            NodeEvent::NodeControl { node_id, event } => {
                 if *node_id != self.node_id {
                     return;
                 }
-                self.peak_amplitude = *volume;
+                match event {
+                    NodeControlEvent::SourceBalance(balance) => {
+                        self.balance = *balance;
+                    }
+                    NodeControlEvent::Volume(volume) => {
+                        self.peak_amplitude = *volume;
+                    }
+                    _ => {}
+                }
             }
-            NodeEvent::NodeControl {
-                node_id: _,
-                event: _,
-            } => {}
         }
     }
 
@@ -88,6 +97,11 @@ impl Node for TriangleWaveSource {
         #[cfg(debug_assertions)]
         assert_eq!(consts::CHANNEL_COUNT, 2);
 
+        let (write_left, write_right) = match self.balance {
+            Balance::Both => (true, true),
+            Balance::Left => (true, false),
+            Balance::Right => (false, true),
+        };
         for i in (0..size).step_by(consts::CHANNEL_COUNT) {
             stretched_progress += 1.0;
             if stretched_progress >= pitch_period_samples {
@@ -98,8 +112,12 @@ impl Node for TriangleWaveSource {
                 true => self.current_amplitude * (3.0 - 4.0 * duty),
                 false => self.current_amplitude * (4.0 * duty - 1.0),
             };
-            buffer[i] += amplitude;
-            buffer[i + 1] += amplitude;
+            if write_left {
+                buffer[i] += amplitude;
+            }
+            if write_right {
+                buffer[i + 1] += amplitude;
+            }
         }
 
         self.cycle_progress_samples =
@@ -112,7 +130,9 @@ impl Node for TriangleWaveSource {
     ) -> Result<(), Error> {
         match children.is_empty() {
             true => Ok(()),
-            false => Err(Error::User("TriangleWaveSource cannot have children".to_owned()))
+            false => Err(Error::User(
+                "TriangleWaveSource cannot have children".to_owned(),
+            )),
         }
     }
 }

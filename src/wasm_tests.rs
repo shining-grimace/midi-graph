@@ -1,6 +1,6 @@
 extern crate wasm_bindgen_test;
 
-use crate::util::{midi_builder_from_bytes, wav_from_bytes};
+use crate::{Balance, util::{midi_builder_from_bytes, wav_from_bytes}};
 use wasm_bindgen_test::*;
 
 wasm_bindgen_test_configure!(run_in_browser);
@@ -15,6 +15,6 @@ fn pass() {
     assert!(midi_builder.is_ok());
 
     // Test wav file
-    let wav = wav_from_bytes(WAV_FILE, 69, None, None);
+    let wav = wav_from_bytes(WAV_FILE, 69, None, Balance::Both, None);
     assert!(wav.is_ok());
 }

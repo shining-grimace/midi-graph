@@ -6,7 +6,7 @@ use midi_graph::{
     font::SoundFontBuilder,
     generator::{SawtoothWaveSource, SquareWaveSource, TriangleWaveSource},
     group::MixerSource,
-    BaseMixer, NodeControlEvent, NodeEvent, NoteEvent, NoteRange,
+    Balance, BaseMixer, NodeControlEvent, NodeEvent, NoteEvent, NoteRange,
 };
 use std::{thread::sleep, time::Duration};
 
@@ -17,11 +17,11 @@ fn main() {
     let triangle_unison = MixerSource::new(
         Some(MIXER_NODE_ID),
         0.375,
-        Box::new(TriangleWaveSource::new(None, 0.75)),
-        Box::new(SawtoothWaveSource::new(None, 0.1625)),
+        Box::new(TriangleWaveSource::new(None, Balance::Both, 0.75)),
+        Box::new(SawtoothWaveSource::new(None, Balance::Both, 0.1625)),
     );
 
-    let square_source = SquareWaveSource::new(None, 0.375, 0.25);
+    let square_source = SquareWaveSource::new(None, Balance::Both, 0.375, 0.25);
     let fader = Fader::new(Some(FADER_NODE_ID), 0.0, Box::new(square_source));
     let soundfont = SoundFontBuilder::new(None)
         .add_range(

@@ -5,7 +5,7 @@ use midi_graph::{
     generator::{LfsrNoiseSource, SawtoothWaveSource, SquareWaveSource, TriangleWaveSource},
     group::{MixerSource, Polyphony},
     util::midi_builder_from_file,
-    BaseMixer, NoteRange,
+    Balance, BaseMixer, NoteRange,
 };
 use std::time::Duration;
 
@@ -22,8 +22,8 @@ fn main() {
         Box::new(MixerSource::new(
             None,
             0.5,
-            Box::new(TriangleWaveSource::new(None, 1.0)),
-            Box::new(SawtoothWaveSource::new(None, 0.25)),
+            Box::new(TriangleWaveSource::new(None, Balance::Left, 1.0)),
+            Box::new(SawtoothWaveSource::new(None, Balance::Right, 0.25)),
         )),
     )
     .unwrap();
@@ -34,19 +34,19 @@ fn main() {
     let square_font = SoundFontBuilder::new(None)
         .add_range(
             NoteRange::new_inclusive_range(0, 50),
-            Box::new(SquareWaveSource::new(None, 0.125, 0.5)),
+            Box::new(SquareWaveSource::new(None, Balance::Both, 0.125, 0.5)),
         )
         .unwrap()
         .add_range(
             NoteRange::new_inclusive_range(51, 255),
-            Box::new(SquareWaveSource::new(None, 0.125, 0.875)),
+            Box::new(SquareWaveSource::new(None, Balance::Both, 0.125, 0.875)),
         )
         .unwrap()
         .build();
     let noise_font = SoundFontBuilder::new(None)
         .add_range(
             NoteRange::new_full_range(),
-            Box::new(LfsrNoiseSource::new(None, 0.25, false, 50)),
+            Box::new(LfsrNoiseSource::new(None, Balance::Both, 0.25, false, 50)),
         )
         .unwrap()
         .build();

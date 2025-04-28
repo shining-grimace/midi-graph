@@ -2,7 +2,7 @@ use crate::{
     font::SoundFontBuilder,
     generator::SquareWaveSource,
     util::{midi_builder_from_file, wav_from_file},
-    BaseMixer, NoteRange
+    Balance, BaseMixer, NoteRange
 };
 use std::time::Duration;
 
@@ -17,7 +17,7 @@ fn can_decode_midi_file() {
 
 #[test]
 fn can_decode_wav_file() {
-    let wav = wav_from_file(WAV_FILE, 69, None, None);
+    let wav = wav_from_file(WAV_FILE, 69, None, Balance::Both, None);
     assert!(wav.is_ok());
 }
 
@@ -31,7 +31,7 @@ fn can_play_square_stream() {
                 SoundFontBuilder::new(None)
                     .add_range(
                         NoteRange::new_full_range(),
-                        Box::new(SquareWaveSource::new(None, 0.25, 0.125)),
+                        Box::new(SquareWaveSource::new(None, Balance::Both, 0.25, 0.125)),
                     )
                     .unwrap()
                     .build(),
@@ -55,7 +55,7 @@ fn can_play_wav_stream() {
                 SoundFontBuilder::new(None)
                     .add_range(
                         NoteRange::new_full_range(),
-                        Box::new(wav_from_file(WAV_FILE, 69, None, None).unwrap()),
+                        Box::new(wav_from_file(WAV_FILE, 69, None, Balance::Both, None).unwrap()),
                     )
                     .unwrap()
                     .build(),

@@ -1,4 +1,6 @@
 
+use serde_derive::{Deserialize, Serialize};
+
 pub mod effect;
 pub mod font;
 pub mod generator;
@@ -94,6 +96,7 @@ pub enum NoteEvent {
 #[derive(Clone, Debug)]
 pub enum NodeControlEvent {
     MixerBalance(f32),
+    SourceBalance(Balance),
     Volume(f32),
     Fade { from: f32, to: f32, seconds: f32 },
     SeekWhenIdeal { to_anchor: Option<u32> },
@@ -119,4 +122,11 @@ impl LoopRange {
             end_frame: config.end,
         }
     }
+}
+
+#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
+pub enum Balance {
+    Both,
+    Left,
+    Right,
 }

@@ -1,10 +1,10 @@
 extern crate midi_graph;
 
 use midi_graph::{
+    Balance, BaseMixer, Node, NoteRange,
     font::SoundFontBuilder,
     generator::{LfsrNoiseSource, SquareWaveSource, TriangleWaveSource},
     util::midi_builder_from_file,
-    BaseMixer, Node, NoteRange,
 };
 use std::time::Duration;
 
@@ -20,7 +20,7 @@ fn main() {
             SoundFontBuilder::new(None)
                 .add_range(
                     NoteRange::new_full_range(),
-                    Box::new(SquareWaveSource::new(None, 0.125, 0.0625)),
+                    Box::new(SquareWaveSource::new(None, Balance::Right, 0.125, 0.0625)),
                 )
                 .unwrap()
                 .build(),
@@ -31,7 +31,7 @@ fn main() {
             SoundFontBuilder::new(None)
                 .add_range(
                     NoteRange::new_full_range(),
-                    Box::new(TriangleWaveSource::new(None, 1.0)),
+                    Box::new(TriangleWaveSource::new(None, Balance::Both, 1.0)),
                 )
                 .unwrap()
                 .build(),
@@ -42,7 +42,7 @@ fn main() {
             SoundFontBuilder::new(None)
                 .add_range(
                     NoteRange::new_full_range(),
-                    Box::new(LfsrNoiseSource::new(None, 0.25, false, 50)),
+                    Box::new(LfsrNoiseSource::new(None, Balance::Left, 0.25, false, 50)),
                 )
                 .unwrap()
                 .build(),
