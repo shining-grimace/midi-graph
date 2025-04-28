@@ -1,4 +1,4 @@
-use crate::{util::midi_builder_from_bytes, BaseMixer, SquareWaveSource};
+use crate::{util::midi_builder_from_bytes, BaseMixer, generator::SquareWaveSource};
 use std::time::Duration;
 use wasm_bindgen::prelude::*;
 

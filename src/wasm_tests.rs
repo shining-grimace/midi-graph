@@ -5,8 +5,8 @@ use wasm_bindgen_test::*;
 
 wasm_bindgen_test_configure!(run_in_browser);
 
-const MIDI_FILE: &'static str = "resources/sample-in-c.mid";
-const WAV_FILE: &'static str = "resources/guitar-a2-48k-stereo.wav";
+const MIDI_FILE: &[u8] = include_bytes!("../resources/sample-in-c.mid");
+const WAV_FILE: &[u8] = include_bytes!("../resources/guitar-a2-48k-stereo.wav");
 
 #[wasm_bindgen_test]
 fn pass() {
