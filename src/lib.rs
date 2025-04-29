@@ -12,6 +12,7 @@ mod wasm_demo;
 
 mod config;
 mod error;
+mod event;
 mod file;
 mod loader;
 mod mix;
@@ -19,12 +20,11 @@ mod node;
 
 pub use config::{Config, FontSource, Loop, MidiDataSource, RangeSource, SoundSource};
 pub use error::Error;
+pub use event::{Balance, BroadcastControl, NodeControlEvent, NodeEvent, NoteEvent};
 pub use file::loader::FileGraphLoader;
 pub use loader::GraphLoader;
 pub use mix::base::BaseMixer;
-pub use node::{
-    Balance, BroadcastControl, LoopRange, Node, NodeControlEvent, NodeEvent, NoteEvent, NoteRange,
-};
+pub use node::{LoopRange, Node, NoteRange};
 
 pub mod effect {
     pub use crate::node::effect::{

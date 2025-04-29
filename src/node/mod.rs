@@ -1,6 +1,4 @@
 
-use serde_derive::{Deserialize, Serialize};
-
 pub mod effect;
 pub mod font;
 pub mod generator;
@@ -11,7 +9,7 @@ pub mod util;
 #[cfg(debug_assertions)]
 pub mod log;
 
-use crate::{Error, Loop, RangeSource};
+use crate::{Error, Loop, NodeEvent, RangeSource};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 const START_GENERATED_NODE_IDS: u64 = 0x10000;
@@ -69,40 +67,6 @@ impl NoteRange {
     }
 }
 
-#[derive(Clone, Debug)]
-pub enum NodeEvent {
-    Broadcast(BroadcastControl),
-    Note {
-        note: u8,
-        event: NoteEvent,
-    },
-    NodeControl {
-        node_id: u64,
-        event: NodeControlEvent,
-    },
-}
-
-#[derive(PartialEq, Copy, Clone, Debug)]
-pub enum BroadcastControl {
-    NotesOff,
-}
-
-#[derive(PartialEq, Copy, Clone, Debug)]
-pub enum NoteEvent {
-    NoteOn { vel: f32 },
-    NoteOff { vel: f32 },
-}
-
-#[derive(Clone, Debug)]
-pub enum NodeControlEvent {
-    MixerBalance(f32),
-    SourceBalance(Balance),
-    Volume(f32),
-    Fade { from: f32, to: f32, seconds: f32 },
-    SeekWhenIdeal { to_anchor: Option<u32> },
-    Unknown,
-}
-
 pub struct LoopRange {
     pub start_frame: usize,
     pub end_frame: usize,
@@ -124,9 +88,3 @@ impl LoopRange {
     }
 }
 
-#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
-pub enum Balance {
-    Both,
-    Left,
-    Right,
-}
