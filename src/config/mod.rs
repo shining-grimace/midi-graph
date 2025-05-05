@@ -165,7 +165,7 @@ pub enum SoundSource {
         balance: Balance,
         path: String,
     },
-    Envelope {
+    AdsrEnvelope {
         #[serde(default = "none_id")]
         node_id: Option<u64>,
         #[serde(default = "default_attack")]
@@ -250,7 +250,7 @@ impl SoundSource {
     }
 
     pub fn stock_envelope(inner: SoundSource) -> Self {
-        SoundSource::Envelope {
+        SoundSource::AdsrEnvelope {
             node_id: none_id(),
             attack_time: default_attack(),
             decay_time: default_decay(),

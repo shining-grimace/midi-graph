@@ -29,7 +29,7 @@ pub use node::{LoopRange, Node, NoteRange};
 pub mod effect {
     pub use crate::node::effect::{
         async_receiver::{AsyncEventReceiver, EventChannel},
-        envelope::Envelope,
+        adsr::AdsrEnvelope,
         fader::Fader,
     };
 }

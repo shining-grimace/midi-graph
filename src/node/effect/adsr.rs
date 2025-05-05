@@ -10,7 +10,7 @@ enum EnvelopeMode {
     Finished,
 }
 
-pub struct Envelope {
+pub struct AdsrEnvelope {
     node_id: u64,
     attack_gradient: f32,
     decay_gradient: f32,
@@ -22,8 +22,8 @@ pub struct Envelope {
     samples_progress_in_mode: isize,
 }
 
-impl Envelope {
-    pub fn from_adsr(
+impl AdsrEnvelope {
+    pub fn from_parameters(
         node_id: Option<u64>,
         attack_time: f32,
         decay_time: f32,
@@ -71,7 +71,7 @@ impl Envelope {
     }
 }
 
-impl Node for Envelope {
+impl Node for AdsrEnvelope {
     fn get_node_id(&self) -> u64 {
         self.node_id
     }
@@ -110,7 +110,7 @@ impl Node for Envelope {
             }
         }
 
-        // Envelope does not consume any events, but listens to notes
+        // AdsrEnvelope does not consume any events, but listens to notes
         if event.target.propagates_from(self.node_id, false) {
             self.consumer.on_event(event);
         }
@@ -209,7 +209,7 @@ impl Node for Envelope {
         children: &[Box<dyn Node + Send + 'static>],
     ) -> Result<(), Error> {
         if children.len() != 1 {
-            return Err(Error::User("Envelope requires one child".to_owned()));
+            return Err(Error::User("AdsrEnvelope requires one child".to_owned()));
         }
         self.consumer = children[0].duplicate()?;
         Ok(())

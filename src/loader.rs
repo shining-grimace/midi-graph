@@ -31,7 +31,7 @@ pub trait GraphLoader {
             SoundSource::LfsrNoise { .. } => {}
             SoundSource::SampleFilePath { .. } => {}
             SoundSource::OneShotFilePath { .. } => {}
-            SoundSource::Envelope { source, .. } => {
+            SoundSource::AdsrEnvelope { source, .. } => {
                 yield_source(source);
             }
             SoundSource::Combiner { sources, .. } => {

@@ -1,5 +1,5 @@
 
 pub mod async_receiver;
-pub mod envelope;
+pub mod adsr;
 pub mod fader;
 

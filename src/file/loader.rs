@@ -1,7 +1,7 @@
 use crate::{
     Config, Error, FontSource, GraphLoader, LoopRange, MidiDataSource, Node, NoteRange,
     SoundSource,
-    effect::{AsyncEventReceiver, Envelope, EventChannel, Fader},
+    effect::{AsyncEventReceiver, AdsrEnvelope, EventChannel, Fader},
     font::SoundFontBuilder,
     generator::{LfsrNoiseSource, SawtoothWaveSource, SquareWaveSource, TriangleWaveSource},
     group::{CombinerSource, MixerSource, Polyphony},
@@ -145,7 +145,7 @@ impl GraphLoader for FileGraphLoader {
                 let source: Box<dyn Node + Send + 'static> = Box::new(source);
                 (vec![], source)
             }
-            SoundSource::Envelope {
+            SoundSource::AdsrEnvelope {
                 node_id,
                 attack_time,
                 decay_time,
@@ -154,7 +154,7 @@ impl GraphLoader for FileGraphLoader {
                 source,
             } => {
                 let (channels, source) = self.load_source_recursive(source)?;
-                let source = Envelope::from_adsr(
+                let source = AdsrEnvelope::from_parameters(
                     *node_id,
                     *attack_time,
                     *decay_time,
