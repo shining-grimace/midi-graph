@@ -1,4 +1,4 @@
-use crate::{consts, Error, Node, NodeEvent};
+use crate::{Error, Message, Node, consts};
 
 pub struct CombinerSource {
     node_id: u64,
@@ -32,9 +32,11 @@ impl Node for CombinerSource {
         Ok(Box::new(combiner))
     }
 
-    fn on_event(&mut self, event: &NodeEvent) {
-        for consumer in self.consumers.iter_mut() {
-            consumer.on_event(event);
+    fn on_event(&mut self, event: &Message) {
+        if event.target.propagates_from(self.node_id, false) {
+            for consumer in self.consumers.iter_mut() {
+                consumer.on_event(event);
+            }
         }
     }
 
@@ -57,7 +59,8 @@ impl Node for CombinerSource {
         &mut self,
         children: &[Box<dyn Node + Send + 'static>],
     ) -> Result<(), Error> {
-        self.consumers = children.iter()
+        self.consumers = children
+            .iter()
             .map(|child| child.duplicate())
             .collect::<Result<Vec<Box<dyn Node + Send + 'static>>, Error>>()?;
         Ok(())

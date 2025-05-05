@@ -1,4 +1,4 @@
-use crate::{consts, BroadcastControl, Error, Node, NodeEvent, NoteEvent};
+use crate::{Error, Event, Message, Node, consts};
 
 const PEAK_AMPLITUDE: f32 = 1.0;
 
@@ -96,28 +96,24 @@ impl Node for Envelope {
         Ok(Box::new(envelope))
     }
 
-    fn on_event(&mut self, event: &NodeEvent) {
-        match event {
-            NodeEvent::Broadcast(BroadcastControl::NotesOff) => {
-                self.release();
+    fn on_event(&mut self, event: &Message) {
+        if event.target.influences(self.node_id) {
+            match event.data {
+                Event::NoteOn { .. } => {
+                    self.mode = EnvelopeMode::Attack;
+                    self.samples_progress_in_mode = 0;
+                }
+                Event::NoteOff { .. } => {
+                    self.release();
+                }
+                _ => {}
             }
-            NodeEvent::Note { note: _, event } => {
-                match event {
-                    NoteEvent::NoteOn { .. } => {
-                        self.mode = EnvelopeMode::Attack;
-                        self.samples_progress_in_mode = 0;
-                    }
-                    NoteEvent::NoteOff { .. } => {
-                        self.release();
-                    }
-                };
-            }
-            NodeEvent::NodeControl {
-                node_id: _,
-                event: _,
-            } => {}
         }
-        self.consumer.on_event(event);
+
+        // Envelope does not consume any events, but listens to notes
+        if event.target.propagates_from(self.node_id, false) {
+            self.consumer.on_event(event);
+        }
     }
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) {

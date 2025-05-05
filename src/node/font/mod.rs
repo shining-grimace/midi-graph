@@ -1,4 +1,4 @@
-use crate::{Error, Node, NodeEvent, NoteRange};
+use crate::{Error, Event, Message, Node, NoteRange};
 
 pub struct SoundFontBuilder {
     node_id: Option<u64>,
@@ -60,14 +60,34 @@ impl Node for SoundFont {
         Err(Error::User("SoundFont cannot be duplicated".to_owned()))
     }
 
-    fn on_event(&mut self, event: &NodeEvent) {
-        for (range, consumer) in self.ranges.iter_mut() {
-            if let NodeEvent::Note { note, .. } = event {
-                if !range.contains(*note) {
-                    continue;
+    fn on_event(&mut self, event: &Message) {
+        let note = match event.data {
+            Event::NoteOn { note, .. } => Some(note),
+            Event::NoteOff { note, .. } => Some(note),
+            _ => None,
+        };
+        let was_consumed = if event.target.influences(self.node_id) {
+            if note.is_some() {
+                let note = note.unwrap();
+                for (range, consumer) in self.ranges.iter_mut() {
+                    if !range.contains(note) {
+                        continue;
+                    }
+                    consumer.on_event(event);
+                }
+            } else {
+                for (_, consumer) in self.ranges.iter_mut() {
+                    consumer.on_event(event);
                 }
             }
-            consumer.on_event(event);
+            true
+        } else {
+            false
+        };
+        if event.target.propagates_from(self.node_id, was_consumed) {
+            for (_, consumer) in self.ranges.iter_mut() {
+                consumer.on_event(event);
+            }
         }
     }
 

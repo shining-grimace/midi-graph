@@ -1,29 +1,29 @@
-use crate::{Error, Node, NodeEvent};
+use crate::{Error, Message, Node};
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use std::ops::{Deref, DerefMut};
 
 pub struct EventChannel {
     pub for_node_id: u64,
-    pub sender: Sender<NodeEvent>,
+    pub sender: Sender<Message>,
 }
 
 impl Deref for EventChannel {
-    type Target = Sender<NodeEvent>;
+    type Target = Sender<Message>;
 
-    fn deref(&self) -> &Sender<NodeEvent> {
+    fn deref(&self) -> &Sender<Message> {
         &self.sender
     }
 }
 
 impl DerefMut for EventChannel {
-    fn deref_mut(&mut self) -> &mut Sender<NodeEvent> {
+    fn deref_mut(&mut self) -> &mut Sender<Message> {
         &mut self.sender
     }
 }
 
 pub struct AsyncEventReceiver {
     node_id: u64,
-    receiver: Receiver<NodeEvent>,
+    receiver: Receiver<Message>,
     consumer: Box<dyn Node + Send + 'static>,
 }
 
@@ -61,7 +61,11 @@ impl Node for AsyncEventReceiver {
         ))
     }
 
-    fn on_event(&mut self, _event: &NodeEvent) {}
+    fn on_event(&mut self, event: &Message) {
+        if event.target.propagates_from(self.node_id, true) {
+            self.consumer.on_event(event);
+        }
+    }
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) {
         for event in self.receiver.try_iter() {

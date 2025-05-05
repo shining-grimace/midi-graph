@@ -1,6 +1,4 @@
-use crate::{
-    Balance, Error, LoopRange, Node, NodeControlEvent, NodeEvent, NoteEvent, consts, util,
-};
+use crate::{Balance, Error, Event, LoopRange, Message, Node, consts, util};
 use hound::{SampleFormat, WavSpec};
 use soundfont::raw::{SampleHeader, SampleLink};
 
@@ -229,36 +227,29 @@ impl Node for WavSource {
         Ok(Box::new(source))
     }
 
-    fn on_event(&mut self, event: &NodeEvent) {
-        match event {
-            NodeEvent::Broadcast(_) => {},
-            NodeEvent::Note { note, event } => match event {
-                NoteEvent::NoteOn { vel: _ } => {
-                    self.is_on = true;
-                    self.data_position = 0;
-                    self.current_note = *note;
-                }
-                NoteEvent::NoteOff { vel: _ } => {
-                    if self.current_note != *note || !self.is_on {
-                        return;
-                    }
-                    self.is_on = false;
-                }
-            },
-            NodeEvent::NodeControl { node_id, event } => {
-                if *node_id != self.node_id {
+    fn on_event(&mut self, event: &Message) {
+        if !event.target.influences(self.node_id) {
+            return;
+        }
+        match event.data {
+            Event::NoteOn { note, vel: _ } => {
+                self.is_on = true;
+                self.data_position = 0;
+                self.current_note = note;
+            }
+            Event::NoteOff { note, vel: _ } => {
+                if self.current_note != note || !self.is_on {
                     return;
                 }
-                match event {
-                    NodeControlEvent::SourceBalance(balance) => {
-                        self.balance = *balance;
-                    }
-                    NodeControlEvent::Volume(volume) => {
-                        self.volume = *volume;
-                    }
-                    _ => {}
-                }
+                self.is_on = false;
             }
+            Event::SourceBalance(balance) => {
+                self.balance = balance;
+            }
+            Event::Volume(volume) => {
+                self.volume = volume;
+            }
+            _ => {}
         }
     }
 

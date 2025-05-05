@@ -2,11 +2,11 @@ extern crate midi_graph;
 
 use crossbeam_channel::Sender;
 use midi_graph::{
+    Balance, BaseMixer, Event, EventTarget, Message, NoteRange,
     effect::{AsyncEventReceiver, Fader},
     font::SoundFontBuilder,
     generator::{SawtoothWaveSource, SquareWaveSource, TriangleWaveSource},
     group::MixerSource,
-    Balance, BaseMixer, NodeControlEvent, NodeEvent, NoteEvent, NoteRange,
 };
 use std::{thread::sleep, time::Duration};
 
@@ -39,114 +39,101 @@ fn main() {
         sleep(Duration::from_millis(50));
         send_or_log(
             &mut sender,
-            &NodeEvent::Note {
-                note: 69,
-                event: NoteEvent::NoteOn { vel: 1.0 },
-            },
+            EventTarget::Broadcast,
+            Event::NoteOn { note: 69, vel: 1.0 },
         );
         for _ in 0..10 {
             sleep(Duration::from_millis(100));
             send_or_log(
                 &mut sender,
-                &NodeEvent::NodeControl {
-                    node_id: MIXER_NODE_ID,
-                    event: NodeControlEvent::MixerBalance(0.625),
-                },
+                EventTarget::SpecificNode(MIXER_NODE_ID),
+                Event::MixerBalance(0.625),
             );
             sleep(Duration::from_millis(100));
             send_or_log(
                 &mut sender,
-                &NodeEvent::NodeControl {
-                    node_id: MIXER_NODE_ID,
-                    event: NodeControlEvent::MixerBalance(0.375),
-                },
+                EventTarget::SpecificNode(MIXER_NODE_ID),
+                Event::MixerBalance(0.375),
             );
         }
         sleep(Duration::from_millis(500));
         send_or_log(
             &mut sender,
-            &NodeEvent::Note {
-                note: 69,
-                event: NoteEvent::NoteOff { vel: 0.0 },
+            EventTarget::Broadcast,
+            Event::NoteOff { note: 69, vel: 0.0 },
+        );
+        send_or_log(
+            &mut sender,
+            EventTarget::SpecificNode(FADER_NODE_ID),
+            Event::Fade {
+                from: 0.0,
+                to: 1.0,
+                seconds: 1.0,
             },
         );
         send_or_log(
             &mut sender,
-            &NodeEvent::NodeControl {
-                node_id: FADER_NODE_ID,
-                event: NodeControlEvent::Fade {
-                    from: 0.0,
-                    to: 1.0,
-                    seconds: 1.0,
-                },
-            },
-        );
-        send_or_log(
-            &mut sender,
-            &NodeEvent::Note {
+            EventTarget::Broadcast,
+            Event::NoteOn {
                 note: 73,
-                event: NoteEvent::NoteOn { vel: 0.375 },
+                vel: 0.375,
             },
         );
         sleep(Duration::from_millis(500));
         send_or_log(
             &mut sender,
-            &NodeEvent::Note {
-                note: 73,
-                event: NoteEvent::NoteOff { vel: 0.0 },
-            },
+            EventTarget::Broadcast,
+            Event::NoteOff { note: 73, vel: 0.0 },
         );
         send_or_log(
             &mut sender,
-            &NodeEvent::Note {
+            EventTarget::Broadcast,
+            Event::NoteOn {
                 note: 74,
-                event: NoteEvent::NoteOn { vel: 0.75 },
+                vel: 0.75,
             },
         );
         sleep(Duration::from_millis(500));
         send_or_log(
             &mut sender,
-            &NodeEvent::Note {
-                note: 74,
-                event: NoteEvent::NoteOff { vel: 0.0 },
-            },
+            EventTarget::Broadcast,
+            Event::NoteOff { note: 74, vel: 0.0 },
         );
         send_or_log(
             &mut sender,
-            &NodeEvent::Note {
+            EventTarget::Broadcast,
+            Event::NoteOn {
                 note: 71,
-                event: NoteEvent::NoteOn { vel: 0.375 },
+                vel: 0.375,
             },
         );
         sleep(Duration::from_millis(500));
         send_or_log(
             &mut sender,
-            &NodeEvent::Note {
-                note: 71,
-                event: NoteEvent::NoteOff { vel: 0.0 },
-            },
+            EventTarget::Broadcast,
+            Event::NoteOff { note: 71, vel: 0.0 },
         );
         send_or_log(
             &mut sender,
-            &NodeEvent::Note {
-                note: 69,
-                event: NoteEvent::NoteOn { vel: 1.0 },
-            },
+            EventTarget::Broadcast,
+            Event::NoteOn { note: 69, vel: 1.0 },
         );
         sleep(Duration::from_millis(1000));
         send_or_log(
             &mut sender,
-            &NodeEvent::Note {
-                note: 69,
-                event: NoteEvent::NoteOff { vel: 0.0 },
-            },
+            EventTarget::Broadcast,
+            Event::NoteOff { note: 69, vel: 0.0 },
         );
     });
     sleep(Duration::from_secs(5));
 }
 
-fn send_or_log(sender: &mut Sender<NodeEvent>, event: &NodeEvent) {
-    if let Err(error) = sender.send(event.clone()) {
+fn send_or_log(sender: &mut Sender<Message>, target: EventTarget, event: Event) {
+    let message = Message {
+        target,
+        data: event
+    };
+    if let Err(error) = sender.send(message) {
         println!("Send error: {:?}", error);
     }
 }

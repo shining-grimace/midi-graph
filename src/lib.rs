@@ -20,7 +20,7 @@ mod node;
 
 pub use config::{Config, FontSource, Loop, MidiDataSource, RangeSource, SoundSource};
 pub use error::Error;
-pub use event::{Balance, BroadcastControl, NodeControlEvent, NodeEvent, NoteEvent};
+pub use event::{Balance, Event, EventTarget, Message};
 pub use file::loader::FileGraphLoader;
 pub use loader::GraphLoader;
 pub use mix::base::BaseMixer;

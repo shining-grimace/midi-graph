@@ -2,9 +2,8 @@ pub mod cue;
 pub mod util;
 
 use crate::{
-    consts,
+    Error, Event, EventTarget, Message, Node, consts,
     midi::{Cue, TimelineCue},
-    BroadcastControl, Error, Node, NodeControlEvent, NodeEvent, NoteEvent,
 };
 use midly::{MetaMessage, MidiMessage, Smf, TrackEvent, TrackEventKind};
 use std::cell::RefCell;
@@ -17,7 +16,7 @@ use crate::node::log;
 enum EventAction {
     ChannelNodeEvent {
         channel: usize,
-        event: NodeEvent,
+        event: Message,
     },
     LoopCue {
         is_ideal_point: bool,
@@ -158,7 +157,10 @@ impl MidiSource {
         }) {
             self.event_ticks_progress = 0;
             self.next_event_index = index + 1;
-            let broadcast_cutoff = NodeEvent::Broadcast(BroadcastControl::NotesOff);
+            let broadcast_cutoff = Message {
+                target: EventTarget::Broadcast,
+                data: Event::NoteOff { note: 0, vel: 1.0 },
+            };
             for (_, source) in self.channel_sources.iter_mut() {
                 source.on_event(&broadcast_cutoff);
             }
@@ -202,9 +204,10 @@ impl MidiSource {
                 message: MidiMessage::NoteOn { key, vel },
             } => Some(EventAction::ChannelNodeEvent {
                 channel: u8::from(channel) as usize,
-                event: NodeEvent::Note {
-                    note: u8::from(key),
-                    event: NoteEvent::NoteOn {
+                event: Message {
+                    target: EventTarget::FirstPossibleConsumer,
+                    data: Event::NoteOn {
+                        note: u8::from(key),
                         vel: u8::from(vel) as f32 / 127.0,
                     },
                 },
@@ -214,9 +217,10 @@ impl MidiSource {
                 message: MidiMessage::NoteOff { key, vel },
             } => Some(EventAction::ChannelNodeEvent {
                 channel: u8::from(channel) as usize,
-                event: NodeEvent::Note {
-                    note: u8::from(key),
-                    event: NoteEvent::NoteOff {
+                event: Message {
+                    target: EventTarget::FirstPossibleConsumer,
+                    data: Event::NoteOff {
+                        note: u8::from(key),
                         vel: u8::from(vel) as f32 / 127.0,
                     },
                 },
@@ -316,14 +320,10 @@ impl Node for MidiSource {
         Err(Error::User("MidiSource cannot be duplicated".to_owned()))
     }
 
-    fn on_event(&mut self, event: &NodeEvent) {
-        if let NodeEvent::NodeControl {
-            node_id,
-            event: NodeControlEvent::SeekWhenIdeal { to_anchor },
-        } = event
-        {
-            if *node_id == self.node_id {
-                self.queued_ideal_seek = *to_anchor;
+    fn on_event(&mut self, event: &Message) {
+        if event.target.influences(self.node_id) {
+            if let Event::SeekWhenIdeal { to_anchor } = event.data {
+                self.queued_ideal_seek = to_anchor;
                 return;
             }
         }

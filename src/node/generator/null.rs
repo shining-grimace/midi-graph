@@ -1,4 +1,4 @@
-use crate::{Error, Node, NodeEvent};
+use crate::{Error, Message, Node};
 
 pub struct NullSource {
     node_id: u64,
@@ -26,7 +26,7 @@ impl Node for NullSource {
         Ok(Box::new(source))
     }
 
-    fn on_event(&mut self, _event: &NodeEvent) {}
+    fn on_event(&mut self, _event: &Message) {}
 
     fn fill_buffer(&mut self, _buffer: &mut [f32]) {}
 
@@ -36,7 +36,7 @@ impl Node for NullSource {
     ) -> Result<(), Error> {
         match children.is_empty() {
             true => Ok(()),
-            false => Err(Error::User("NullSource cannot have children".to_owned()))
+            false => Err(Error::User("NullSource cannot have children".to_owned())),
         }
     }
 }

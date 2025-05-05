@@ -1,6 +1,4 @@
-use crate::{
-    Balance, BroadcastControl, Error, Node, NodeControlEvent, NodeEvent, NoteEvent, consts,
-};
+use crate::{Balance, Error, Event, Message, Node, consts};
 use hound::{SampleFormat, WavSpec};
 use soundfont::raw::{SampleHeader, SampleLink};
 
@@ -122,33 +120,24 @@ impl Node for OneShotSource {
         Ok(Box::new(source))
     }
 
-    fn on_event(&mut self, event: &NodeEvent) {
-        match event {
-            NodeEvent::Broadcast(BroadcastControl::NotesOff) => {
+    fn on_event(&mut self, event: &Message) {
+        if !event.target.influences(self.node_id) {
+            return;
+        }
+        match event.data {
+            Event::NoteOn { .. } => {
+                self.data_position = 0;
+            }
+            Event::NoteOff { .. } => {
                 self.data_position = self.source_data.len();
             }
-            NodeEvent::Note { note: _, event } => match event {
-                NoteEvent::NoteOn { vel: _ } => {
-                    self.data_position = 0;
-                }
-                NoteEvent::NoteOff { vel: _ } => {
-                    self.data_position = self.source_data.len();
-                }
-            },
-            NodeEvent::NodeControl { node_id, event } => {
-                if *node_id != self.node_id {
-                    return;
-                }
-                match event {
-                    NodeControlEvent::SourceBalance(balance) => {
-                        self.balance = *balance;
-                    }
-                    NodeControlEvent::Volume(volume) => {
-                        self.volume = *volume;
-                    }
-                    _ => {}
-                }
+            Event::SourceBalance(balance) => {
+                self.balance = balance;
             }
+            Event::Volume(volume) => {
+                self.volume = volume;
+            }
+            _ => {}
         }
     }
 

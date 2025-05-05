@@ -1,4 +1,4 @@
-use crate::{consts, Error, Node, NodeControlEvent, NodeEvent};
+use crate::{Error, Event, Message, Node, consts};
 
 pub struct MixerSource {
     node_id: u64,
@@ -41,19 +41,25 @@ impl Node for MixerSource {
         Ok(Box::new(mixer))
     }
 
-    fn on_event(&mut self, event: &NodeEvent) {
-        if let NodeEvent::NodeControl {
-            node_id,
-            event: NodeControlEvent::MixerBalance(balance),
-        } = event
-        {
-            if *node_id == self.node_id {
+    fn on_event(&mut self, event: &Message) {
+        let was_consumed = if event.target.influences(self.node_id) {
+            if let Message {
+                data: Event::MixerBalance(balance),
+                ..
+            } = event
+            {
                 self.balance = *balance;
-                return;
+                true
+            } else {
+                false
             }
+        } else {
+            false
+        };
+        if event.target.propagates_from(self.node_id, was_consumed) {
+            self.consumer_0.on_event(event);
+            self.consumer_1.on_event(event);
         }
-        self.consumer_0.on_event(event);
-        self.consumer_1.on_event(event);
     }
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) {

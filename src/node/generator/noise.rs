@@ -1,4 +1,4 @@
-use crate::{consts, util, Balance, BroadcastControl, Error, Node, NodeControlEvent, NodeEvent, NoteEvent};
+use crate::{Balance, Error, Event, EventTarget, Message, Node, consts, util};
 
 pub struct LfsrNoiseSource {
     node_id: u64,
@@ -77,9 +77,10 @@ impl Node for LfsrNoiseSource {
             0x4040 => true,
             0x4000 => false,
             _ => {
-                return Err(Error::Internal(
-                    format!("MidiGraph: Unexpected feedback mask {}", self.feedback_mask)
-                ));
+                return Err(Error::Internal(format!(
+                    "MidiGraph: Unexpected feedback mask {}",
+                    self.feedback_mask
+                )));
             }
         };
         let source = Self::new(
@@ -92,38 +93,28 @@ impl Node for LfsrNoiseSource {
         Ok(Box::new(source))
     }
 
-    fn on_event(&mut self, event: &NodeEvent) {
-        match event {
-            NodeEvent::Broadcast(BroadcastControl::NotesOff) => {
-                self.is_on = false;
-            }
-            NodeEvent::Note { note, event } => match event {
-                NoteEvent::NoteOn { vel } => {
-                    self.is_on = true;
-                    self.current_note = *note;
-                    self.current_amplitude = self.peak_amplitude * *vel;
-                }
-                NoteEvent::NoteOff { vel: _ } => {
-                    if self.current_note != *note {
-                        return;
-                    }
+    fn on_event(&mut self, event: &Message) {
+        if !event.target.influences(self.node_id) {
+            return;
+        }
+        match event.data {
+            Event::NoteOff { note, .. } => {
+                if note == self.current_note || event.target == EventTarget::Broadcast {
                     self.is_on = false;
                 }
-            },
-            NodeEvent::NodeControl { node_id, event } => {
-                if *node_id != self.node_id {
-                    return;
-                }
-                match event {
-                    NodeControlEvent::SourceBalance(balance) => {
-                        self.balance = *balance;
-                    }
-                    NodeControlEvent::Volume(volume) => {
-                        self.peak_amplitude = *volume;
-                    }
-                    _ => {}
-                }
             }
+            Event::NoteOn { note, vel } => {
+                self.is_on = true;
+                self.current_note = note;
+                self.current_amplitude = self.peak_amplitude * vel;
+            }
+            Event::SourceBalance(balance) => {
+                self.balance = balance;
+            }
+            Event::Volume(volume) => {
+                self.peak_amplitude = volume;
+            }
+            _ => {}
         }
     }
 
@@ -175,7 +166,9 @@ impl Node for LfsrNoiseSource {
     ) -> Result<(), Error> {
         match children.is_empty() {
             true => Ok(()),
-            false => Err(Error::User("LfsrNoiseSource cannot have children".to_owned()))
+            false => Err(Error::User(
+                "LfsrNoiseSource cannot have children".to_owned(),
+            )),
         }
     }
 }

@@ -1,4 +1,3 @@
-
 pub mod effect;
 pub mod font;
 pub mod generator;
@@ -9,7 +8,7 @@ pub mod util;
 #[cfg(debug_assertions)]
 pub mod log;
 
-use crate::{Error, Loop, NodeEvent, RangeSource};
+use crate::{Error, Loop, Message, RangeSource};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 const START_GENERATED_NODE_IDS: u64 = 0x10000;
@@ -19,7 +18,7 @@ pub trait Node {
     fn get_node_id(&self) -> u64;
     fn set_node_id(&mut self, node_id: u64);
     fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error>;
-    fn on_event(&mut self, event: &NodeEvent);
+    fn on_event(&mut self, event: &Message);
     fn fill_buffer(&mut self, buffer: &mut [f32]);
     fn replace_children(
         &mut self,
@@ -87,4 +86,3 @@ impl LoopRange {
         }
     }
 }
-

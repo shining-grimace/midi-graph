@@ -1,4 +1,4 @@
-use crate::{Error, Node, NodeEvent, NoteEvent};
+use crate::{Error, Event, Message, Node};
 
 pub struct Polyphony {
     node_id: u64,
@@ -53,25 +53,28 @@ impl Node for Polyphony {
         Ok(Box::new(polyphony))
     }
 
-    fn on_event(&mut self, event: &NodeEvent) {
-        match event {
-            NodeEvent::Note {
-                event: note_event, ..
-            } => match note_event {
-                NoteEvent::NoteOn { .. } => {
+    fn on_event(&mut self, event: &Message) {
+        let was_consumed = if event.target.influences(self.node_id) {
+            match event.data {
+                Event::NoteOn { .. } => {
                     self.consumers[self.next_on_index].on_event(event);
                     self.next_on_index = (self.next_on_index + 1) % self.consumers.len();
+                    true
                 }
-                NoteEvent::NoteOff { .. } => {
+                Event::NoteOff { .. } => {
                     for consumer in self.consumers.iter_mut() {
                         consumer.on_event(event);
                     }
+                    true
                 }
-            },
-            _ => {
-                for consumer in self.consumers.iter_mut() {
-                    consumer.on_event(event);
-                }
+                _ => false
+            }
+        } else {
+            true
+        };
+        if event.target.propagates_from(self.node_id, was_consumed) {
+            for consumer in self.consumers.iter_mut() {
+                consumer.on_event(event);
             }
         }
     }

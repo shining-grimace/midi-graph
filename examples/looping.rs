@@ -2,8 +2,8 @@ extern crate midi_graph;
 
 use crossbeam_channel::Sender;
 use midi_graph::{
-    Balance, BaseMixer, FileGraphLoader, FontSource, GraphLoader, MidiDataSource, NodeControlEvent,
-    NodeEvent, RangeSource, SoundSource,
+    Balance, BaseMixer, Event, EventTarget, FileGraphLoader, FontSource, GraphLoader, Message,
+    MidiDataSource, RangeSource, SoundSource,
 };
 use std::{collections::HashMap, thread::sleep, time::Duration};
 
@@ -73,29 +73,29 @@ fn main() {
         sleep(Duration::from_millis(500));
         send_or_log(
             &mut sender,
-            &NodeEvent::NodeControl {
-                node_id: FADER_NODE_ID,
-                event: NodeControlEvent::Fade {
-                    from: 0.0,
-                    to: 1.0,
-                    seconds: 1.0,
-                },
+            EventTarget::SpecificNode(FADER_NODE_ID),
+            Event::Fade {
+                from: 0.0,
+                to: 1.0,
+                seconds: 1.0,
             },
         );
         sleep(Duration::from_secs(12));
         send_or_log(
             &mut sender,
-            &NodeEvent::NodeControl {
-                node_id: MIDI_NODE_ID,
-                event: NodeControlEvent::SeekWhenIdeal { to_anchor: Some(1) },
-            },
+            EventTarget::SpecificNode(MIDI_NODE_ID),
+            Event::SeekWhenIdeal { to_anchor: Some(1) }
         );
     });
     sleep(Duration::from_secs(30));
 }
 
-fn send_or_log(sender: &mut Sender<NodeEvent>, event: &NodeEvent) {
-    if let Err(error) = sender.send(event.clone()) {
+fn send_or_log(sender: &mut Sender<Message>, target: EventTarget, event: Event) {
+    let message = Message {
+        target,
+        data: event,
+    };
+    if let Err(error) = sender.send(message) {
         println!("Send error: {:?}", error);
     }
 }

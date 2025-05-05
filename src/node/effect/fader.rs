@@ -1,4 +1,4 @@
-use crate::{consts, Error, Node, NodeControlEvent, NodeEvent};
+use crate::{Error, Event, Message, Node, consts};
 
 pub struct Fader {
     node_id: u64,
@@ -51,21 +51,23 @@ impl Node for Fader {
         Ok(Box::new(fader))
     }
 
-    fn on_event(&mut self, event: &NodeEvent) {
-        if let NodeEvent::NodeControl {
-            node_id,
-            event: NodeControlEvent::Fade { from, to, seconds },
-        } = event
-        {
-            if *node_id == self.node_id {
-                self.from_volume = *from;
-                self.to_volume = *to;
-                self.duration_seconds = *seconds;
+    fn on_event(&mut self, event: &Message) {
+        let was_consumed = if event.target.influences(self.node_id) {
+            if let Event::Fade { from, to, seconds } = event.data {
+                self.from_volume = from;
+                self.to_volume = to;
+                self.duration_seconds = seconds;
                 self.progress_seconds = 0.0;
-                return;
+                true
+            } else {
+                false
             }
+        } else {
+            false
+        };
+        if event.target.propagates_from(self.node_id, was_consumed) {
+            self.consumer.on_event(event);
         }
-        self.consumer.on_event(event);
     }
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) {
