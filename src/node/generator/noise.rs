@@ -5,13 +5,15 @@ pub struct LfsrNoiseSource {
     is_on: bool,
     note_of_16_shifts: u8,
     current_note: u8,
+    current_frequency: f32,
     balance: Balance,
-    current_amplitude: f32,
     current_lfsr: u16,
     feedback_mask: u16,
     cycle_progress_samples: f32,
     cycle_samples_a440: f32,
     peak_amplitude: f32,
+    note_velocity: f32,
+    modulated_volume: f32
 }
 
 impl LfsrNoiseSource {
@@ -38,21 +40,24 @@ impl LfsrNoiseSource {
             is_on: false,
             note_of_16_shifts,
             current_note: 0,
+            current_frequency: 10.0,
             balance,
-            current_amplitude: 0.0,
             current_lfsr: 0x0001,
             feedback_mask,
             cycle_progress_samples: 0.0,
             cycle_samples_a440,
             peak_amplitude: amplitude,
+            note_velocity: 1.0,
+            modulated_volume: 1.0
         }
     }
 
     #[inline]
     fn value(&self) -> f32 {
+        let current_amplitude = self.peak_amplitude * self.note_velocity * self.modulated_volume;
         match self.current_lfsr & 0x0001 {
-            0x0001 => self.current_amplitude,
-            _ => -self.current_amplitude,
+            0x0001 => current_amplitude,
+            _ => -current_amplitude,
         }
     }
 
@@ -106,13 +111,17 @@ impl Node for LfsrNoiseSource {
             Event::NoteOn { note, vel } => {
                 self.is_on = true;
                 self.current_note = note;
-                self.current_amplitude = self.peak_amplitude * vel;
+                self.current_frequency = util::frequency_of(note);
+                self.note_velocity = vel;
+            }
+            Event::PitchMultiplier(multiplier) => {
+                self.current_frequency = multiplier * util::frequency_of(self.current_note);
             }
             Event::SourceBalance(balance) => {
                 self.balance = balance;
             }
             Event::Volume(volume) => {
-                self.peak_amplitude = volume;
+                self.modulated_volume = volume;
             }
             _ => {}
         }
@@ -123,8 +132,7 @@ impl Node for LfsrNoiseSource {
             return;
         }
         let size = buffer.len();
-        let note_frequency = util::frequency_of(self.current_note);
-        let pitch_cycle_samples = consts::PLAYBACK_SAMPLE_RATE as f32 / note_frequency;
+        let pitch_cycle_samples = consts::PLAYBACK_SAMPLE_RATE as f32 / self.current_frequency;
         let mut stretched_progress =
             self.cycle_progress_samples * pitch_cycle_samples / self.cycle_samples_a440;
 
@@ -135,25 +143,22 @@ impl Node for LfsrNoiseSource {
         #[cfg(debug_assertions)]
         assert_eq!(consts::CHANNEL_COUNT, 2);
 
-        let mut amplitude = self.value();
-        let (write_left, write_right) = match self.balance {
-            Balance::Both => (true, true),
-            Balance::Left => (true, false),
-            Balance::Right => (false, true),
+        let mut current_amplitude = self.value();
+        let (left_amplitude, right_amplitude) = match self.balance {
+            Balance::Both => (1.0, 1.0),
+            Balance::Left => (1.0, 0.0),
+            Balance::Right => (0.0, 1.0),
+            Balance::Pan(pan) => (1.0 - pan, pan),
         };
         for i in (0..size).step_by(consts::CHANNEL_COUNT) {
             stretched_progress += 1.0;
             if stretched_progress >= pitch_cycle_samples {
                 stretched_progress -= pitch_cycle_samples;
                 self.shift();
-                amplitude = self.value();
+                current_amplitude = self.value();
             }
-            if write_left {
-                buffer[i] += amplitude;
-            }
-            if write_right {
-                buffer[i + 1] += amplitude;
-            }
+            buffer[i] += left_amplitude * current_amplitude;
+            buffer[i + 1] += right_amplitude * current_amplitude;
         }
 
         self.cycle_progress_samples =

@@ -31,6 +31,9 @@ pub mod effect {
         async_receiver::{AsyncEventReceiver, EventChannel},
         adsr::AdsrEnvelope,
         fader::Fader,
+        lfo::Lfo,
+        transition::TransitionEnvelope,
+        ModulationProperty
     };
 }
 

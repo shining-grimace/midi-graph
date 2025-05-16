@@ -12,6 +12,7 @@ pub struct WavSource {
     loop_end_data_position: usize,
     data_position: usize,
     current_note: u8,
+    pitch_multiplier: f32,
     volume: f32,
     source_data: Vec<f32>,
     playback_scale: f64,
@@ -100,6 +101,7 @@ impl WavSource {
             loop_end_data_position: loop_range.end_frame * channels,
             data_position: data.len(),
             current_note: 0,
+            pitch_multiplier: 1.0,
             volume: 1.0,
             source_data: data,
             playback_scale,
@@ -164,29 +166,22 @@ impl WavSource {
     ) -> (usize, usize) {
         let mut src_index = 0;
         let mut dst_index = 0;
-        let (write_left, write_right) = match self.balance {
-            Balance::Both => (true, true),
-            Balance::Left => (true, false),
-            Balance::Right => (false, true),
+        let (left_amplitude, right_amplitude) = match self.balance {
+            Balance::Both => (1.0, 1.0),
+            Balance::Left => (1.0, 0.0),
+            Balance::Right => (0.0, 1.0),
+            Balance::Pan(pan) => (1.0 - pan, pan),
         };
         while src_index < src.len() && dst_index < dst.len() {
             match src_channels {
                 1 => {
                     let sample = src[src_index] * self.volume;
-                    if write_left {
-                        dst[dst_index] += sample;
-                    }
-                    if write_right {
-                        dst[dst_index + 1] += sample;
-                    }
+                    dst[dst_index] += left_amplitude * sample;
+                    dst[dst_index + 1] += right_amplitude * sample;
                 }
                 2 => {
-                    if write_left {
-                        dst[dst_index] += src[src_index] * self.volume;
-                    }
-                    if write_right {
-                        dst[dst_index + 1] += src[src_index + 1] * self.volume;
-                    }
+                    dst[dst_index] += left_amplitude * src[src_index] * self.volume;
+                    dst[dst_index + 1] += right_amplitude * src[src_index + 1] * self.volume;
                 }
                 _ => {}
             }
@@ -236,12 +231,16 @@ impl Node for WavSource {
                 self.is_on = true;
                 self.data_position = 0;
                 self.current_note = note;
+                self.pitch_multiplier = 1.0;
             }
             Event::NoteOff { note, vel: _ } => {
                 if self.current_note != note || !self.is_on {
                     return;
                 }
                 self.is_on = false;
+            }
+            Event::PitchMultiplier(multiplier) => {
+                self.pitch_multiplier = multiplier;
             }
             Event::SourceBalance(balance) => {
                 self.balance = balance;
@@ -263,8 +262,8 @@ impl Node for WavSource {
         }
 
         // Scaling
-        let relative_pitch =
-            util::relative_pitch_ratio_of(self.current_note, self.source_note) as f64;
+        let relative_pitch = self.pitch_multiplier as f64
+            * util::relative_pitch_ratio_of(self.current_note, self.source_note) as f64;
         let source_frames_per_output_frame = relative_pitch * self.playback_scale;
 
         #[cfg(debug_assertions)]

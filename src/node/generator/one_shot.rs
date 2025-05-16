@@ -154,29 +154,27 @@ impl Node for OneShotSource {
         assert_eq!(buffer.len() % consts::CHANNEL_COUNT, 0);
 
         let src = &self.source_data[self.data_position..];
+        let (left_amplitude, right_amplitude) = match self.balance {
+            Balance::Both => (1.0, 1.0),
+            Balance::Left => (1.0, 0.0),
+            Balance::Right => (0.0, 1.0),
+            Balance::Pan(pan) => (1.0 - pan, pan),
+        };
         match self.source_channel_count {
             1 => {
                 let src_data_points = (buffer.len() / 2).min(src.len());
-                let (write_left, write_right) = match self.balance {
-                    Balance::Both => (true, true),
-                    Balance::Left => (true, false),
-                    Balance::Right => (false, true),
-                };
                 for src_data_index in 0..src_data_points {
                     let sample = src[src_data_index] * self.volume;
-                    if write_left {
-                        buffer[src_data_index * 2] += sample;
-                    }
-                    if write_right {
-                        buffer[src_data_index * 2 + 1] += sample;
-                    }
+                    buffer[src_data_index * 2] += left_amplitude * sample;
+                    buffer[src_data_index * 2 + 1] += right_amplitude * sample;
                 }
                 self.data_position += src_data_points;
             }
             2 => {
                 let src_data_points = buffer.len().min(src.len());
-                for src_data_index in 0..src_data_points {
-                    buffer[src_data_index] += src[src_data_index] * self.volume;
+                for src_data_index in (0..src_data_points).step_by(2) {
+                    buffer[src_data_index] += left_amplitude * src[src_data_index] * self.volume;
+                    buffer[src_data_index + 1] += right_amplitude * src[src_data_index + 1] * self.volume;
                 }
                 self.data_position += src_data_points;
             }

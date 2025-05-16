@@ -4,11 +4,13 @@ pub struct SquareWaveSource {
     node_id: u64,
     is_on: bool,
     current_note: u8,
+    current_frequency: f32,
     balance: Balance,
-    current_amplitude: f32,
     cycle_progress_samples: f32,
     period_samples_a440: f32,
     peak_amplitude: f32,
+    note_velocity: f32,
+    modulated_volume: f32,
     duty_cycle: f32,
 }
 
@@ -18,11 +20,13 @@ impl SquareWaveSource {
             node_id: node_id.unwrap_or_else(<Self as Node>::new_node_id),
             is_on: false,
             current_note: 0,
+            current_frequency: 10.0,
             balance,
-            current_amplitude: 0.0,
             cycle_progress_samples: 0.0,
             period_samples_a440: consts::PLAYBACK_SAMPLE_RATE as f32 / 440.0,
             peak_amplitude: amplitude,
+            note_velocity: 1.0,
+            modulated_volume: 1.0,
             duty_cycle,
         }
     }
@@ -60,13 +64,17 @@ impl Node for SquareWaveSource {
             Event::NoteOn { note, vel } => {
                 self.is_on = true;
                 self.current_note = note;
-                self.current_amplitude = self.peak_amplitude * vel;
+                self.current_frequency = util::frequency_of(note);
+                self.note_velocity = vel;
+            }
+            Event::PitchMultiplier(multiplier) => {
+                self.current_frequency = multiplier * util::frequency_of(self.current_note);
             }
             Event::SourceBalance(balance) => {
                 self.balance = balance;
             }
             Event::Volume(volume) => {
-                self.peak_amplitude = volume;
+                self.modulated_volume = volume;
             }
             _ => {}
         }
@@ -77,8 +85,7 @@ impl Node for SquareWaveSource {
             return;
         }
         let size = buffer.len();
-        let note_frequency = util::frequency_of(self.current_note);
-        let pitch_period_samples = consts::PLAYBACK_SAMPLE_RATE as f32 / note_frequency;
+        let pitch_period_samples = consts::PLAYBACK_SAMPLE_RATE as f32 / self.current_frequency;
         let mut stretched_progress =
             self.cycle_progress_samples * pitch_period_samples / self.period_samples_a440;
 
@@ -89,10 +96,12 @@ impl Node for SquareWaveSource {
         #[cfg(debug_assertions)]
         assert_eq!(consts::CHANNEL_COUNT, 2);
 
-        let (write_left, write_right) = match self.balance {
-            Balance::Both => (true, true),
-            Balance::Left => (true, false),
-            Balance::Right => (false, true),
+        let current_amplitude = self.peak_amplitude * self.note_velocity * self.modulated_volume;
+        let (left_amplitude, right_amplitude) = match self.balance {
+            Balance::Both => (1.0, 1.0),
+            Balance::Left => (1.0, 0.0),
+            Balance::Right => (0.0, 1.0),
+            Balance::Pan(pan) => (1.0 - pan, pan),
         };
         for i in (0..size).step_by(consts::CHANNEL_COUNT) {
             stretched_progress += 1.0;
@@ -101,15 +110,11 @@ impl Node for SquareWaveSource {
             }
             let duty = stretched_progress / pitch_period_samples;
             let amplitude = match duty > self.duty_cycle {
-                true => self.current_amplitude,
-                false => -self.current_amplitude,
+                true => current_amplitude,
+                false => -current_amplitude,
             };
-            if write_left {
-                buffer[i] += amplitude;
-            }
-            if write_right {
-                buffer[i + 1] += amplitude;
-            }
+            buffer[i] += left_amplitude * amplitude;
+            buffer[i + 1] += right_amplitude * amplitude;
         }
 
         self.cycle_progress_samples =

@@ -1,4 +1,5 @@
 
+use crate::effect::ModulationProperty;
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Clone, Debug)]
@@ -48,8 +49,12 @@ pub enum Event {
     MixerBalance(f32),
     SourceBalance(Balance),
     Volume(f32),
+    PitchMultiplier(f32),
     Fade { from: f32, to: f32, seconds: f32 },
     SeekWhenIdeal { to_anchor: Option<u32> },
+    Transition { property: ModulationProperty, from: f32, to: f32, duration_secs: f32, steps: usize },
+    Lfo { property: ModulationProperty, low: f32, high: f32, period_secs: f32, steps: usize },
+    EndModulation,
     Unknown,
 }
 
@@ -58,5 +63,6 @@ pub enum Balance {
     Both,
     Left,
     Right,
+    Pan(f32)
 }
 
