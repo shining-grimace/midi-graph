@@ -3,7 +3,7 @@ extern crate midi_graph;
 use crossbeam_channel::Sender;
 use midi_graph::{
     Balance, BaseMixer, Event, EventTarget, FileGraphLoader, FontSource, GraphLoader, Message,
-    MidiDataSource, RangeSource, SoundSource,
+    MidiDataSource, RangeSource, SoundSource, midi::CueData,
 };
 use std::{collections::HashMap, thread::sleep, time::Duration};
 
@@ -84,7 +84,7 @@ fn main() {
         send_or_log(
             &mut sender,
             EventTarget::SpecificNode(MIDI_NODE_ID),
-            Event::SeekWhenIdeal { to_anchor: Some(1) }
+            Event::CueData(CueData::SeekWhenIdeal(1)),
         );
     });
     sleep(Duration::from_secs(30));

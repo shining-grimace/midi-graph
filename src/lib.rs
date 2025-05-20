@@ -28,12 +28,12 @@ pub use node::{LoopRange, Node, NoteRange};
 
 pub mod effect {
     pub use crate::node::effect::{
-        async_receiver::{AsyncEventReceiver, EventChannel},
+        ModulationProperty,
         adsr::AdsrEnvelope,
+        async_receiver::{AsyncEventReceiver, EventChannel},
         fader::Fader,
         lfo::Lfo,
         transition::TransitionEnvelope,
-        ModulationProperty
     };
 }
 
@@ -57,8 +57,7 @@ pub mod group {
 
 pub mod midi {
     pub use crate::node::midi::{
-        MidiSource, MidiSourceBuilder,
-        cue::{Cue, TimelineCue},
+        MidiSource, MidiSourceBuilder, cue::CueData, util::MidiEvent,
     };
 }
 

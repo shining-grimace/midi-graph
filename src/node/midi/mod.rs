@@ -3,33 +3,19 @@ pub mod util;
 
 use crate::{
     Error, Event, EventTarget, Message, Node, consts,
-    midi::{Cue, TimelineCue},
+    midi::{CueData, MidiEvent},
 };
-use midly::{MetaMessage, MidiMessage, Smf, TrackEvent, TrackEventKind};
-use std::cell::RefCell;
+use midly::Smf;
 use std::collections::HashMap;
 
 #[cfg(debug_assertions)]
 use crate::node::log;
 
-#[derive(Debug)]
-enum EventAction {
-    ChannelNodeEvent {
-        channel: usize,
-        event: Message,
-    },
-    LoopCue {
-        is_ideal_point: bool,
-        seek_anchor: Option<u32>,
-    },
-}
-
 pub struct MidiSourceBuilder {
     node_id: Option<u64>,
-    smf: Smf<'static>,
-    track_no: usize,
-    timeline_cues: Vec<TimelineCue>,
+    midi_events: Vec<MidiEvent>,
     channel_sources: HashMap<usize, Box<dyn Node + Send + 'static>>,
+    samples_per_tick: f64,
 }
 
 impl MidiSourceBuilder {
@@ -40,33 +26,30 @@ impl MidiSourceBuilder {
         log::log_loaded_midi(&smf);
 
         let track_no = util::choose_track_index(&smf)?;
-        let timeline_cues = TimelineCue::from_smf(&smf, track_no)?;
-        let static_smf = smf.to_static();
         if smf.tracks.len() > track_no + 1 {
             println!("WARNING: MIDI: Only the first track containing notes will be used");
         }
+        let samples_per_tick = util::get_samples_per_tick(&smf)?;
+        let midi_events = util::midi_events_from_midi(smf, track_no)?;
         Ok(Self {
             node_id,
-            smf: static_smf,
-            track_no,
-            timeline_cues,
+            midi_events,
             channel_sources: HashMap::new(),
+            samples_per_tick,
         })
     }
 
     /// Set up a builder using ready-to-go properties, but without any channel sources assigned
-    fn new_from_prepared_data(
+    fn new_empty_from_prepared_data(
         node_id: Option<u64>,
-        smf: Smf<'static>,
-        track_no: usize,
-        timeline_cues: Vec<TimelineCue>,
+        midi_events: Vec<MidiEvent>,
+        samples_per_tick: f64,
     ) -> Self {
         Self {
             node_id,
-            smf,
-            track_no,
-            timeline_cues,
+            midi_events,
             channel_sources: HashMap::new(),
+            samples_per_tick,
         }
     }
 
@@ -82,19 +65,16 @@ impl MidiSourceBuilder {
     pub fn build(self) -> Result<MidiSource, Error> {
         MidiSource::new(
             self.node_id,
-            self.smf,
-            self.track_no,
-            self.timeline_cues,
+            self.midi_events,
             self.channel_sources,
+            self.samples_per_tick,
         )
     }
 }
 
 pub struct MidiSource {
-    smf: RefCell<Smf<'static>>,
+    midi_events: Vec<MidiEvent>,
     node_id: u64,
-    track_no: usize,
-    timeline_cues: Vec<TimelineCue>,
     queued_ideal_seek: Option<u32>,
     channel_sources: HashMap<usize, Box<dyn Node + Send + 'static>>,
     has_finished: bool,
@@ -106,12 +86,10 @@ pub struct MidiSource {
 impl MidiSource {
     fn new(
         node_id: Option<u64>,
-        smf: Smf<'static>,
-        track_no: usize,
-        timeline_cues: Vec<TimelineCue>,
+        midi_events: Vec<MidiEvent>,
         channel_sources: HashMap<usize, Box<dyn Node + Send + 'static>>,
+        samples_per_tick: f64,
     ) -> Result<Self, Error> {
-        let samples_per_tick = util::get_samples_per_tick(&smf)?;
         let mut sources: HashMap<usize, Box<dyn Node + Send + 'static>> = HashMap::new();
 
         for (channel, source) in channel_sources.into_iter() {
@@ -121,10 +99,8 @@ impl MidiSource {
         }
 
         Ok(Self {
-            smf: RefCell::new(smf),
+            midi_events,
             node_id: node_id.unwrap_or_else(<Self as Node>::new_node_id),
-            track_no,
-            timeline_cues,
             queued_ideal_seek: None,
             channel_sources: sources,
             has_finished: false,
@@ -135,25 +111,21 @@ impl MidiSource {
     }
 
     pub fn duplicate_without_sources(&self) -> MidiSourceBuilder {
-        MidiSourceBuilder::new_from_prepared_data(
+        MidiSourceBuilder::new_empty_from_prepared_data(
             Some(self.node_id),
-            self.smf.borrow().clone(),
-            self.track_no,
-            self.timeline_cues.clone(),
+            self.midi_events.clone(),
+            self.samples_per_tick,
         )
     }
 
     fn seek_to_anchor(&mut self, anchor: u32) {
         self.queued_ideal_seek = None;
-        if let Some(index) = self.timeline_cues.iter().find_map(|c| match c {
-            TimelineCue {
-                event_index,
-                cue: Cue::Anchor(a),
-            } => match *a == anchor {
-                true => Some(*event_index),
-                false => None,
-            },
-            _ => None,
+        if let Some(index) = self.midi_events.iter().position(|c| match c.message {
+            Message {
+                data: Event::CueData(CueData::TargetMarker(a)),
+                ..
+            } => a == anchor,
+            _ => false,
         }) {
             self.event_ticks_progress = 0;
             self.next_event_index = index + 1;
@@ -167,98 +139,39 @@ impl MidiSource {
         };
     }
 
-    fn on_event_reached(&mut self, event: &Option<EventAction>) {
-        match event {
-            None => {}
-            Some(EventAction::ChannelNodeEvent { channel, event }) => {
-                let Some(source) = self.channel_sources.get_mut(channel) else {
-                    return;
-                };
-                source.on_event(event);
-            }
-            Some(EventAction::LoopCue {
-                is_ideal_point,
-                seek_anchor,
-            }) => {
-                if *is_ideal_point {
-                    if let Some(anchor) = self.queued_ideal_seek {
-                        self.seek_to_anchor(anchor);
-                        return;
-                    }
-                }
-                if let Some(anchor) = seek_anchor {
-                    self.seek_to_anchor(*anchor);
-                }
-            }
+    fn on_internal_event_reached(&mut self, event: MidiEvent) {
+        if let Event::CueData(cue) = &event.message.data {
+            self.process_cue_event(cue);
+            return;
         }
+        let Some(source) = self.channel_sources.get_mut(&event.channel) else {
+            return;
+        };
+        source.on_event(&event.message);
     }
 
-    fn note_event_from_midi_event(
-        &self,
-        at_track_index: usize,
-        event: &TrackEvent,
-    ) -> Option<EventAction> {
-        match event.kind {
-            TrackEventKind::Midi {
-                channel,
-                message: MidiMessage::NoteOn { key, vel },
-            } => Some(EventAction::ChannelNodeEvent {
-                channel: u8::from(channel) as usize,
-                event: Message {
-                    target: EventTarget::FirstPossibleConsumer,
-                    data: Event::NoteOn {
-                        note: u8::from(key),
-                        vel: u8::from(vel) as f32 / 127.0,
-                    },
-                },
-            }),
-            TrackEventKind::Midi {
-                channel,
-                message: MidiMessage::NoteOff { key, vel },
-            } => Some(EventAction::ChannelNodeEvent {
-                channel: u8::from(channel) as usize,
-                event: Message {
-                    target: EventTarget::FirstPossibleConsumer,
-                    data: Event::NoteOff {
-                        note: u8::from(key),
-                        vel: u8::from(vel) as f32 / 127.0,
-                    },
-                },
-            }),
-            TrackEventKind::Meta(MetaMessage::CuePoint(_)) => {
-                let is_ideal_point = self.timeline_cues.iter().any(|c| match c {
-                    TimelineCue {
-                        event_index,
-                        cue: Cue::IdealSeekPoint,
-                    } => *event_index == at_track_index,
-                    _ => false,
-                });
-                let seek_anchor = self.timeline_cues.iter().find_map(|c| match c {
-                    TimelineCue {
-                        event_index,
-                        cue: Cue::Seek(anchor),
-                    } => match *event_index == at_track_index {
-                        true => Some(*anchor),
-                        false => None,
-                    },
-                    _ => None,
-                });
-                match is_ideal_point || seek_anchor.is_some() {
-                    true => Some(EventAction::LoopCue {
-                        is_ideal_point,
-                        seek_anchor,
-                    }),
-                    false => None,
+    fn process_cue_event(&mut self, cue: &CueData) {
+        match cue {
+            CueData::TargetMarker(_) => { /* Marker, no action */ }
+            CueData::GoodPointToSeekFrom => {
+                if let Some(anchor) = self.queued_ideal_seek {
+                    self.seek_to_anchor(anchor);
+                    return;
                 }
             }
-            _ => None,
+            CueData::SeekNowToTarget(anchor) => {
+                self.seek_to_anchor(*anchor);
+            }
+            CueData::SeekWhenIdeal(anchor) => {
+                self.queued_ideal_seek = Some(*anchor);
+            }
+            CueData::ClearQueuedSeek => {
+                self.queued_ideal_seek = None;
+            }
         }
     }
 
     fn fill_all_channels(&mut self, buffer: &mut [f32]) {
-        if self.has_finished {
-            return;
-        }
         #[cfg(debug_assertions)]
         assert_eq!(buffer.len() % consts::CHANNEL_COUNT, 0);
 
@@ -268,11 +181,8 @@ impl MidiSource {
 
         loop {
             let reached_note_event = {
-                let smf = self.smf.borrow();
-                let track_data = &smf.tracks[self.track_no];
-                let next_event = &track_data[self.next_event_index];
-                let event_ticks_delta = u32::from(next_event.delta) as isize;
-                let ticks_until_event = event_ticks_delta - self.event_ticks_progress;
+                let next_channel_event = &self.midi_events[self.next_event_index];
+                let ticks_until_event = next_channel_event.delta_ticks - self.event_ticks_progress;
                 let samples_until_event =
                     (ticks_until_event as f64 * self.samples_per_tick) as usize;
                 let samples_available_per_channel = buffer.len() / consts::CHANNEL_COUNT;
@@ -295,14 +205,14 @@ impl MidiSource {
 
                 self.event_ticks_progress = 0;
                 self.next_event_index += 1;
-                if self.next_event_index >= track_data.len() {
+                if self.next_event_index >= self.midi_events.len() {
                     self.has_finished = true;
                     return;
                 }
 
-                self.note_event_from_midi_event(self.next_event_index - 1, next_event)
+                next_channel_event
             };
-            self.on_event_reached(&reached_note_event);
+            self.on_internal_event_reached(reached_note_event.clone());
         }
     }
 }
@@ -321,18 +231,28 @@ impl Node for MidiSource {
     }
 
     fn on_event(&mut self, event: &Message) {
-        if event.target.influences(self.node_id) {
-            if let Event::SeekWhenIdeal { to_anchor } = event.data {
-                self.queued_ideal_seek = to_anchor;
-                return;
+        let was_consumed = if event.target.influences(self.node_id) {
+            match &event.data {
+                Event::CueData(cue) => {
+                    self.process_cue_event(cue);
+                    true
+                }
+                _ => false,
             }
-        }
-        for (_, source) in self.channel_sources.iter_mut() {
-            source.on_event(event);
+        } else {
+            false
+        };
+        if event.target.propagates_from(self.node_id, was_consumed) {
+            for (_, source) in self.channel_sources.iter_mut() {
+                source.on_event(event);
+            }
         }
     }
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) {
+        if self.has_finished {
+            return;
+        }
         self.fill_all_channels(buffer);
     }
 

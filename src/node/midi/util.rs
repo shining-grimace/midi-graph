@@ -1,4 +1,4 @@
-use crate::{consts::PLAYBACK_SAMPLE_RATE, Error};
+use crate::{Error, Event, EventTarget, Message, consts::PLAYBACK_SAMPLE_RATE, midi::CueData};
 use midly::{Fps, MetaMessage, MidiMessage, Smf, Timing, TrackEvent, TrackEventKind};
 
 pub fn get_samples_per_tick(smf: &Smf) -> Result<f64, Error> {
@@ -75,4 +75,72 @@ pub fn choose_track_index(smf: &Smf) -> Result<usize, Error> {
     Err(Error::User(
         "MIDI file does not have any tracks with NoteOn events".to_owned(),
     ))
+}
+
+#[derive(Debug, Clone)]
+pub struct MidiEvent {
+    pub delta_ticks: isize,
+    pub channel: usize,
+    pub message: Message,
+}
+
+pub fn midi_events_from_midi(smf: Smf, track_no: usize) -> Result<Vec<MidiEvent>, Error> {
+    let mut midi_events: Vec<MidiEvent> = vec![];
+    let track = smf
+        .tracks
+        .get(track_no)
+        .ok_or_else(|| Error::User(format!("ERROR: MIDI: No track no. {}", track_no)))?;
+    for event in track {
+        match event.kind {
+            TrackEventKind::Midi {
+                channel,
+                message: MidiMessage::NoteOn { key, vel },
+            } => {
+                midi_events.push(MidiEvent {
+                    delta_ticks: u32::from(event.delta) as isize,
+                    channel: u8::from(channel) as usize,
+                    message: Message {
+                        target: EventTarget::FirstPossibleConsumer,
+                        data: Event::NoteOn {
+                            note: u8::from(key),
+                            vel: u8::from(vel) as f32 / 127.0,
+                        },
+                    },
+                });
+            }
+            TrackEventKind::Midi {
+                channel,
+                message: MidiMessage::NoteOff { key, vel },
+            } => {
+                midi_events.push(MidiEvent {
+                    delta_ticks: u32::from(event.delta) as isize,
+                    channel: u8::from(channel) as usize,
+                    message: Message {
+                        target: EventTarget::FirstPossibleConsumer,
+                        data: Event::NoteOff {
+                            note: u8::from(key),
+                            vel: u8::from(vel) as f32 / 127.0,
+                        },
+                    },
+                });
+            }
+            TrackEventKind::Meta(MetaMessage::CuePoint(label)) => {
+                let cue_data = CueData::from_label(label)?;
+                let mut event_delta = u32::from(event.delta) as isize;
+                for cue in cue_data.into_iter() {
+                    midi_events.push(MidiEvent {
+                        delta_ticks: event_delta,
+                        channel: 0, // Ignored for cue data
+                        message: Message {
+                            target: EventTarget::FirstPossibleConsumer,
+                            data: Event::CueData(cue),
+                        },
+                    });
+                    event_delta = 0;
+                }
+            }
+            _ => {}
+        }
+    }
+    Ok(midi_events)
 }
