@@ -42,6 +42,47 @@ The supported signals, encoded as strings, are:
 When exporting a project as a MIDI file ("File" > "Export Project MIDI..."), be sure to check
 "Export project markers as MIDI", and select "cues" (not "markers").
 
+## MIDI Event Compatibility
+
+These tables are non-exhaustive lists of MIDI event types, indicating which are used by MIDI
+Graph and which are planned for an implementation.
+
+### Messages
+
+| Message | Status | Notes |
+| --- | --- | --- |
+| NoteOff | Implemented | Velocity is unused |
+| NoteOn | Implemented |  |
+| Aftertouch | Planned |  |
+| Controller | Not planned |  |
+| ProgramChange | Planned |  |
+| ChannelAftertouch | Not planned |  |
+| PitchBend | Planned |  |
+
+### Meta Messages
+
+| Meta Message | Status | Description |
+| --- | --- | --- |
+| TrackNumber | Not planned |  |
+| Text | Not planned |  |
+| Copyright | Not planned |  |
+| TrackName | Not planned |  |
+| InstrumentName | Not planned |  |
+| Lyric | Not planned |  |
+| Marker | Not planned |  |
+| CuePoint | Implemented | Used for custom cue signals |
+| ProgramName | Not planned |  |
+| DeviceName | Not planned |  |
+| MidiChannel | Not planned |  |
+| MidiPort | Not planned |  |
+| EndOfTrack | Not planned |  |
+| Tempo | Implemented |  |
+| SmpteOffset | Implemented |  |
+| TimeSignature | Not planned |  |
+| KeySignature | Not planned |  |
+| SequencerSpecific | Not planned |  |
+| Unknown | Not planned |  |
+
 ## Examples
 
 `cargo run --example <example-name>`
