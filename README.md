@@ -35,13 +35,6 @@ The supported signals, encoded as strings, are:
 - Requesting (or clearing) the anchor to seek to at the next point marked with a "?" cue can be
   done by sending a custom event into the graph
 
-### Exporting Custom Cue Components From DAWs
-
-#### Using REAPER 7
-
-When exporting a project as a MIDI file ("File" > "Export Project MIDI..."), be sure to check
-"Export project markers as MIDI", and select "cues" (not "markers").
-
 ## MIDI Event Compatibility
 
 These tables are non-exhaustive lists of MIDI event types, indicating which are used by MIDI
@@ -82,6 +75,36 @@ Graph and which are planned for an implementation.
 | KeySignature | Not planned |  |
 | SequencerSpecific | Not planned |  |
 | Unknown | Not planned |  |
+
+## DAW Workflow
+
+Suggested workflows for composing music in a DAW and exporting MIDI files for best compatibility
+with MIDI Graph.
+
+### REAPER 7
+
+#### Workflow Tips
+
+Add project Markers ("Insert" > "Marker (prompt for name)") at a desired playback position and
+use the name to specify MIDI Graph custom cue components.
+
+For a workflow to compose all notes in a single Track, add one Track for composing notes, and
+then one additional Track per sound that will be used. Send the composition Track to every other
+track. Add the MIDI Channel Filter LV2 plugin to the receiving Tracks, setting each one to a
+different channel, and add plugins for the desired sound for each channel Track. Now in the piano
+roll for the composition Track, set the "Color" option to "Channel" so notes are easier to
+distinguish by channel.
+
+#### Export Settings
+
+When exporting ("File" > "Export Project MIDI..."):
+- Check the "Export project markers as MIDI", choose "cues" instead of "markers", and uncheck
+  the "Only export project markers that begin with '#'" setting to export cue components
+  correctly
+- If notes were composed in a single track using multiple channels, select the main composition
+  track before exporting, and then in the export dialog choose "Selected tracks only" under the
+  "Consolidate MIDI items" setting, and "Merge to single MIDI track (type 0 MIDI file)" under
+  "Output"
 
 ## Examples
 
