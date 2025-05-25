@@ -262,10 +262,19 @@ impl Node for MidiSource {
 
     fn replace_children(
         &mut self,
-        _children: &[Box<dyn Node + Send + 'static>],
+        children: &[Box<dyn Node + Send + 'static>],
     ) -> Result<(), Error> {
-        Err(Error::User(
-            "MidiSource does not support replacing its children".to_owned(),
-        ))
+        if !self.channel_sources.is_empty() {
+            return Err(Error::User(
+                "MidiSource does not support replacing its children".to_owned(),
+            ));
+        }
+        println!("MIDI Graph: Assigning channel sources to MIDI source; assuming sequential channel numbers starting at 1.");
+        println!("This is a current limitation. Please check your source file channel numbers if needed.");
+        self.channel_sources = children.iter()
+            .enumerate()
+            .map(|(index, source)| source.duplicate().map(|copy| (index + 1, copy)))
+            .collect::<Result<HashMap<usize, Box<dyn Node + Send + 'static>>, Error>>()?;
+        Ok(())
     }
 }
