@@ -227,7 +227,11 @@ impl Node for MidiSource {
     }
 
     fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error> {
-        Err(Error::User("MidiSource cannot be duplicated".to_owned()))
+        if !self.channel_sources.is_empty() {
+            return Err(Error::User("MidiSource cannot be duplicated".to_owned()));
+        }
+        let source = Self::new(Some(self.node_id), self.midi_events.clone(), HashMap::new(), self.samples_per_tick)?;
+        Ok(Box::new(source))
     }
 
     fn on_event(&mut self, event: &Message) {
