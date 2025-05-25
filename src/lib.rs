@@ -18,6 +18,9 @@ mod loader;
 mod mix;
 mod node;
 
+// Re-exports
+pub type MessageSender = crossbeam_channel::Sender<Message>;
+
 pub use config::{Config, FontSource, Loop, MidiDataSource, RangeSource, SoundSource};
 pub use error::Error;
 pub use event::{Balance, Event, EventTarget, Message};
@@ -30,7 +33,6 @@ pub mod effect {
     pub use crate::node::effect::{
         ModulationProperty,
         adsr::AdsrEnvelope,
-        async_receiver::{AsyncEventReceiver, EventChannel},
         fader::Fader,
         lfo::Lfo,
         transition::TransitionEnvelope,

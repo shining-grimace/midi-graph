@@ -1,12 +1,13 @@
 use crate::{
-    consts, effect::EventChannel, generator::NullSource, Config, Error, GraphLoader, Node,
+    Config, Error, GraphLoader, Message, MessageSender, Node, consts, generator::NullSource,
 };
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{Stream, StreamConfig};
+use crossbeam_channel::{Receiver, unbounded};
 use std::collections::HashMap;
 use std::sync::{
-    atomic::{AtomicPtr, Ordering},
     Arc, Mutex,
+    atomic::{AtomicPtr, Ordering},
 };
 
 enum ConsumerCell {
@@ -17,6 +18,7 @@ enum ConsumerCell {
 pub struct BaseMixer {
     stream: Mutex<Stream>,
     program_sources: HashMap<usize, ConsumerCell>,
+    event_sender: Arc<MessageSender>,
     consumer: super::swap::SwappableConsumer,
 }
 
@@ -35,11 +37,13 @@ impl BaseMixer {
 
     pub fn start_single_program(consumer: Box<dyn Node + Send + 'static>) -> Result<Self, Error> {
         let swappable = super::swap::SwappableConsumer::new(consumer);
-        let stream = Self::open_stream(swappable.take_consumer())?;
+        let (event_sender, event_receiver) = unbounded();
+        let stream = Self::open_stream(swappable.take_consumer(), event_receiver)?;
         stream.play()?;
         Ok(Self {
             stream: Mutex::new(stream),
             program_sources: HashMap::new(),
+            event_sender: Arc::new(event_sender),
             consumer: swappable,
         })
     }
@@ -48,17 +52,21 @@ impl BaseMixer {
         loader: &L,
         program_no: Option<usize>,
         config: &Config,
-    ) -> Result<(Vec<EventChannel>, Self), Error> {
-        let (channels, source) = loader.load_source_recursive(&config.root)?;
+    ) -> Result<Self, Error> {
+        let source = loader.load_source_with_dependencies(&config.root)?;
         if let Some(program_no) = &program_no {
             let mut mixer = Self::start_empty()?;
             mixer.store_program(*program_no, source);
             mixer.change_program(*program_no)?;
-            Ok((channels, mixer))
+            Ok(mixer)
         } else {
             let mixer = Self::start_single_program(source)?;
-            Ok((channels, mixer))
+            Ok(mixer)
         }
+    }
+
+    pub fn get_event_sender(&self) -> Arc<MessageSender> {
+        self.event_sender.clone()
     }
 
     // Store a program at a given index.
@@ -91,14 +99,14 @@ impl BaseMixer {
                 return Err(Error::User(format!(
                     "Cannot change program: program no. {} is already playing",
                     program_no
-                )))
+                )));
             }
             Some(ConsumerCell::Source(program)) => program,
             None => {
                 return Err(Error::User(format!(
                     "Cannot change program: nothing is stored for program no. {}",
                     program_no
-                )))
+                )));
             }
         };
 
@@ -123,6 +131,7 @@ impl BaseMixer {
 
     fn open_stream(
         consumer: Arc<AtomicPtr<Box<dyn Node + Send + 'static>>>,
+        event_receiver: Receiver<Message>,
     ) -> Result<Stream, Error> {
         let host = cpal::default_host();
         let device = host.default_output_device().ok_or(Error::NoDevice)?;
@@ -138,6 +147,9 @@ impl BaseMixer {
                 let consumer_ptr = consumer.load(Ordering::SeqCst);
                 if !consumer_ptr.is_null() {
                     unsafe {
+                        for event in event_receiver.try_iter() {
+                            (*consumer_ptr).on_event(&event);
+                        }
                         (*consumer_ptr).fill_buffer(data);
                     }
                 }

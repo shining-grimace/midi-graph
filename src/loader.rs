@@ -1,10 +1,11 @@
-use crate::{config::SoundSource, effect::EventChannel, Error, FontSource, Node};
+use crate::{config::SoundSource, Error, FontSource, Node};
 
 pub trait GraphLoader {
-    fn load_source_recursive(
+
+    fn load_source_with_dependencies(
         &self,
         source: &SoundSource,
-    ) -> Result<(Vec<EventChannel>, Box<dyn Node + Send + 'static>), Error>;
+    ) -> Result<Box<dyn Node + Send + 'static>, Error>;
 
     fn traverse_sources(root: &SoundSource, mut yield_source: impl FnMut(&SoundSource)) {
         yield_source(root);
@@ -13,9 +14,6 @@ pub trait GraphLoader {
                 for channel in channels.iter() {
                     yield_source(channel.1);
                 }
-            }
-            SoundSource::EventReceiver { source, .. } => {
-                yield_source(source.as_ref());
             }
             SoundSource::Font { config, .. } => match config {
                 FontSource::Ranges(ranges) => {

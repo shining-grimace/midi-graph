@@ -1,11 +1,10 @@
 extern crate midi_graph;
 
-use crossbeam_channel::Sender;
 use midi_graph::{
     Balance, BaseMixer, Event, EventTarget, FileGraphLoader, FontSource, GraphLoader, Message,
-    MidiDataSource, RangeSource, SoundSource, midi::CueData,
+    MessageSender, MidiDataSource, RangeSource, SoundSource, midi::CueData,
 };
-use std::{collections::HashMap, thread::sleep, time::Duration};
+use std::{collections::HashMap, sync::Arc, thread::sleep, time::Duration};
 
 const MIDI_FILE: &'static str = "resources/LoopingMidi.mid";
 
@@ -16,60 +15,55 @@ const MIDI_NODE_ID: u64 = 100;
 const FADER_NODE_ID: u64 = 101;
 
 fn main() {
-    let config = SoundSource::EventReceiver {
-        node_id: None,
-        source: Box::new(SoundSource::Midi {
-            node_id: Some(MIDI_NODE_ID),
-            source: MidiDataSource::FilePath(MIDI_FILE.to_owned()),
-            channels: HashMap::from([
-                (
-                    NOISE_CHANNEL,
-                    SoundSource::Font {
-                        node_id: None,
-                        config: FontSource::Ranges(vec![RangeSource {
-                            source: SoundSource::Fader {
-                                node_id: Some(FADER_NODE_ID),
-                                initial_volume: 0.0,
-                                source: Box::new(SoundSource::LfsrNoise {
-                                    node_id: None,
-                                    balance: Balance::Left,
-                                    amplitude: 0.5,
-                                    inside_feedback: true,
-                                    note_for_16_shifts: 70,
-                                }),
-                            },
-                            lower: 0,
-                            upper: 127,
-                        }]),
-                    },
-                ),
-                (
-                    LEAD_CHANNEL,
-                    SoundSource::Font {
-                        node_id: None,
-                        config: FontSource::Ranges(vec![RangeSource {
-                            source: SoundSource::SawtoothWave {
+    let config = Box::new(SoundSource::Midi {
+        node_id: Some(MIDI_NODE_ID),
+        source: MidiDataSource::FilePath(MIDI_FILE.to_owned()),
+        channels: HashMap::from([
+            (
+                NOISE_CHANNEL,
+                SoundSource::Font {
+                    node_id: None,
+                    config: FontSource::Ranges(vec![RangeSource {
+                        source: SoundSource::Fader {
+                            node_id: Some(FADER_NODE_ID),
+                            initial_volume: 0.0,
+                            source: Box::new(SoundSource::LfsrNoise {
                                 node_id: None,
-                                balance: Balance::Right,
+                                balance: Balance::Left,
                                 amplitude: 0.5,
-                            },
-                            lower: 0,
-                            upper: 127,
-                        }]),
-                    },
-                ),
-            ]),
-        }),
-    };
+                                inside_feedback: true,
+                                note_for_16_shifts: 70,
+                            }),
+                        },
+                        lower: 0,
+                        upper: 127,
+                    }]),
+                },
+            ),
+            (
+                LEAD_CHANNEL,
+                SoundSource::Font {
+                    node_id: None,
+                    config: FontSource::Ranges(vec![RangeSource {
+                        source: SoundSource::SawtoothWave {
+                            node_id: None,
+                            balance: Balance::Right,
+                            amplitude: 0.5,
+                        },
+                        lower: 0,
+                        upper: 127,
+                    }]),
+                },
+            ),
+        ]),
+    });
     let loader = FileGraphLoader::default();
-    let (mut event_channels, source) = loader
-        .load_source_recursive(&config)
+    let source = loader
+        .load_source_with_dependencies(&config)
         .expect("Could not create MIDI");
-    let _mixer = BaseMixer::start_single_program(source).expect("Could not start stream");
+    let mixer = BaseMixer::start_single_program(source).expect("Could not start stream");
+    let mut sender = mixer.get_event_sender();
     std::thread::spawn(move || {
-        let mut sender = event_channels
-            .first_mut()
-            .expect("The event sender was not found");
         sleep(Duration::from_millis(500));
         send_or_log(
             &mut sender,
@@ -90,7 +84,7 @@ fn main() {
     sleep(Duration::from_secs(30));
 }
 
-fn send_or_log(sender: &mut Sender<Message>, target: EventTarget, event: Event) {
+fn send_or_log(sender: &mut Arc<MessageSender>, target: EventTarget, event: Event) {
     let message = Message {
         target,
         data: event,

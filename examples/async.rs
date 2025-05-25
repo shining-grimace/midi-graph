@@ -1,14 +1,13 @@
 extern crate midi_graph;
 
-use crossbeam_channel::Sender;
 use midi_graph::{
-    Balance, BaseMixer, Event, EventTarget, Message, NoteRange,
-    effect::{AsyncEventReceiver, Fader, Lfo, ModulationProperty, TransitionEnvelope},
+    Balance, BaseMixer, Event, EventTarget, Message, MessageSender, NoteRange,
+    effect::{Fader, Lfo, ModulationProperty, TransitionEnvelope},
     font::SoundFontBuilder,
     generator::{SawtoothWaveSource, SquareWaveSource, TriangleWaveSource},
     group::MixerSource,
 };
-use std::{thread::sleep, time::Duration};
+use std::{sync::Arc, thread::sleep, time::Duration};
 
 const LFO_NODE_ID: u64 = 100;
 const FADER_NODE_ID: u64 = 101;
@@ -39,9 +38,9 @@ fn main() {
         .add_range(NoteRange::new_inclusive_range(71, 255), Box::new(fader))
         .unwrap()
         .build();
-    let (mut sender, receiver) = AsyncEventReceiver::new(None, Box::new(soundfont));
-    let _mixer =
-        BaseMixer::start_single_program(Box::new(receiver)).expect("Could not open stream");
+    let mixer =
+        BaseMixer::start_single_program(Box::new(soundfont)).expect("Could not open stream");
+    let mut sender = mixer.get_event_sender();
     std::thread::spawn(move || {
         sleep(Duration::from_millis(50));
         send_or_log(
@@ -164,7 +163,7 @@ fn main() {
     sleep(Duration::from_secs(5));
 }
 
-fn send_or_log(sender: &mut Sender<Message>, target: EventTarget, event: Event) {
+fn send_or_log(sender: &mut Arc<MessageSender>, target: EventTarget, event: Event) {
     let message = Message {
         target,
         data: event,

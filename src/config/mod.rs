@@ -75,7 +75,7 @@ pub enum FontSource {
         path: String,
         instrument_index: usize,
         #[serde(default = "default_soundfont_polyphony_voices")]
-        polyphony_voices: usize
+        polyphony_voices: usize,
     },
 }
 
@@ -101,11 +101,6 @@ pub enum SoundSource {
         node_id: Option<u64>,
         source: MidiDataSource,
         channels: HashMap<usize, SoundSource>,
-    },
-    EventReceiver {
-        #[serde(default = "none_id")]
-        node_id: Option<u64>,
-        source: Box<SoundSource>,
     },
     Font {
         #[serde(default = "none_id")]
@@ -232,13 +227,6 @@ impl SoundSource {
         }
     }
 
-    pub fn event_receiver(node_id: Option<u64>, source: SoundSource) -> Self {
-        SoundSource::EventReceiver {
-            node_id,
-            source: Box::new(source),
-        }
-    }
-
     pub fn stock_noise_source(inside_feedback_mode: bool) -> Self {
         SoundSource::LfsrNoise {
             node_id: none_id(),
@@ -273,7 +261,7 @@ impl SoundSource {
         SoundSource::Polyphony {
             node_id: none_id(),
             max_voices: default_max_voices(),
-            source: Box::new(inner)
+            source: Box::new(inner),
         }
     }
 
