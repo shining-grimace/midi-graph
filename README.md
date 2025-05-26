@@ -98,13 +98,14 @@ distinguish by channel.
 #### Export Settings
 
 When exporting ("File" > "Export Project MIDI..."):
-- Check the "Export project markers as MIDI", choose "cues" instead of "markers", and uncheck
-  the "Only export project markers that begin with '#'" setting to export cue components
-  correctly
 - If notes were composed in a single track using multiple channels, select the main composition
   track before exporting, and then in the export dialog choose "Selected tracks only" under the
   "Consolidate MIDI items" setting, and "Merge to single MIDI track (type 0 MIDI file)" under
   "Output"
+- Check the "Embed project tempo/time signature changes" option
+- Check the "Export project markers as MIDI", choose "cues" instead of "markers", and uncheck
+  the "Only export project markers that begin with '#'" setting to export cue components
+  correctly
 
 ## Examples
 
