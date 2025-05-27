@@ -1,4 +1,4 @@
-use crate::{Error, Event, Message, Node};
+use crate::{Error, Event, EventTarget, Message, Node};
 
 struct Voice {
     pub current_note: Option<u8>,
@@ -104,9 +104,16 @@ impl Node for Polyphony {
         } else {
             true
         };
-        if event.target.propagates_from(self.node_id, was_consumed) {
+        let new_event: &Message = match was_consumed {
+            true => &Message {
+                target: EventTarget::Broadcast,
+                data: event.data.clone()
+            },
+            false => event
+        };
+        if new_event.target.propagates_from(self.node_id, was_consumed) {
             for voice in self.voices.iter_mut() {
-                voice.source.on_event(event);
+                voice.source.on_event(new_event);
             }
         }
     }
