@@ -1,10 +1,10 @@
-use crate::{Error, Event, Message, Node, consts};
+use crate::{Error, Event, GraphNode, Message, Node, consts};
 
 pub struct MixerSource {
     node_id: u64,
     balance: f32,
-    consumer_0: Box<dyn Node + Send + 'static>,
-    consumer_1: Box<dyn Node + Send + 'static>,
+    consumer_0: GraphNode,
+    consumer_1: GraphNode,
     intermediate_buffer: Vec<f32>,
 }
 
@@ -12,8 +12,8 @@ impl MixerSource {
     pub fn new(
         node_id: Option<u64>,
         balance: f32,
-        consumer_0: Box<dyn Node + Send + 'static>,
-        consumer_1: Box<dyn Node + Send + 'static>,
+        consumer_0: GraphNode,
+        consumer_1: GraphNode,
     ) -> Self {
         Self {
             node_id: node_id.unwrap_or_else(<Self as Node>::new_node_id),
@@ -34,7 +34,7 @@ impl Node for MixerSource {
         self.node_id = node_id;
     }
 
-    fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error> {
+    fn duplicate(&self) -> Result<GraphNode, Error> {
         let consumer_0 = self.consumer_0.duplicate()?;
         let consumer_1 = self.consumer_1.duplicate()?;
         let mixer = Self::new(Some(self.node_id), self.balance, consumer_0, consumer_1);
@@ -83,10 +83,7 @@ impl Node for MixerSource {
         }
     }
 
-    fn replace_children(
-        &mut self,
-        children: &[Box<dyn Node + Send + 'static>],
-    ) -> Result<(), Error> {
+    fn replace_children(&mut self, children: &[GraphNode]) -> Result<(), Error> {
         if children.len() != 2 {
             return Err(Error::User("Mixer requires two children".to_owned()));
         }

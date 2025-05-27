@@ -1,4 +1,4 @@
-use crate::{Balance, Error, Event, EventTarget, Message, Node, consts, util};
+use crate::{Balance, Error, Event, EventTarget, GraphNode, Message, Node, consts, util};
 
 pub struct TriangleWaveSource {
     node_id: u64,
@@ -10,7 +10,7 @@ pub struct TriangleWaveSource {
     period_samples_a440: f32,
     peak_amplitude: f32,
     note_velocity: f32,
-    modulated_volume: f32
+    modulated_volume: f32,
 }
 
 impl TriangleWaveSource {
@@ -39,7 +39,7 @@ impl Node for TriangleWaveSource {
         self.node_id = node_id;
     }
 
-    fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error> {
+    fn duplicate(&self) -> Result<GraphNode, Error> {
         Ok(Box::new(Self::new(
             Some(self.node_id),
             self.balance,
@@ -117,10 +117,7 @@ impl Node for TriangleWaveSource {
             stretched_progress * self.period_samples_a440 / pitch_period_samples;
     }
 
-    fn replace_children(
-        &mut self,
-        children: &[Box<dyn Node + Send + 'static>],
-    ) -> Result<(), Error> {
+    fn replace_children(&mut self, children: &[GraphNode]) -> Result<(), Error> {
         match children.is_empty() {
             true => Ok(()),
             false => Err(Error::User(

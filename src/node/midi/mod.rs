@@ -2,7 +2,7 @@ pub mod cue;
 pub mod util;
 
 use crate::{
-    Error, Event, EventTarget, Message, Node, consts,
+    Error, Event, EventTarget, GraphNode, Message, Node, consts,
     midi::{CueData, MidiEvent},
 };
 use midly::Smf;
@@ -14,7 +14,7 @@ use crate::node::log;
 pub struct MidiSourceBuilder {
     node_id: Option<u64>,
     midi_events: Vec<MidiEvent>,
-    channel_sources: HashMap<usize, Box<dyn Node + Send + 'static>>,
+    channel_sources: HashMap<usize, GraphNode>,
     samples_per_tick: f64,
 }
 
@@ -53,11 +53,7 @@ impl MidiSourceBuilder {
         }
     }
 
-    pub fn add_channel_source(
-        mut self,
-        channel: usize,
-        source: Box<dyn Node + Send + 'static>,
-    ) -> Self {
+    pub fn add_channel_source(mut self, channel: usize, source: GraphNode) -> Self {
         self.channel_sources.insert(channel, source);
         self
     }
@@ -76,7 +72,7 @@ pub struct MidiSource {
     midi_events: Vec<MidiEvent>,
     node_id: u64,
     queued_ideal_seek: Option<u32>,
-    channel_sources: HashMap<usize, Box<dyn Node + Send + 'static>>,
+    channel_sources: HashMap<usize, GraphNode>,
     has_finished: bool,
     samples_per_tick: f64,
     next_event_index: usize,
@@ -87,10 +83,10 @@ impl MidiSource {
     fn new(
         node_id: Option<u64>,
         midi_events: Vec<MidiEvent>,
-        channel_sources: HashMap<usize, Box<dyn Node + Send + 'static>>,
+        channel_sources: HashMap<usize, GraphNode>,
         samples_per_tick: f64,
     ) -> Result<Self, Error> {
-        let mut sources: HashMap<usize, Box<dyn Node + Send + 'static>> = HashMap::new();
+        let mut sources: HashMap<usize, GraphNode> = HashMap::new();
 
         for (channel, source) in channel_sources.into_iter() {
             if sources.insert(channel, source).is_some() {
@@ -226,11 +222,16 @@ impl Node for MidiSource {
         self.node_id = node_id;
     }
 
-    fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error> {
+    fn duplicate(&self) -> Result<GraphNode, Error> {
         if !self.channel_sources.is_empty() {
             return Err(Error::User("MidiSource cannot be duplicated".to_owned()));
         }
-        let source = Self::new(Some(self.node_id), self.midi_events.clone(), HashMap::new(), self.samples_per_tick)?;
+        let source = Self::new(
+            Some(self.node_id),
+            self.midi_events.clone(),
+            HashMap::new(),
+            self.samples_per_tick,
+        )?;
         Ok(Box::new(source))
     }
 
@@ -260,21 +261,23 @@ impl Node for MidiSource {
         self.fill_all_channels(buffer);
     }
 
-    fn replace_children(
-        &mut self,
-        children: &[Box<dyn Node + Send + 'static>],
-    ) -> Result<(), Error> {
+    fn replace_children(&mut self, children: &[GraphNode]) -> Result<(), Error> {
         if !self.channel_sources.is_empty() {
             return Err(Error::User(
                 "MidiSource does not support replacing its children".to_owned(),
             ));
         }
-        println!("MIDI Graph: Assigning channel sources to MIDI source; assuming sequential channel numbers starting at 1.");
-        println!("This is a current limitation. Please check your source file channel numbers if needed.");
-        self.channel_sources = children.iter()
+        println!(
+            "MIDI Graph: Assigning channel sources to MIDI source; assuming sequential channel numbers starting at 1."
+        );
+        println!(
+            "This is a current limitation. Please check your source file channel numbers if needed."
+        );
+        self.channel_sources = children
+            .iter()
             .enumerate()
             .map(|(index, source)| source.duplicate().map(|copy| (index + 1, copy)))
-            .collect::<Result<HashMap<usize, Box<dyn Node + Send + 'static>>, Error>>()?;
+            .collect::<Result<HashMap<usize, GraphNode>, Error>>()?;
         Ok(())
     }
 }

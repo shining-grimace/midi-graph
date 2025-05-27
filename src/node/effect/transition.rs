@@ -1,11 +1,12 @@
 use crate::{
-    Balance, Error, Event, EventTarget, Message, Node, consts, effect::ModulationProperty,
+    Balance, Error, Event, EventTarget, GraphNode, Message, Node, consts,
+    effect::ModulationProperty,
 };
 
 pub struct TransitionEnvelope {
     node_id: u64,
     property: Option<ModulationProperty>,
-    consumer: Box<dyn Node + Send + 'static>,
+    consumer: GraphNode,
     frames_progress_in_step: isize,
     frames_per_step: isize,
     current_step: usize,
@@ -15,10 +16,7 @@ pub struct TransitionEnvelope {
 }
 
 impl TransitionEnvelope {
-    pub fn new(
-        node_id: Option<u64>,
-        consumer: Box<dyn Node + Send + 'static>,
-    ) -> Result<Self, Error> {
+    pub fn new(node_id: Option<u64>, consumer: GraphNode) -> Result<Self, Error> {
         Ok(Self {
             node_id: node_id.unwrap_or_else(<Self as Node>::new_node_id),
             property: None,
@@ -60,7 +58,7 @@ impl Node for TransitionEnvelope {
         self.node_id = node_id;
     }
 
-    fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error> {
+    fn duplicate(&self) -> Result<GraphNode, Error> {
         let consumer = self.consumer.duplicate()?;
         let transition = Self {
             node_id: self.node_id,
@@ -157,10 +155,7 @@ impl Node for TransitionEnvelope {
         }
     }
 
-    fn replace_children(
-        &mut self,
-        children: &[Box<dyn Node + Send + 'static>],
-    ) -> Result<(), Error> {
+    fn replace_children(&mut self, children: &[GraphNode]) -> Result<(), Error> {
         if children.len() != 1 {
             return Err(Error::User(
                 "TransitionEnvelope requires one child".to_owned(),

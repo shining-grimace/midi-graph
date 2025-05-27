@@ -1,4 +1,4 @@
-use crate::{Error, Event, Message, Node, consts};
+use crate::{Error, Event, GraphNode, Message, Node, consts};
 
 pub struct Fader {
     node_id: u64,
@@ -6,16 +6,12 @@ pub struct Fader {
     from_volume: f32,
     to_volume: f32,
     progress_seconds: f32,
-    consumer: Box<dyn Node + Send + 'static>,
+    consumer: GraphNode,
     intermediate_buffer: Vec<f32>,
 }
 
 impl Fader {
-    pub fn new(
-        node_id: Option<u64>,
-        initial_volume: f32,
-        consumer: Box<dyn Node + Send + 'static>,
-    ) -> Self {
+    pub fn new(node_id: Option<u64>, initial_volume: f32, consumer: GraphNode) -> Self {
         Self {
             node_id: node_id.unwrap_or_else(<Self as Node>::new_node_id),
             duration_seconds: 0.0,
@@ -37,7 +33,7 @@ impl Node for Fader {
         self.node_id = node_id;
     }
 
-    fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error> {
+    fn duplicate(&self) -> Result<GraphNode, Error> {
         let consumer = self.consumer.duplicate()?;
         let fader = Self {
             node_id: self.node_id,
@@ -107,10 +103,7 @@ impl Node for Fader {
             .min(self.duration_seconds);
     }
 
-    fn replace_children(
-        &mut self,
-        children: &[Box<dyn Node + Send + 'static>],
-    ) -> Result<(), Error> {
+    fn replace_children(&mut self, children: &[GraphNode]) -> Result<(), Error> {
         if children.len() != 1 {
             return Err(Error::User("Fader requires one child".to_owned()));
         }

@@ -1,8 +1,8 @@
-use crate::{Error, Event, Message, Node, NoteRange};
+use crate::{Error, Event, GraphNode, Message, Node, NoteRange};
 
 pub struct SoundFontBuilder {
     node_id: Option<u64>,
-    ranges: Vec<(NoteRange, Box<dyn Node + Send + 'static>)>,
+    ranges: Vec<(NoteRange, GraphNode)>,
 }
 
 impl Default for SoundFontBuilder {
@@ -19,11 +19,7 @@ impl SoundFontBuilder {
         }
     }
 
-    pub fn add_range(
-        mut self,
-        range: NoteRange,
-        consumer: Box<dyn Node + Send + 'static>,
-    ) -> Result<Self, Error> {
+    pub fn add_range(mut self, range: NoteRange, consumer: GraphNode) -> Result<Self, Error> {
         self.ranges.push((range, consumer));
         Ok(self)
     }
@@ -35,11 +31,11 @@ impl SoundFontBuilder {
 
 pub struct SoundFont {
     node_id: u64,
-    ranges: Vec<(NoteRange, Box<dyn Node + Send + 'static>)>,
+    ranges: Vec<(NoteRange, GraphNode)>,
 }
 
 impl SoundFont {
-    fn new(node_id: Option<u64>, ranges: Vec<(NoteRange, Box<dyn Node + Send + 'static>)>) -> Self {
+    fn new(node_id: Option<u64>, ranges: Vec<(NoteRange, GraphNode)>) -> Self {
         Self {
             node_id: node_id.unwrap_or_else(<Self as Node>::new_node_id),
             ranges,
@@ -56,7 +52,7 @@ impl Node for SoundFont {
         self.node_id = node_id;
     }
 
-    fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error> {
+    fn duplicate(&self) -> Result<GraphNode, Error> {
         Err(Error::User("SoundFont cannot be duplicated".to_owned()))
     }
 
@@ -97,10 +93,7 @@ impl Node for SoundFont {
         }
     }
 
-    fn replace_children(
-        &mut self,
-        _children: &[Box<dyn Node + Send + 'static>],
-    ) -> Result<(), Error> {
+    fn replace_children(&mut self, _children: &[GraphNode]) -> Result<(), Error> {
         Err(Error::User(
             "SoundFont does not support replacing its children".to_owned(),
         ))

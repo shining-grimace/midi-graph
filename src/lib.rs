@@ -18,8 +18,13 @@ mod loader;
 mod mix;
 mod node;
 
-// Re-exports
+// Re-exports as new types
 pub type MessageSender = crossbeam_channel::Sender<Message>;
+
+// Helper types
+pub type GraphNode = Box<dyn Node + Send + 'static>;
+
+// General exports below
 
 pub use config::{Config, FontSource, Loop, MidiDataSource, RangeSource, SoundSource};
 pub use error::Error;

@@ -1,4 +1,4 @@
-use crate::{Error, Message, Node};
+use crate::{Error, GraphNode, Message, Node};
 
 pub struct NullSource {
     node_id: u64,
@@ -21,7 +21,7 @@ impl Node for NullSource {
         self.node_id = node_id;
     }
 
-    fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error> {
+    fn duplicate(&self) -> Result<GraphNode, Error> {
         let source = Self::new(Some(self.node_id));
         Ok(Box::new(source))
     }
@@ -30,10 +30,7 @@ impl Node for NullSource {
 
     fn fill_buffer(&mut self, _buffer: &mut [f32]) {}
 
-    fn replace_children(
-        &mut self,
-        children: &[Box<dyn Node + Send + 'static>],
-    ) -> Result<(), Error> {
+    fn replace_children(&mut self, children: &[GraphNode]) -> Result<(), Error> {
         match children.is_empty() {
             true => Ok(()),
             false => Err(Error::User("NullSource cannot have children".to_owned())),

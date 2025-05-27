@@ -1,11 +1,7 @@
-use crate::{config::SoundSource, Error, FontSource, Node};
+use crate::{Error, FontSource, GraphNode, config::SoundSource};
 
 pub trait GraphLoader {
-
-    fn load_source_with_dependencies(
-        &self,
-        source: &SoundSource,
-    ) -> Result<Box<dyn Node + Send + 'static>, Error>;
+    fn load_source_with_dependencies(&self, source: &SoundSource) -> Result<GraphNode, Error>;
 
     fn traverse_sources(root: &SoundSource, mut yield_source: impl FnMut(&SoundSource)) {
         yield_source(root);
@@ -43,9 +39,7 @@ pub trait GraphLoader {
                 yield_source(source_0);
                 yield_source(source_1);
             }
-            SoundSource::Polyphony {
-                source, ..
-            } => {
+            SoundSource::Polyphony { source, .. } => {
                 yield_source(source);
             }
             SoundSource::Fader { source, .. } => {

@@ -1,8 +1,8 @@
-use crate::{Error, Event, EventTarget, Message, Node};
+use crate::{Error, Event, EventTarget, GraphNode, Message, Node};
 
 struct Voice {
     pub current_note: Option<u8>,
-    pub source: Box<dyn Node + Send + 'static>,
+    pub source: GraphNode,
 }
 
 pub struct Polyphony {
@@ -15,7 +15,7 @@ impl Polyphony {
     pub fn new(
         node_id: Option<u64>,
         max_voices: usize,
-        consumer: Box<dyn Node + Send + 'static>,
+        consumer: GraphNode,
     ) -> Result<Self, Error> {
         if max_voices < 1 {
             return Err(Error::User(format!(
@@ -52,7 +52,7 @@ impl Node for Polyphony {
         self.node_id = node_id;
     }
 
-    fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error> {
+    fn duplicate(&self) -> Result<GraphNode, Error> {
         let voices = self
             .voices
             .iter()
@@ -86,13 +86,13 @@ impl Node for Polyphony {
                     true
                 }
                 Event::NoteOff { note, .. } => {
-                    if let Some(index) = self
-                        .voices
-                        .iter()
-                        .position(|voice| match voice.current_note {
-                            Some(current_note) => current_note == note,
-                            None => false
-                        })
+                    if let Some(index) =
+                        self.voices
+                            .iter()
+                            .position(|voice| match voice.current_note {
+                                Some(current_note) => current_note == note,
+                                None => false,
+                            })
                     {
                         self.voices[index].source.on_event(event);
                         self.voices[index].current_note = None;
@@ -107,9 +107,9 @@ impl Node for Polyphony {
         let new_event: &Message = match was_consumed {
             true => &Message {
                 target: EventTarget::Broadcast,
-                data: event.data.clone()
+                data: event.data.clone(),
             },
-            false => event
+            false => event,
         };
         if new_event.target.propagates_from(self.node_id, was_consumed) {
             for voice in self.voices.iter_mut() {
@@ -124,10 +124,7 @@ impl Node for Polyphony {
         }
     }
 
-    fn replace_children(
-        &mut self,
-        children: &[Box<dyn Node + Send + 'static>],
-    ) -> Result<(), Error> {
+    fn replace_children(&mut self, children: &[GraphNode]) -> Result<(), Error> {
         if children.len() != 1 {
             return Err(Error::User(
                 "Polyphony requires one child which will be duplicated as needed".to_owned(),

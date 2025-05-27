@@ -1,13 +1,13 @@
 use crate::{
+    Balance, Error, GraphNode, NoteRange,
     file::wav::wav_from_i16_samples,
     group::Polyphony,
     node::font::{SoundFont, SoundFontBuilder},
-    Balance, Error, Node, NoteRange,
 };
 use byteorder::{LittleEndian, ReadBytesExt};
 use soundfont::{
-    data::{GeneratorAmount, GeneratorType},
     SfEnum, SoundFont2, Zone,
+    data::{GeneratorAmount, GeneratorType},
 };
 use std::{
     fs::File,
@@ -83,7 +83,7 @@ where
         let note_range = note_range_for_zone(zone)?;
         let source = wav_from_i16_samples(sample_header, Balance::Both, &sample_data)?;
 
-        let polyphony: Box<dyn Node + Send + 'static> = match polyphony_voices {
+        let polyphony: GraphNode = match polyphony_voices {
             0 | 1 => {
                 let polyphony = Polyphony::new(None, polyphony_voices, Box::new(source))?;
                 Box::new(polyphony)

@@ -1,5 +1,5 @@
 use crate::{
-    Config, Error, FontSource, GraphLoader, LoopRange, MidiDataSource, Node, NoteRange,
+    Config, Error, FontSource, GraphLoader, GraphNode, LoopRange, MidiDataSource, NoteRange,
     SoundSource,
     effect::{AdsrEnvelope, Fader},
     font::SoundFontBuilder,
@@ -22,10 +22,7 @@ impl FileGraphLoader {
 }
 
 impl GraphLoader for FileGraphLoader {
-    fn load_source_with_dependencies(
-        &self,
-        source: &SoundSource,
-    ) -> Result<Box<dyn Node + Send + 'static>, Error> {
+    fn load_source_with_dependencies(&self, source: &SoundSource) -> Result<GraphNode, Error> {
         let consumer = match source {
             SoundSource::Midi {
                 node_id,
@@ -42,7 +39,7 @@ impl GraphLoader for FileGraphLoader {
                     midi_builder = midi_builder.add_channel_source(*channel, source);
                 }
                 let source = midi_builder.build()?;
-                let source: Box<dyn Node + Send + 'static> = Box::new(source);
+                let source: GraphNode = Box::new(source);
                 source
             }
             SoundSource::Font { node_id, config } => match config {
@@ -53,7 +50,7 @@ impl GraphLoader for FileGraphLoader {
                         let source = self.load_source_with_dependencies(&range.source)?;
                         font_builder = font_builder.add_range(note_range, source)?;
                     }
-                    let source: Box<dyn Node + Send + 'static> = Box::new(font_builder.build());
+                    let source: GraphNode = Box::new(font_builder.build());
                     source
                 }
                 FontSource::Sf2FilePath {
@@ -67,7 +64,7 @@ impl GraphLoader for FileGraphLoader {
                         *instrument_index,
                         *polyphony_voices,
                     )?;
-                    let source: Box<dyn Node + Send + 'static> = Box::new(source);
+                    let source: GraphNode = Box::new(source);
                     source
                 }
             },
@@ -78,7 +75,7 @@ impl GraphLoader for FileGraphLoader {
                 duty_cycle,
             } => {
                 let source = SquareWaveSource::new(*node_id, *balance, *amplitude, *duty_cycle);
-                let source: Box<dyn Node + Send + 'static> = Box::new(source);
+                let source: GraphNode = Box::new(source);
                 source
             }
             SoundSource::TriangleWave {
@@ -87,7 +84,7 @@ impl GraphLoader for FileGraphLoader {
                 amplitude,
             } => {
                 let source = TriangleWaveSource::new(*node_id, *balance, *amplitude);
-                let source: Box<dyn Node + Send + 'static> = Box::new(source);
+                let source: GraphNode = Box::new(source);
                 source
             }
             SoundSource::SawtoothWave {
@@ -96,7 +93,7 @@ impl GraphLoader for FileGraphLoader {
                 amplitude,
             } => {
                 let source = SawtoothWaveSource::new(*node_id, *balance, *amplitude);
-                let source: Box<dyn Node + Send + 'static> = Box::new(source);
+                let source: GraphNode = Box::new(source);
                 source
             }
             SoundSource::LfsrNoise {
@@ -113,7 +110,7 @@ impl GraphLoader for FileGraphLoader {
                     *inside_feedback,
                     *note_for_16_shifts,
                 );
-                let source: Box<dyn Node + Send + 'static> = Box::new(source);
+                let source: GraphNode = Box::new(source);
                 source
             }
             SoundSource::SampleFilePath {
@@ -126,12 +123,16 @@ impl GraphLoader for FileGraphLoader {
                 let loop_range = looping.as_ref().map(LoopRange::from_config);
                 let source =
                     util::wav_from_file(path.as_str(), *base_note, loop_range, *balance, *node_id)?;
-                let source: Box<dyn Node + Send + 'static> = Box::new(source);
+                let source: GraphNode = Box::new(source);
                 source
             }
-            SoundSource::OneShotFilePath { node_id, balance, path } => {
+            SoundSource::OneShotFilePath {
+                node_id,
+                balance,
+                path,
+            } => {
                 let source = util::one_shot_from_file(path.as_str(), *balance, *node_id)?;
-                let source: Box<dyn Node + Send + 'static> = Box::new(source);
+                let source: GraphNode = Box::new(source);
                 source
             }
             SoundSource::AdsrEnvelope {
@@ -151,17 +152,17 @@ impl GraphLoader for FileGraphLoader {
                     *release_time,
                     source,
                 );
-                let source: Box<dyn Node + Send + 'static> = Box::new(source);
+                let source: GraphNode = Box::new(source);
                 source
             }
             SoundSource::Combiner { node_id, sources } => {
-                let mut inner_sources: Vec<Box<dyn Node + Send + 'static>> = vec![];
+                let mut inner_sources: Vec<GraphNode> = vec![];
                 for source in sources.iter() {
                     let source = self.load_source_with_dependencies(source)?;
                     inner_sources.push(source);
                 }
                 let source = CombinerSource::new(*node_id, inner_sources);
-                let source: Box<dyn Node + Send + 'static> = Box::new(source);
+                let source: GraphNode = Box::new(source);
                 source
             }
             SoundSource::Mixer {
@@ -173,7 +174,7 @@ impl GraphLoader for FileGraphLoader {
                 let source_0 = self.load_source_with_dependencies(source_0)?;
                 let source_1 = self.load_source_with_dependencies(source_1)?;
                 let source = MixerSource::new(*node_id, *balance, source_0, source_1);
-                let source: Box<dyn Node + Send + 'static> = Box::new(source);
+                let source: GraphNode = Box::new(source);
                 source
             }
             SoundSource::Polyphony {
@@ -183,7 +184,7 @@ impl GraphLoader for FileGraphLoader {
             } => {
                 let source = self.load_source_with_dependencies(source)?;
                 let source = Polyphony::new(*node_id, *max_voices, source)?;
-                let source: Box<dyn Node + Send + 'static> = Box::new(source);
+                let source: GraphNode = Box::new(source);
                 source
             }
             SoundSource::Fader {
@@ -193,7 +194,7 @@ impl GraphLoader for FileGraphLoader {
             } => {
                 let source = self.load_source_with_dependencies(source)?;
                 let source = Fader::new(*node_id, *initial_volume, source);
-                let source: Box<dyn Node + Send + 'static> = Box::new(source);
+                let source: GraphNode = Box::new(source);
                 source
             }
         };

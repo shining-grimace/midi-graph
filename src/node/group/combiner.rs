@@ -1,13 +1,13 @@
-use crate::{Error, Message, Node, consts};
+use crate::{Error, GraphNode, Message, Node, consts};
 
 pub struct CombinerSource {
     node_id: u64,
-    consumers: Vec<Box<dyn Node + Send + 'static>>,
+    consumers: Vec<GraphNode>,
     intermediate_buffer: Vec<f32>,
 }
 
 impl CombinerSource {
-    pub fn new(node_id: Option<u64>, consumers: Vec<Box<dyn Node + Send + 'static>>) -> Self {
+    pub fn new(node_id: Option<u64>, consumers: Vec<GraphNode>) -> Self {
         Self {
             node_id: node_id.unwrap_or_else(<Self as Node>::new_node_id),
             consumers,
@@ -25,8 +25,8 @@ impl Node for CombinerSource {
         self.node_id = node_id;
     }
 
-    fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error> {
-        let consumers: Result<Vec<Box<dyn Node + Send + 'static>>, Error> =
+    fn duplicate(&self) -> Result<GraphNode, Error> {
+        let consumers: Result<Vec<GraphNode>, Error> =
             self.consumers.iter().map(|c| c.duplicate()).collect();
         let combiner = Self::new(Some(self.node_id), consumers?);
         Ok(Box::new(combiner))
@@ -55,14 +55,11 @@ impl Node for CombinerSource {
         }
     }
 
-    fn replace_children(
-        &mut self,
-        children: &[Box<dyn Node + Send + 'static>],
-    ) -> Result<(), Error> {
+    fn replace_children(&mut self, children: &[GraphNode]) -> Result<(), Error> {
         self.consumers = children
             .iter()
             .map(|child| child.duplicate())
-            .collect::<Result<Vec<Box<dyn Node + Send + 'static>>, Error>>()?;
+            .collect::<Result<Vec<GraphNode>, Error>>()?;
         Ok(())
     }
 }

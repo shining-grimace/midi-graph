@@ -1,4 +1,4 @@
-use crate::{Balance, Error, Event, EventTarget, Message, Node, consts, util};
+use crate::{Balance, Error, Event, EventTarget, GraphNode, Message, Node, consts, util};
 
 pub struct LfsrNoiseSource {
     node_id: u64,
@@ -13,7 +13,7 @@ pub struct LfsrNoiseSource {
     cycle_samples_a440: f32,
     peak_amplitude: f32,
     note_velocity: f32,
-    modulated_volume: f32
+    modulated_volume: f32,
 }
 
 impl LfsrNoiseSource {
@@ -48,7 +48,7 @@ impl LfsrNoiseSource {
             cycle_samples_a440,
             peak_amplitude: amplitude,
             note_velocity: 1.0,
-            modulated_volume: 1.0
+            modulated_volume: 1.0,
         }
     }
 
@@ -77,7 +77,7 @@ impl Node for LfsrNoiseSource {
         self.node_id = node_id;
     }
 
-    fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error> {
+    fn duplicate(&self) -> Result<GraphNode, Error> {
         let inside_feedback = match self.feedback_mask {
             0x4040 => true,
             0x4000 => false,
@@ -165,10 +165,7 @@ impl Node for LfsrNoiseSource {
             stretched_progress * self.cycle_samples_a440 / pitch_cycle_samples;
     }
 
-    fn replace_children(
-        &mut self,
-        children: &[Box<dyn Node + Send + 'static>],
-    ) -> Result<(), Error> {
+    fn replace_children(&mut self, children: &[GraphNode]) -> Result<(), Error> {
         match children.is_empty() {
             true => Ok(()),
             false => Err(Error::User(

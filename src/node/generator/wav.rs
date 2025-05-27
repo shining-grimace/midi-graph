@@ -1,4 +1,4 @@
-use crate::{Balance, Error, Event, LoopRange, Message, Node, consts, util};
+use crate::{Balance, Error, Event, GraphNode, LoopRange, Message, Node, consts, util};
 use hound::{SampleFormat, WavSpec};
 use soundfont::raw::{SampleHeader, SampleLink};
 
@@ -204,7 +204,7 @@ impl Node for WavSource {
         self.node_id = node_id;
     }
 
-    fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error> {
+    fn duplicate(&self) -> Result<GraphNode, Error> {
         let sample_rate = (consts::PLAYBACK_SAMPLE_RATE as f64 / self.playback_scale) as u32;
         let loop_range = LoopRange::new_frame_range(
             self.loop_start_data_position / self.source_channel_count,
@@ -305,10 +305,7 @@ impl Node for WavSource {
         }
     }
 
-    fn replace_children(
-        &mut self,
-        children: &[Box<dyn Node + Send + 'static>],
-    ) -> Result<(), Error> {
+    fn replace_children(&mut self, children: &[GraphNode]) -> Result<(), Error> {
         match children.is_empty() {
             true => Ok(()),
             false => Err(Error::User("WavSource cannot have children".to_owned())),

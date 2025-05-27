@@ -1,5 +1,5 @@
 use crate::{
-    Config, Error, GraphLoader, Message, MessageSender, Node, consts, generator::NullSource,
+    Config, Error, GraphLoader, GraphNode, Message, MessageSender, consts, generator::NullSource,
 };
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{Stream, StreamConfig};
@@ -11,7 +11,7 @@ use std::sync::{
 };
 
 enum ConsumerCell {
-    Source(Box<dyn Node + Send + 'static>),
+    Source(GraphNode),
     Placeholder,
 }
 
@@ -35,7 +35,7 @@ impl BaseMixer {
         Self::start_single_program(consumer)
     }
 
-    pub fn start_single_program(consumer: Box<dyn Node + Send + 'static>) -> Result<Self, Error> {
+    pub fn start_single_program(consumer: GraphNode) -> Result<Self, Error> {
         let swappable = super::swap::SwappableConsumer::new(consumer);
         let (event_sender, event_receiver) = unbounded();
         let stream = Self::open_stream(swappable.take_consumer(), event_receiver)?;
@@ -71,11 +71,7 @@ impl BaseMixer {
 
     // Store a program at a given index.
     // Return whether a program already existed in that index (and will be replaced).
-    pub fn store_program(
-        &mut self,
-        program_no: usize,
-        program: Box<dyn Node + Send + 'static>,
-    ) -> bool {
+    pub fn store_program(&mut self, program_no: usize, program: GraphNode) -> bool {
         // A program is already at this index and is currently being played; it will be discarded
         if matches!(
             self.program_sources.get(&program_no),
@@ -130,7 +126,7 @@ impl BaseMixer {
     }
 
     fn open_stream(
-        consumer: Arc<AtomicPtr<Box<dyn Node + Send + 'static>>>,
+        consumer: Arc<AtomicPtr<GraphNode>>,
         event_receiver: Receiver<Message>,
     ) -> Result<Stream, Error> {
         let host = cpal::default_host();

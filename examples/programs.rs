@@ -1,7 +1,7 @@
 extern crate midi_graph;
 
 use midi_graph::{
-    Balance, BaseMixer, Node, NoteRange,
+    Balance, BaseMixer, GraphNode, NoteRange,
     font::SoundFontBuilder,
     generator::{LfsrNoiseSource, SquareWaveSource, TriangleWaveSource},
     util::midi_builder_from_file,
@@ -15,7 +15,7 @@ const PROGRAM_0: usize = 0;
 const PROGRAM_1: usize = 7;
 
 fn main() {
-    fn square_font() -> Box<dyn Node + Send + 'static> {
+    fn square_font() -> GraphNode {
         Box::new(
             SoundFontBuilder::new(None)
                 .add_range(
@@ -26,7 +26,7 @@ fn main() {
                 .build(),
         )
     }
-    fn triangle_font() -> Box<dyn Node + Send + 'static> {
+    fn triangle_font() -> GraphNode {
         Box::new(
             SoundFontBuilder::new(None)
                 .add_range(
@@ -37,7 +37,7 @@ fn main() {
                 .build(),
         )
     }
-    fn noise_font() -> Box<dyn Node + Send + 'static> {
+    fn noise_font() -> GraphNode {
         Box::new(
             SoundFontBuilder::new(None)
                 .add_range(

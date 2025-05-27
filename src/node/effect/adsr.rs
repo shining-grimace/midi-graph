@@ -1,4 +1,4 @@
-use crate::{Error, Event, Message, Node, consts};
+use crate::{Error, Event, GraphNode, Message, Node, consts};
 
 const PEAK_AMPLITUDE: f32 = 1.0;
 
@@ -16,7 +16,7 @@ pub struct AdsrEnvelope {
     decay_gradient: f32,
     sustain_multiplier: f32,
     release_gradient: f32,
-    consumer: Box<dyn Node + Send + 'static>,
+    consumer: GraphNode,
     intermediate_buffer: Vec<f32>,
     mode: EnvelopeMode,
     samples_progress_in_mode: isize,
@@ -29,7 +29,7 @@ impl AdsrEnvelope {
         decay_time: f32,
         sustain_multiplier: f32,
         release_time: f32,
-        consumer: Box<dyn Node + Send + 'static>,
+        consumer: GraphNode,
     ) -> Self {
         let attack_gradient = PEAK_AMPLITUDE / (attack_time * consts::PLAYBACK_SAMPLE_RATE as f32);
         let decay_gradient = (sustain_multiplier - PEAK_AMPLITUDE)
@@ -80,7 +80,7 @@ impl Node for AdsrEnvelope {
         self.node_id = node_id;
     }
 
-    fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error> {
+    fn duplicate(&self) -> Result<GraphNode, Error> {
         let consumer = self.consumer.duplicate()?;
         let envelope = Self {
             node_id: self.node_id,
@@ -204,10 +204,7 @@ impl Node for AdsrEnvelope {
         }
     }
 
-    fn replace_children(
-        &mut self,
-        children: &[Box<dyn Node + Send + 'static>],
-    ) -> Result<(), Error> {
+    fn replace_children(&mut self, children: &[GraphNode]) -> Result<(), Error> {
         if children.len() != 1 {
             return Err(Error::User("AdsrEnvelope requires one child".to_owned()));
         }

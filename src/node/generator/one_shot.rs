@@ -1,4 +1,4 @@
-use crate::{Balance, Error, Event, Message, Node, consts};
+use crate::{Balance, Error, Event, GraphNode, Message, Node, consts};
 use hound::{SampleFormat, WavSpec};
 use soundfont::raw::{SampleHeader, SampleLink};
 
@@ -110,7 +110,7 @@ impl Node for OneShotSource {
         self.node_id = node_id;
     }
 
-    fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error> {
+    fn duplicate(&self) -> Result<GraphNode, Error> {
         let source = Self::new(
             Some(self.node_id),
             self.source_channel_count,
@@ -174,7 +174,8 @@ impl Node for OneShotSource {
                 let src_data_points = buffer.len().min(src.len());
                 for src_data_index in (0..src_data_points).step_by(2) {
                     buffer[src_data_index] += left_amplitude * src[src_data_index] * self.volume;
-                    buffer[src_data_index + 1] += right_amplitude * src[src_data_index + 1] * self.volume;
+                    buffer[src_data_index + 1] +=
+                        right_amplitude * src[src_data_index + 1] * self.volume;
                 }
                 self.data_position += src_data_points;
             }
@@ -182,10 +183,7 @@ impl Node for OneShotSource {
         }
     }
 
-    fn replace_children(
-        &mut self,
-        children: &[Box<dyn Node + Send + 'static>],
-    ) -> Result<(), Error> {
+    fn replace_children(&mut self, children: &[GraphNode]) -> Result<(), Error> {
         match children.is_empty() {
             true => Ok(()),
             false => Err(Error::User("OneShotSource cannot have children".to_owned())),
