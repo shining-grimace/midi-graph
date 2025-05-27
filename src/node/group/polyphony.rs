@@ -1,8 +1,13 @@
 use crate::{Error, Event, Message, Node};
 
+struct Voice {
+    pub current_note: Option<u8>,
+    pub source: Box<dyn Node + Send + 'static>,
+}
+
 pub struct Polyphony {
     node_id: u64,
-    consumers: Vec<Box<dyn Node + Send + 'static>>,
+    voices: Vec<Voice>,
     next_on_index: usize,
 }
 
@@ -18,13 +23,21 @@ impl Polyphony {
                 max_voices
             )));
         }
-        let mut consumers = (0..(max_voices - 1))
-            .map(|_| consumer.duplicate())
-            .collect::<Result<Vec<Box<dyn Node + Send + 'static>>, Error>>()?;
-        consumers.push(consumer);
+        let mut voices = (0..(max_voices - 1))
+            .map(|_| {
+                consumer.duplicate().map(|source| Voice {
+                    current_note: None,
+                    source,
+                })
+            })
+            .collect::<Result<Vec<Voice>, Error>>()?;
+        voices.push(Voice {
+            current_note: None,
+            source: consumer,
+        });
         Ok(Self {
             node_id: node_id.unwrap_or_else(<Self as Node>::new_node_id),
-            consumers,
+            voices,
             next_on_index: 0,
         })
     }
@@ -40,14 +53,19 @@ impl Node for Polyphony {
     }
 
     fn duplicate(&self) -> Result<Box<dyn Node + Send + 'static>, Error> {
-        let consumers = self
-            .consumers
+        let voices = self
+            .voices
             .iter()
-            .map(|consumer| consumer.duplicate())
-            .collect::<Result<Vec<Box<dyn Node + Send + 'static>>, Error>>()?;
+            .map(|voice| {
+                voice.source.duplicate().map(|source| Voice {
+                    current_note: None,
+                    source,
+                })
+            })
+            .collect::<Result<Vec<Voice>, Error>>()?;
         let polyphony = Self {
             node_id: self.node_id,
-            consumers,
+            voices,
             next_on_index: 0,
         };
         Ok(Box::new(polyphony))
@@ -56,32 +74,46 @@ impl Node for Polyphony {
     fn on_event(&mut self, event: &Message) {
         let was_consumed = if event.target.influences(self.node_id) {
             match event.data {
-                Event::NoteOn { .. } => {
-                    self.consumers[self.next_on_index].on_event(event);
-                    self.next_on_index = (self.next_on_index + 1) % self.consumers.len();
-                    true
-                }
-                Event::NoteOff { .. } => {
-                    for consumer in self.consumers.iter_mut() {
-                        consumer.on_event(event);
+                Event::NoteOn { note, .. } => {
+                    if let Some(index) = self
+                        .voices
+                        .iter()
+                        .position(|voice| voice.current_note.is_none())
+                    {
+                        self.voices[index].current_note = Some(note);
+                        self.voices[index].source.on_event(event);
                     }
                     true
                 }
-                _ => false
+                Event::NoteOff { note, .. } => {
+                    if let Some(index) = self
+                        .voices
+                        .iter()
+                        .position(|voice| match voice.current_note {
+                            Some(current_note) => current_note == note,
+                            None => false
+                        })
+                    {
+                        self.voices[index].source.on_event(event);
+                        self.voices[index].current_note = None;
+                    }
+                    true
+                }
+                _ => false,
             }
         } else {
             true
         };
         if event.target.propagates_from(self.node_id, was_consumed) {
-            for consumer in self.consumers.iter_mut() {
-                consumer.on_event(event);
+            for voice in self.voices.iter_mut() {
+                voice.source.on_event(event);
             }
         }
     }
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) {
-        for consumer in self.consumers.iter_mut() {
-            consumer.fill_buffer(buffer);
+        for voice in self.voices.iter_mut() {
+            voice.source.fill_buffer(buffer);
         }
     }
 
@@ -95,9 +127,14 @@ impl Node for Polyphony {
             ));
         }
 
-        self.consumers = (0..(self.consumers.len()))
-            .map(|_| children[0].duplicate())
-            .collect::<Result<Vec<Box<dyn Node + Send + 'static>>, Error>>()?;
+        self.voices = (0..(self.voices.len()))
+            .map(|_| {
+                children[0].duplicate().map(|source| Voice {
+                    current_note: None,
+                    source,
+                })
+            })
+            .collect::<Result<Vec<Voice>, Error>>()?;
         self.next_on_index = 0;
         Ok(())
     }
