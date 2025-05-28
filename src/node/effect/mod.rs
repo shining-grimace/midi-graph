@@ -9,6 +9,7 @@ pub enum ModulationProperty {
     Volume,
     Pan,
     PitchMultiplier,
-    MixBalance
+    MixBalance,
+    TimeDilation
 }
 

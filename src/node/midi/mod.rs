@@ -77,6 +77,7 @@ pub struct MidiSource {
     samples_per_tick: f64,
     next_event_index: usize,
     event_ticks_progress: isize,
+    time_dilation: f32,
 }
 
 impl MidiSource {
@@ -103,6 +104,7 @@ impl MidiSource {
             samples_per_tick,
             next_event_index: 0,
             event_ticks_progress: 0,
+            time_dilation: 1.0,
         })
     }
 
@@ -179,8 +181,9 @@ impl MidiSource {
             let reached_note_event = {
                 let next_channel_event = &self.midi_events[self.next_event_index];
                 let ticks_until_event = next_channel_event.delta_ticks - self.event_ticks_progress;
-                let samples_until_event =
-                    (ticks_until_event as f64 * self.samples_per_tick) as usize;
+                let samples_until_event = (ticks_until_event as f64
+                    * (self.samples_per_tick / self.time_dilation as f64))
+                    as usize;
                 let samples_available_per_channel = buffer.len() / consts::CHANNEL_COUNT;
 
                 {
@@ -188,8 +191,9 @@ impl MidiSource {
                         for (_, source) in self.channel_sources.iter_mut() {
                             source.fill_buffer(buffer);
                         }
-                        self.event_ticks_progress +=
-                            (samples_available_per_channel as f64 / self.samples_per_tick) as isize;
+                        self.event_ticks_progress += (samples_available_per_channel as f64
+                            / (self.samples_per_tick / self.time_dilation as f64))
+                            as isize;
                         return;
                     }
 
@@ -236,9 +240,14 @@ impl Node for MidiSource {
     }
 
     fn try_consume_event(&mut self, event: &Message) -> bool {
+        println!("Received event {:?}", event);
         match &event.data {
             Event::CueData(cue) => {
                 self.process_cue_event(cue);
+                true
+            }
+            Event::TimeDilation(value) => {
+                self.time_dilation = *value;
                 true
             }
             _ => false,

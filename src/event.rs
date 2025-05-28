@@ -55,6 +55,7 @@ pub enum Event {
     SourceBalance(Balance),
     Volume(f32),
     PitchMultiplier(f32),
+    TimeDilation(f32),
     Fade {
         from: f32,
         to: f32,

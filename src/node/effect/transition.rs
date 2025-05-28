@@ -38,6 +38,7 @@ impl TransitionEnvelope {
             Some(ModulationProperty::Pan) => Event::SourceBalance(Balance::Pan(value)),
             Some(ModulationProperty::PitchMultiplier) => Event::PitchMultiplier(value),
             Some(ModulationProperty::MixBalance) => Event::MixerBalance(value),
+            Some(ModulationProperty::TimeDilation) => Event::TimeDilation(value),
             None => {
                 return;
             }

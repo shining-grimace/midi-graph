@@ -41,6 +41,7 @@ impl Lfo {
             Some(ModulationProperty::Pan) => Event::SourceBalance(Balance::Pan(value)),
             Some(ModulationProperty::PitchMultiplier) => Event::PitchMultiplier(value),
             Some(ModulationProperty::MixBalance) => Event::MixerBalance(value),
+            Some(ModulationProperty::TimeDilation) => Event::TimeDilation(value),
             None => {
                 return;
             }
@@ -57,6 +58,7 @@ impl Lfo {
             Some(ModulationProperty::Pan) => Event::SourceBalance(Balance::Both),
             Some(ModulationProperty::PitchMultiplier) => Event::PitchMultiplier(1.0),
             Some(ModulationProperty::MixBalance) => Event::MixerBalance(0.5),
+            Some(ModulationProperty::TimeDilation) => Event::TimeDilation(1.0),
             None => {
                 return;
             }
