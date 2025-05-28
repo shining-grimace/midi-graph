@@ -71,50 +71,48 @@ impl Node for Polyphony {
         Ok(Box::new(polyphony))
     }
 
-    fn on_event(&mut self, event: &Message) {
-        let was_consumed = if event.target.influences(self.node_id) {
-            match event.data {
-                Event::NoteOn { note, .. } => {
-                    if let Some(index) = self
-                        .voices
-                        .iter()
-                        .position(|voice| voice.current_note.is_none())
-                    {
-                        self.voices[index].current_note = Some(note);
-                        self.voices[index].source.on_event(event);
-                    }
-                    true
+    fn try_consume_event(&mut self, event: &Message) -> bool {
+        match event.data {
+            Event::NoteOn { note, .. } => {
+                if let Some(index) = self
+                    .voices
+                    .iter()
+                    .position(|voice| voice.current_note.is_none())
+                {
+                    let broadcast_event = Message {
+                        target: EventTarget::Broadcast,
+                        data: event.data.clone(),
+                    };
+                    self.voices[index].current_note = Some(note);
+                    self.voices[index].source.on_event(&broadcast_event);
                 }
-                Event::NoteOff { note, .. } => {
-                    if let Some(index) =
-                        self.voices
-                            .iter()
-                            .position(|voice| match voice.current_note {
-                                Some(current_note) => current_note == note,
-                                None => false,
-                            })
-                    {
-                        self.voices[index].source.on_event(event);
-                        self.voices[index].current_note = None;
-                    }
-                    true
+                true
+            }
+            Event::NoteOff { note, .. } => {
+                if let Some(index) = self
+                    .voices
+                    .iter()
+                    .position(|voice| match voice.current_note {
+                        Some(current_note) => current_note == note,
+                        None => false,
+                    })
+                {
+                    let broadcast_event = Message {
+                        target: EventTarget::Broadcast,
+                        data: event.data.clone(),
+                    };
+                    self.voices[index].source.on_event(&broadcast_event);
+                    self.voices[index].current_note = None;
                 }
-                _ => false,
+                true
             }
-        } else {
-            true
-        };
-        let new_event: &Message = match was_consumed {
-            true => &Message {
-                target: EventTarget::Broadcast,
-                data: event.data.clone(),
-            },
-            false => event,
-        };
-        if new_event.target.propagates_from(self.node_id, was_consumed) {
-            for voice in self.voices.iter_mut() {
-                voice.source.on_event(new_event);
-            }
+            _ => false,
+        }
+    }
+
+    fn propagate(&mut self, event: &Message) {
+        for voice in self.voices.iter_mut() {
+            voice.source.on_event(event);
         }
     }
 

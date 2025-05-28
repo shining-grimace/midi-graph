@@ -9,13 +9,12 @@ pub struct Message {
 
 #[derive(PartialEq, Copy, Clone, Debug)]
 pub enum EventTarget {
-    /// Propagated everywhere without condition
+    /// Handled by all nodes reached.
+    /// Propagates through graph branches until consumed.
     Broadcast,
 
-    /// Handled in the first node that knows how to consume it
-    FirstPossibleConsumer,
-
-    /// Handled by a specific node
+    /// Handled by a specific node.
+    /// Still propagates through graph branches until consumed.
     SpecificNode(u64),
 }
 
@@ -24,7 +23,6 @@ impl EventTarget {
     pub fn influences(&self, node_id: u64) -> bool {
         match self {
             EventTarget::Broadcast => true,
-            EventTarget::FirstPossibleConsumer => true,
             EventTarget::SpecificNode(id) => *id == node_id,
         }
     }
@@ -32,8 +30,7 @@ impl EventTarget {
     #[inline]
     pub fn propagates_from(&self, node_id: u64, was_consumed: bool) -> bool {
         match self {
-            EventTarget::Broadcast => true,
-            EventTarget::FirstPossibleConsumer => !was_consumed,
+            EventTarget::Broadcast => !was_consumed,
             EventTarget::SpecificNode(id) => *id != node_id,
         }
     }

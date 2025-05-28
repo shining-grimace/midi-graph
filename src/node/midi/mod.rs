@@ -235,22 +235,19 @@ impl Node for MidiSource {
         Ok(Box::new(source))
     }
 
-    fn on_event(&mut self, event: &Message) {
-        let was_consumed = if event.target.influences(self.node_id) {
-            match &event.data {
-                Event::CueData(cue) => {
-                    self.process_cue_event(cue);
-                    true
-                }
-                _ => false,
+    fn try_consume_event(&mut self, event: &Message) -> bool {
+        match &event.data {
+            Event::CueData(cue) => {
+                self.process_cue_event(cue);
+                true
             }
-        } else {
-            false
-        };
-        if event.target.propagates_from(self.node_id, was_consumed) {
-            for (_, source) in self.channel_sources.iter_mut() {
-                source.on_event(event);
-            }
+            _ => false,
+        }
+    }
+
+    fn propagate(&mut self, event: &Message) {
+        for (_, source) in self.channel_sources.iter_mut() {
+            source.on_event(event);
         }
     }
 

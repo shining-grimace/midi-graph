@@ -26,7 +26,11 @@ impl Node for NullSource {
         Ok(Box::new(source))
     }
 
-    fn on_event(&mut self, _event: &Message) {}
+    fn try_consume_event(&mut self, _event: &Message) -> bool {
+        true
+    }
+
+    fn propagate(&mut self, _event: &Message) {}
 
     fn fill_buffer(&mut self, _buffer: &mut [f32]) {}
 

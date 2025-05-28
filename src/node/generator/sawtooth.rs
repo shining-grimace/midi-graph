@@ -47,10 +47,7 @@ impl Node for SawtoothWaveSource {
         )))
     }
 
-    fn on_event(&mut self, event: &Message) {
-        if !event.target.influences(self.node_id) {
-            return;
-        }
+    fn try_consume_event(&mut self, event: &Message) -> bool {
         match event.data {
             Event::NoteOff { note, .. } => {
                 if self.current_note == note || event.target == EventTarget::Broadcast {
@@ -74,7 +71,10 @@ impl Node for SawtoothWaveSource {
             }
             _ => {}
         }
+        true
     }
+
+    fn propagate(&mut self, _event: &Message) {}
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) {
         if !self.is_on {

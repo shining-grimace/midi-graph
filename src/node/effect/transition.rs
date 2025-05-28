@@ -43,7 +43,7 @@ impl TransitionEnvelope {
             }
         };
         self.consumer.on_event(&Message {
-            target: EventTarget::FirstPossibleConsumer,
+            target: EventTarget::Broadcast,
             data: event,
         });
     }
@@ -74,49 +74,49 @@ impl Node for TransitionEnvelope {
         Ok(Box::new(transition))
     }
 
-    fn on_event(&mut self, event: &Message) {
-        if event.target.influences(self.node_id) {
-            match event.data {
-                Event::Transition {
-                    property,
-                    from,
-                    to,
-                    duration_secs,
-                    steps,
-                } => {
-                    let total_steps = if steps == 0 {
-                        println!("WARNING: Cannot have zero steps for TransitionEnvelope");
-                        1
-                    } else {
-                        steps
-                    };
-                    let duration_secs = if duration_secs < f32::EPSILON {
-                        println!(
-                            "WARNING: Duration for TransitionEnvelope must be a positive, not-insignificant number"
-                        );
-                        1.0
-                    } else {
-                        duration_secs
-                    };
-                    let frames_per_step: f32 =
-                        consts::PLAYBACK_SAMPLE_RATE as f32 / (steps as f32 / duration_secs);
-                    self.property = Some(property);
-                    self.from = from;
-                    self.to = to;
-                    self.frames_progress_in_step = 0;
-                    self.frames_per_step = frames_per_step as isize;
-                    self.current_step = 0;
-                    self.total_steps = total_steps;
-                }
-                Event::EndModulation => self.property = None,
-                _ => {}
+    fn try_consume_event(&mut self, event: &Message) -> bool {
+        match event.data {
+            Event::Transition {
+                property,
+                from,
+                to,
+                duration_secs,
+                steps,
+            } => {
+                let total_steps = if steps == 0 {
+                    println!("WARNING: Cannot have zero steps for TransitionEnvelope");
+                    1
+                } else {
+                    steps
+                };
+                let duration_secs = if duration_secs < f32::EPSILON {
+                    println!(
+                        "WARNING: Duration for TransitionEnvelope must be a positive, not-insignificant number"
+                    );
+                    1.0
+                } else {
+                    duration_secs
+                };
+                let frames_per_step: f32 =
+                    consts::PLAYBACK_SAMPLE_RATE as f32 / (steps as f32 / duration_secs);
+                self.property = Some(property);
+                self.from = from;
+                self.to = to;
+                self.frames_progress_in_step = 0;
+                self.frames_per_step = frames_per_step as isize;
+                self.current_step = 0;
+                self.total_steps = total_steps;
             }
+            Event::EndModulation => self.property = None,
+            _ => {}
         }
 
         // TransitionEnvelope does not consume any events, but listens to notes
-        if event.target.propagates_from(self.node_id, false) {
-            self.consumer.on_event(event);
-        }
+        false
+    }
+
+    fn propagate(&mut self, event: &Message) {
+        self.consumer.on_event(event);
     }
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) {

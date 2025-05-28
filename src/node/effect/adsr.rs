@@ -96,24 +96,23 @@ impl Node for AdsrEnvelope {
         Ok(Box::new(envelope))
     }
 
-    fn on_event(&mut self, event: &Message) {
-        if event.target.influences(self.node_id) {
-            match event.data {
-                Event::NoteOn { .. } => {
-                    self.mode = EnvelopeMode::Attack;
-                    self.samples_progress_in_mode = 0;
-                }
-                Event::NoteOff { .. } => {
-                    self.release();
-                }
-                _ => {}
+    fn try_consume_event(&mut self, event: &Message) -> bool {
+        match event.data {
+            Event::NoteOn { .. } => {
+                self.mode = EnvelopeMode::Attack;
+                self.samples_progress_in_mode = 0;
             }
+            Event::NoteOff { .. } => {
+                self.release();
+            }
+            _ => {}
         }
-
         // AdsrEnvelope does not consume any events, but listens to notes
-        if event.target.propagates_from(self.node_id, false) {
-            self.consumer.on_event(event);
-        }
+        false
+    }
+
+    fn propagate(&mut self, event: &Message) {
+        self.consumer.on_event(event);
     }
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) {

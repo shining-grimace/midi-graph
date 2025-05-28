@@ -41,25 +41,22 @@ impl Node for MixerSource {
         Ok(Box::new(mixer))
     }
 
-    fn on_event(&mut self, event: &Message) {
-        let was_consumed = if event.target.influences(self.node_id) {
-            if let Message {
-                data: Event::MixerBalance(balance),
-                ..
-            } = event
-            {
-                self.balance = *balance;
-                true
-            } else {
-                false
-            }
+    fn try_consume_event(&mut self, event: &Message) -> bool {
+        if let Message {
+            data: Event::MixerBalance(balance),
+            ..
+        } = event
+        {
+            self.balance = *balance;
+            true
         } else {
             false
-        };
-        if event.target.propagates_from(self.node_id, was_consumed) {
-            self.consumer_0.on_event(event);
-            self.consumer_1.on_event(event);
         }
+    }
+
+    fn propagate(&mut self, event: &Message) {
+        self.consumer_0.on_event(event);
+        self.consumer_1.on_event(event);
     }
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) {

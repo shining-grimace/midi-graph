@@ -222,10 +222,7 @@ impl Node for WavSource {
         Ok(Box::new(source))
     }
 
-    fn on_event(&mut self, event: &Message) {
-        if !event.target.influences(self.node_id) {
-            return;
-        }
+    fn try_consume_event(&mut self, event: &Message) -> bool {
         match event.data {
             Event::NoteOn { note, vel: _ } => {
                 self.is_on = true;
@@ -234,10 +231,9 @@ impl Node for WavSource {
                 self.pitch_multiplier = 1.0;
             }
             Event::NoteOff { note, vel: _ } => {
-                if self.current_note != note || !self.is_on {
-                    return;
+                if self.current_note == note && self.is_on {
+                    self.is_on = false;
                 }
-                self.is_on = false;
             }
             Event::PitchMultiplier(multiplier) => {
                 self.pitch_multiplier = multiplier;
@@ -250,7 +246,10 @@ impl Node for WavSource {
             }
             _ => {}
         }
+        true
     }
+
+    fn propagate(&mut self, _event: &Message) {}
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) {
         if buffer.is_empty() {

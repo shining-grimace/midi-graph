@@ -56,34 +56,31 @@ impl Node for SoundFont {
         Err(Error::User("SoundFont cannot be duplicated".to_owned()))
     }
 
-    fn on_event(&mut self, event: &Message) {
+    fn try_consume_event(&mut self, event: &Message) -> bool {
         let note = match event.data {
             Event::NoteOn { note, .. } => Some(note),
             Event::NoteOff { note, .. } => Some(note),
             _ => None,
         };
-        let was_consumed = if event.target.influences(self.node_id) {
-            if note.is_some() {
-                let note = note.unwrap();
-                for (range, consumer) in self.ranges.iter_mut() {
-                    if !range.contains(note) {
-                        continue;
-                    }
-                    consumer.on_event(event);
+        if note.is_some() {
+            let note = note.unwrap();
+            for (range, consumer) in self.ranges.iter_mut() {
+                if !range.contains(note) {
+                    continue;
                 }
-            } else {
-                for (_, consumer) in self.ranges.iter_mut() {
-                    consumer.on_event(event);
-                }
+                consumer.on_event(event);
             }
-            true
         } else {
-            false
-        };
-        if event.target.propagates_from(self.node_id, was_consumed) {
             for (_, consumer) in self.ranges.iter_mut() {
                 consumer.on_event(event);
             }
+        }
+        true
+    }
+
+    fn propagate(&mut self, event: &Message) {
+        for (_, consumer) in self.ranges.iter_mut() {
+            consumer.on_event(event);
         }
     }
 

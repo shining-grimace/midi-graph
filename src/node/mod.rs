@@ -8,7 +8,7 @@ pub mod util;
 #[cfg(debug_assertions)]
 pub mod log;
 
-use crate::{Error, GraphNode, Loop, Message, RangeSource};
+use crate::{Error, EventTarget, GraphNode, Loop, Message, RangeSource};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 const START_GENERATED_NODE_IDS: u64 = 0x10000;
@@ -18,9 +18,36 @@ pub trait Node {
     fn get_node_id(&self) -> u64;
     fn set_node_id(&mut self, node_id: u64);
     fn duplicate(&self) -> Result<GraphNode, Error>;
-    fn on_event(&mut self, event: &Message);
+    fn try_consume_event(&mut self, event: &Message) -> bool;
+    fn propagate(&mut self, event: &Message);
     fn fill_buffer(&mut self, buffer: &mut [f32]);
     fn replace_children(&mut self, children: &[GraphNode]) -> Result<(), Error>;
+
+    fn on_event(&mut self, event: &Message) {
+        let node_id = self.get_node_id();
+        let was_consumed = if event.target.influences(node_id) {
+            self.try_consume_event(event)
+        } else {
+            false
+        };
+        let broadcast_propagate = match event.target {
+            EventTarget::SpecificNode(node_id) => node_id == self.get_node_id(),
+            _ => false,
+        };
+        let propagation_event = match broadcast_propagate {
+            true => &Message {
+                target: EventTarget::Broadcast,
+                data: event.data.clone(),
+            },
+            false => event,
+        };
+        if propagation_event
+            .target
+            .propagates_from(node_id, was_consumed)
+        {
+            self.propagate(propagation_event);
+        }
+    }
 
     fn new_node_id() -> u64
     where

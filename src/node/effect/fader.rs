@@ -47,23 +47,20 @@ impl Node for Fader {
         Ok(Box::new(fader))
     }
 
-    fn on_event(&mut self, event: &Message) {
-        let was_consumed = if event.target.influences(self.node_id) {
-            if let Event::Fade { from, to, seconds } = event.data {
-                self.from_volume = from;
-                self.to_volume = to;
-                self.duration_seconds = seconds;
-                self.progress_seconds = 0.0;
-                true
-            } else {
-                false
-            }
+    fn try_consume_event(&mut self, event: &Message) -> bool {
+        if let Event::Fade { from, to, seconds } = event.data {
+            self.from_volume = from;
+            self.to_volume = to;
+            self.duration_seconds = seconds;
+            self.progress_seconds = 0.0;
+            true
         } else {
             false
-        };
-        if event.target.propagates_from(self.node_id, was_consumed) {
-            self.consumer.on_event(event);
         }
+    }
+
+    fn propagate(&mut self, event: &Message) {
+        self.consumer.on_event(event);
     }
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) {

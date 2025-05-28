@@ -32,11 +32,13 @@ impl Node for CombinerSource {
         Ok(Box::new(combiner))
     }
 
-    fn on_event(&mut self, event: &Message) {
-        if event.target.propagates_from(self.node_id, false) {
-            for consumer in self.consumers.iter_mut() {
-                consumer.on_event(event);
-            }
+    fn try_consume_event(&mut self, _event: &Message) -> bool {
+        false
+    }
+
+    fn propagate(&mut self, event: &Message) {
+        for consumer in self.consumers.iter_mut() {
+            consumer.on_event(event);
         }
     }
 

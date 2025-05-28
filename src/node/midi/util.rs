@@ -100,7 +100,7 @@ pub fn midi_events_from_midi(smf: Smf, track_no: usize) -> Result<Vec<MidiEvent>
                     delta_ticks: u32::from(event.delta) as isize,
                     channel: u8::from(channel) as usize,
                     message: Message {
-                        target: EventTarget::FirstPossibleConsumer,
+                        target: EventTarget::Broadcast,
                         data: Event::NoteOn {
                             note: u8::from(key),
                             vel: u8::from(vel) as f32 / 127.0,
@@ -116,7 +116,7 @@ pub fn midi_events_from_midi(smf: Smf, track_no: usize) -> Result<Vec<MidiEvent>
                     delta_ticks: u32::from(event.delta) as isize,
                     channel: u8::from(channel) as usize,
                     message: Message {
-                        target: EventTarget::FirstPossibleConsumer,
+                        target: EventTarget::Broadcast,
                         data: Event::NoteOff {
                             note: u8::from(key),
                             vel: u8::from(vel) as f32 / 127.0,
@@ -132,7 +132,7 @@ pub fn midi_events_from_midi(smf: Smf, track_no: usize) -> Result<Vec<MidiEvent>
                         delta_ticks: event_delta,
                         channel: 0, // Ignored for cue data
                         message: Message {
-                            target: EventTarget::FirstPossibleConsumer,
+                            target: EventTarget::Broadcast,
                             data: Event::CueData(cue),
                         },
                     });
