@@ -1,5 +1,4 @@
 pub mod effect;
-pub mod font;
 pub mod generator;
 pub mod group;
 pub mod midi;

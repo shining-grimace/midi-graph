@@ -1,8 +1,7 @@
 use crate::{
     Balance, Error, GraphNode, NoteRange,
     file::wav::wav_from_i16_samples,
-    group::Polyphony,
-    node::font::{SoundFont, SoundFontBuilder},
+    group::{Polyphony, SoundFont, SoundFontBuilder},
 };
 use byteorder::{LittleEndian, ReadBytesExt};
 use soundfont::{

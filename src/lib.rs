@@ -44,10 +44,6 @@ pub mod effect {
     };
 }
 
-pub mod font {
-    pub use crate::node::font::{SoundFont, SoundFontBuilder};
-}
-
 pub mod generator {
     pub use crate::node::generator::{
         noise::LfsrNoiseSource, null::NullSource, one_shot::OneShotSource,
@@ -58,7 +54,10 @@ pub mod generator {
 
 pub mod group {
     pub use crate::node::group::{
-        combiner::CombinerSource, mixer::MixerSource, polyphony::Polyphony,
+        combiner::CombinerSource,
+        mixer::MixerSource,
+        polyphony::Polyphony,
+        font::{SoundFont, SoundFontBuilder}
     };
 }
 

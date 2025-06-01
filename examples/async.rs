@@ -3,9 +3,8 @@ extern crate midi_graph;
 use midi_graph::{
     Balance, BaseMixer, Event, EventTarget, Message, MessageSender, NoteRange,
     effect::{Fader, Lfo, ModulationProperty, TransitionEnvelope},
-    font::SoundFontBuilder,
     generator::{SawtoothWaveSource, SquareWaveSource, TriangleWaveSource},
-    group::MixerSource,
+    group::{MixerSource, SoundFontBuilder},
 };
 use std::{sync::Arc, thread::sleep, time::Duration};
 

@@ -1,8 +1,8 @@
 extern crate midi_graph;
 
 use midi_graph::{
-    font::SoundFontBuilder,
     generator::LfsrNoiseSource,
+    group::SoundFontBuilder,
     util::{midi_builder_from_file, soundfont_from_file},
     Balance, BaseMixer, NoteRange,
 };
