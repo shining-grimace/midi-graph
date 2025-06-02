@@ -1,6 +1,6 @@
 use crate::{Balance, Error};
 use ron::de::from_bytes;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 const fn none_id() -> Option<u64> {

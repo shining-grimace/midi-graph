@@ -1,4 +1,7 @@
-use crate::{Error, FontSource, GraphNode, config::SoundSource};
+use crate::{
+    Error, GraphNode,
+    serialize::{FontSource, SoundSource},
+};
 
 pub trait GraphLoader {
     fn load_source_with_dependencies(&self, source: &SoundSource) -> Result<GraphNode, Error>;

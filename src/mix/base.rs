@@ -1,5 +1,6 @@
 use crate::{
-    Config, Error, GraphLoader, GraphNode, Message, MessageSender, consts, generator::NullSource,
+    Error, GraphLoader, GraphNode, Message, MessageSender, consts, generator::NullSource,
+    serialize::Config,
 };
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{Stream, StreamConfig};

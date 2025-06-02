@@ -1,9 +1,9 @@
 use crate::{
-    Config, Error, FontSource, GraphLoader, GraphNode, LoopRange, MidiDataSource, NoteRange,
-    SoundSource,
+    Error, GraphLoader, GraphNode, LoopRange, NoteRange,
     effect::{AdsrEnvelope, Fader},
     generator::{LfsrNoiseSource, SawtoothWaveSource, SquareWaveSource, TriangleWaveSource},
     group::{CombinerSource, MixerSource, Polyphony, SoundFontBuilder},
+    serialize::{Config, FontSource, MidiDataSource, SoundSource},
     util,
 };
 use ron::de::from_reader;

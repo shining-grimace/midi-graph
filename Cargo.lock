@@ -389,7 +389,6 @@ dependencies = [
  "midly",
  "ron",
  "serde",
- "serde_derive",
  "soundfont",
  "wasm-bindgen",
 ]

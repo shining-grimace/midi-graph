@@ -1,5 +1,5 @@
 use crate::{midi::CueData, effect::ModulationProperty};
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug)]
 pub struct Message {

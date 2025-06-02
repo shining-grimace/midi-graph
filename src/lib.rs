@@ -1,4 +1,4 @@
-AND THEN DO AN INTO BOX
+// AND THEN DO AN INTO BOX
 
 //! # MIDI Graph
 //!
@@ -80,9 +80,9 @@ pub use mix::base::BaseMixer;
 pub use node::{LoopRange, Node, NoteRange};
 
 /// Abstract, serialisable/deserialisable representation of a graph
-pub mod abstract {
-    pub use config::{Config, FontSource, Loop, MidiDataSource, RangeSource, SoundSource};
-};
+pub mod serialize {
+    pub use super::config::{Config, FontSource, Loop, MidiDataSource, RangeSource, SoundSource};
+}
 
 /// Nodes that wrap other nodes and apply effects to them.
 pub mod effect {

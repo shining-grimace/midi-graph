@@ -7,7 +7,10 @@ pub mod util;
 #[cfg(debug_assertions)]
 pub mod log;
 
-use crate::{Error, EventTarget, GraphNode, Loop, Message, RangeSource};
+use crate::{
+    Error, EventTarget, GraphNode, Message,
+    serialize::{Loop, RangeSource},
+};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 const START_GENERATED_NODE_IDS: u64 = 0x10000;
