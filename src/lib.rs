@@ -84,7 +84,7 @@ pub mod abstraction {
     pub mod defaults {
         pub use crate::config::defaults::*;
     }
-    pub use super::config::{NodeConfig, NodeConfigData, Config, Loop, registry::NodeRegistry};
+    pub use super::config::{NodeConfig, NodeConfigData, Loop, registry::NodeRegistry};
 }
 
 /// Nodes that wrap other nodes and apply effects to them.
@@ -118,6 +118,7 @@ pub mod group {
         mixer::{Mixer, MixerNode},
         polyphony::{Polyphony, PolyphonyNode},
         font::{Font, FontNode, FontNodeBuilder, FontSource, RangeSource},
+        subtree::Subtree
     };
 }
 

@@ -4,6 +4,7 @@ pub enum Error {
     User(String),
     Internal(String),
     Io(std::io::Error),
+    Json(serde_json::Error),
     Midly(midly::Error),
     Hound(hound::Error),
     Soundfont(soundfont::Error),
@@ -18,6 +19,7 @@ impl std::fmt::Display for Error {
             Error::User(e) => e.fmt(fmt),
             Error::Internal(e) => e.fmt(fmt),
             Error::Io(e) => e.fmt(fmt),
+            Error::Json(e) => e.fmt(fmt),
             Error::Midly(e) => e.fmt(fmt),
             Error::Hound(e) => e.fmt(fmt),
             Error::Soundfont(e) => fmt.write_fmt(format_args!("{:?}", e)),
@@ -33,6 +35,12 @@ impl std::error::Error for Error {}
 impl From<std::io::Error> for Error {
     fn from(value: std::io::Error) -> Self {
         Error::Io(value)
+    }
+}
+
+impl From<serde_json::Error> for Error {
+    fn from(value: serde_json::Error) -> Self {
+        Error::Json(value)
     }
 }
 

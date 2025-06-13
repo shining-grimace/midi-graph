@@ -1,19 +1,16 @@
+pub mod builtin;
 pub mod defaults;
 pub mod registry;
 
-use crate::{Error, GraphNode, abstraction::NodeRegistry};
-use serde::{Deserialize, Serialize};
+use crate::{Error, GraphNode, abstraction::NodeRegistry, config::registry::get_registry};
+use serde::{Deserialize, Serialize, de};
+use serde_json::Value;
 use std::fmt::Formatter;
 
 pub trait NodeConfig: Send + 'static {
     fn to_node(&self, registry: &NodeRegistry) -> Result<GraphNode, Error>;
     fn clone_child_configs(&self) -> Option<Vec<NodeConfigData>>;
     fn duplicate(&self) -> Box<dyn NodeConfig>;
-}
-
-#[derive(Clone)]
-pub struct Config {
-    pub root: NodeConfigData,
 }
 
 /// Loop range, defined as the inclusive start and exclusive end.
@@ -39,10 +36,39 @@ impl std::fmt::Debug for NodeConfigData {
 }
 
 impl<'de> Deserialize<'de> for NodeConfigData {
-    fn deserialize<D>(_deserializer: D) -> Result<Self, D::Error>
-        where
-            D: serde::Deserializer<'de> {
-        todo!("Deserialize NodeConfigData")
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        let full_value = Value::deserialize(deserializer)?;
+        let obj = full_value.as_object().ok_or_else(|| {
+            de::Error::custom("Error deserializing NodeConfigData: not a JSON object")
+        })?;
+        let node_type = obj.get("type").ok_or_else(|| {
+            de::Error::custom("Error deserializing NodeConfigData: type key not found")
+        })?;
+        let node_type_string = node_type.as_str().ok_or_else(|| {
+            de::Error::custom("Error deserializing NodeConfigData: type is not a string")
+        })?;
+        let registry = get_registry().ok_or_else(|| {
+            de::Error::custom(
+                "Error deserializing NodeConfigData: start building a BaseMixer first",
+            )
+        })?;
+        let deserializer = registry
+            .get_deserialize_fn(node_type_string)
+            .ok_or_else(|| {
+                de::Error::custom(format!(
+                    "Error deserializing NodeConfigData: type {} not registered",
+                    node_type_string
+                ))
+            })?;
+        let config_trait_object = deserializer(&full_value).map_err(|e| {
+            de::Error::custom(format!(
+                "Error deserializing NodeConfigData: could not deserialize {} node: {}",
+                node_type_string, e
+            ))
+        })?;
+        Ok(NodeConfigData(config_trait_object))
     }
 }
-

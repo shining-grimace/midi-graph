@@ -4,6 +4,7 @@ use crate::{
     config::{
         NodeConfigData,
         registry::{get_registry, init_node_registry},
+        builtin::register_builtin_types
     },
     consts,
     generator::NullNode,
@@ -35,6 +36,7 @@ impl BaseMixerBuilder {
     {
         let asset_loader = Box::new(asset_loader);
         let mut config_registry = NodeRegistry::new(asset_loader);
+        register_builtin_types(&mut config_registry);
         registration(&mut config_registry);
         init_node_registry(config_registry)?;
         Ok(Self {
@@ -100,10 +102,13 @@ impl Drop for BaseMixer {
 }
 
 impl BaseMixer {
-    pub fn builder<A, F>(asset_loader: A, registration: F) -> Result<BaseMixerBuilder, Error>
-    where
-        A: AssetLoader + Send + Sync + 'static,
-        F: FnMut(&mut NodeRegistry),
+    pub fn builder<A, F>(
+        asset_loader: A,
+        registration: F
+    ) -> Result<BaseMixerBuilder, Error>
+        where
+            A: AssetLoader + Send + Sync + 'static,
+            F: FnMut(&mut NodeRegistry)
     {
         BaseMixerBuilder::new(asset_loader, registration)
     }

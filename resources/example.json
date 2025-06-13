@@ -1,0 +1,59 @@
+{
+  "type": "Midi",
+  "source": {
+    "FilePath": "resources/sample-in-c.mid"
+  },
+  "channels": {
+    "0": {
+      "type": "Font",
+      "config": {
+        "Ranges": [
+          {
+            "lower": 0,
+            "upper": 50,
+            "source": {
+              "type": "Subtree",
+              "file_path": "resources/subtree.json"
+            }
+          },
+          {
+            "lower": 51,
+            "upper": 255,
+            "source": {
+              "type": "AdsrEnvelope",
+              "source": {
+                "type": "SawtoothWave",
+                "amplitude": 0.1875
+              }
+            }
+          }
+        ]
+      }
+    },
+    "1": {
+      "type": "AdsrEnvelope",
+      "source": {
+        "type": "SampleLoop",
+        "path": "resources/guitar-a2-48k-stereo.wav",
+        "balance": "Right",
+        "base_note": 45,
+        "looping": {
+          "start": 2590,
+          "end": 6557
+        }
+      }
+    },
+    "2": {
+      "type": "AdsrEnvelope",
+      "attack_time": 0.0,
+      "decay_time": 0.125,
+      "sustain_multiplier": 0.25,
+      "release_time": 0.125,
+      "source": {
+        "type": "LfsrNoise",
+        "balance": "Left",
+        "inside_feedback": false
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "type": "Polyphony",
+  "max_voices": 4,
+  "source": {
+    "type": "AdsrEnvelope",
+    "attack_time": 0.5,
+    "decay_time": 1.0,
+    "sustain_multiplier": 0.75,
+    "release_time": 0.125,
+    "source": {
+      "type": "SquareWave",
+      "amplitude": 0.125
+    }
+  }
+}
