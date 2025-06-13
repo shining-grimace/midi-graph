@@ -6,17 +6,13 @@ use crate::{
     serialize::{Config, FontSource, MidiDataSource, SoundSource},
     util,
 };
-use ron::de::from_reader;
-use std::fs::File;
 
 #[derive(Default)]
 pub struct FileGraphLoader;
 
 impl FileGraphLoader {
-    pub fn config_from_file(&self, file_name: &str) -> Result<Config, Error> {
-        let file = File::open(file_name)?;
-        let config = from_reader(&file)?;
-        Ok(config)
+    pub fn config_from_file(&self, _file_name: &str) -> Result<Config, Error> {
+        todo!("Deserialize config from a file")
     }
 }
 

@@ -4,7 +4,6 @@ pub enum Error {
     User(String),
     Internal(String),
     Io(std::io::Error),
-    Ron(ron::error::SpannedError),
     Midly(midly::Error),
     Hound(hound::Error),
     Soundfont(soundfont::Error),
@@ -19,7 +18,6 @@ impl std::fmt::Display for Error {
             Error::User(e) => e.fmt(fmt),
             Error::Internal(e) => e.fmt(fmt),
             Error::Io(e) => e.fmt(fmt),
-            Error::Ron(e) => e.fmt(fmt),
             Error::Midly(e) => e.fmt(fmt),
             Error::Hound(e) => e.fmt(fmt),
             Error::Soundfont(e) => fmt.write_fmt(format_args!("{:?}", e)),
@@ -35,12 +33,6 @@ impl std::error::Error for Error {}
 impl From<std::io::Error> for Error {
     fn from(value: std::io::Error) -> Self {
         Error::Io(value)
-    }
-}
-
-impl From<ron::error::SpannedError> for Error {
-    fn from(value: ron::error::SpannedError) -> Self {
-        Error::Ron(value)
     }
 }
 

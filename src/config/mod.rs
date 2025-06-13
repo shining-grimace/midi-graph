@@ -1,5 +1,4 @@
-use crate::{Balance, Error};
-use ron::de::from_bytes;
+use crate::Balance;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -54,13 +53,6 @@ const fn default_max_voices() -> usize {
 #[derive(Deserialize, Clone)]
 pub struct Config {
     pub root: SoundSource,
-}
-
-impl Config {
-    pub fn from_bytes(bytes: &[u8]) -> Result<Config, Error> {
-        let config = from_bytes(bytes)?;
-        Ok(config)
-    }
 }
 
 #[derive(Deserialize, Serialize, Clone)]
