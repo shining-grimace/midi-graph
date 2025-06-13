@@ -1,8 +1,9 @@
 extern crate midi_graph;
 
 use midi_graph::{
-    Balance, BaseMixer, Event, EventTarget, FileGraphLoader, FontSource, GraphLoader, Message,
-    MessageSender, MidiDataSource, RangeSource, SoundSource, midi::CueData,
+    Balance, BaseMixer, Event, EventTarget, FileGraphLoader, GraphLoader, Message, MessageSender,
+    midi::CueData,
+    serialize::{FontSource, MidiDataSource, RangeSource, SoundSource},
 };
 use std::{collections::HashMap, sync::Arc, thread::sleep, time::Duration};
 
