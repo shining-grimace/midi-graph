@@ -1,7 +1,7 @@
 use crate::{
     Balance, Error, GraphNode, NoteRange,
     file::wav::wav_from_i16_samples,
-    group::{Polyphony, SoundFont, SoundFontBuilder},
+    group::{PolyphonyNode, FontNode, FontNodeBuilder},
 };
 use byteorder::{LittleEndian, ReadBytesExt};
 use soundfont::{
@@ -18,7 +18,7 @@ pub fn soundfont_from_file(
     file_name: &str,
     instrument_index: usize,
     polyphony_voices: usize,
-) -> Result<SoundFont, Error> {
+) -> Result<FontNode, Error> {
     let file = File::open(file_name)?;
     let reader = BufReader::new(file);
     soundfont_from_reader(reader, node_id, instrument_index, polyphony_voices)
@@ -29,7 +29,7 @@ pub fn soundfont_from_bytes(
     bytes: &[u8],
     instrument_index: usize,
     polyphony_voices: usize,
-) -> Result<SoundFont, Error> {
+) -> Result<FontNode, Error> {
     let cursor = Cursor::new(bytes);
     soundfont_from_reader(cursor, node_id, instrument_index, polyphony_voices)
 }
@@ -39,7 +39,7 @@ fn soundfont_from_reader<R>(
     node_id: Option<u64>,
     instrument_index: usize,
     polyphony_voices: usize,
-) -> Result<SoundFont, Error>
+) -> Result<FontNode, Error>
 where
     R: Read + Seek,
 {
@@ -62,7 +62,7 @@ where
     #[cfg(debug_assertions)]
     println!("SF2: Using instrument from file: {:?}", &instrument.header);
 
-    let mut soundfont_builder = SoundFontBuilder::new(node_id);
+    let mut soundfont_builder = FontNodeBuilder::new(node_id);
     for zone in instrument.zones.iter() {
         let Some(sample_index) = zone.sample() else {
             println!("WARNING: SF2: Sample index not found for instrument zone");
@@ -84,7 +84,7 @@ where
 
         let polyphony: GraphNode = match polyphony_voices {
             0 | 1 => {
-                let polyphony = Polyphony::new(None, polyphony_voices, Box::new(source))?;
+                let polyphony = PolyphonyNode::new(None, polyphony_voices, Box::new(source))?;
                 Box::new(polyphony)
             }
             _ => Box::new(source),

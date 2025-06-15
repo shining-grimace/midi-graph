@@ -1,10 +1,10 @@
 extern crate midi_graph;
 
 use midi_graph::{
-    generator::{LfsrNoiseSource, SawtoothWaveSource, SquareWaveSource, TriangleWaveSource},
-    group::{MixerSource, Polyphony, SoundFontBuilder},
+    Balance, BaseMixer, FileAssetLoader, NoteRange,
+    generator::{LfsrNoiseNode, SawtoothWaveNode, SquareWaveNode, TriangleWaveNode},
+    group::{FontNodeBuilder, MixerNode, PolyphonyNode},
     util::midi_builder_from_file,
-    Balance, BaseMixer, NoteRange,
 };
 use std::time::Duration;
 
@@ -15,37 +15,37 @@ const SQUARE_CHANNEL: usize = 1;
 const NOISE_CHANNEL: usize = 2;
 
 fn main() {
-    let triangle_unison = Polyphony::new(
+    let triangle_unison = PolyphonyNode::new(
         None,
         4,
-        Box::new(MixerSource::new(
+        Box::new(MixerNode::new(
             None,
             0.5,
-            Box::new(TriangleWaveSource::new(None, Balance::Left, 1.0)),
-            Box::new(SawtoothWaveSource::new(None, Balance::Right, 0.25)),
+            Box::new(TriangleWaveNode::new(None, Balance::Left, 1.0)),
+            Box::new(SawtoothWaveNode::new(None, Balance::Right, 0.25)),
         )),
     )
     .unwrap();
-    let triangle_font = SoundFontBuilder::new(None)
+    let triangle_font = FontNodeBuilder::new(None)
         .add_range(NoteRange::new_full_range(), Box::new(triangle_unison))
         .unwrap()
         .build();
-    let square_font = SoundFontBuilder::new(None)
+    let square_font = FontNodeBuilder::new(None)
         .add_range(
             NoteRange::new_inclusive_range(0, 50),
-            Box::new(SquareWaveSource::new(None, Balance::Both, 0.125, 0.5)),
+            Box::new(SquareWaveNode::new(None, Balance::Both, 0.125, 0.5)),
         )
         .unwrap()
         .add_range(
             NoteRange::new_inclusive_range(51, 255),
-            Box::new(SquareWaveSource::new(None, Balance::Both, 0.125, 0.875)),
+            Box::new(SquareWaveNode::new(None, Balance::Both, 0.125, 0.875)),
         )
         .unwrap()
         .build();
-    let noise_font = SoundFontBuilder::new(None)
+    let noise_font = FontNodeBuilder::new(None)
         .add_range(
             NoteRange::new_full_range(),
-            Box::new(LfsrNoiseSource::new(None, Balance::Both, 0.25, false, 50)),
+            Box::new(LfsrNoiseNode::new(None, Balance::Both, 0.25, false, 50)),
         )
         .unwrap()
         .build();
@@ -56,6 +56,10 @@ fn main() {
         .add_channel_source(NOISE_CHANNEL, Box::new(noise_font))
         .build()
         .unwrap();
-    let _mixer = BaseMixer::start_single_program(Box::new(midi)).expect("Could not open stream");
+    let _mixer = BaseMixer::builder(FileAssetLoader, |_| {})
+        .unwrap()
+        .set_initial_program(1, Box::new(midi))
+        .build(1)
+        .unwrap();
     std::thread::sleep(Duration::from_secs(16));
 }

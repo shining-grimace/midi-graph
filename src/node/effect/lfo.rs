@@ -1,11 +1,36 @@
-use core::f32;
-
 use crate::{
-    Balance, Error, Event, EventTarget, GraphNode, Message, Node, consts,
+    Balance, Error, Event, EventTarget, GraphNode, Message, Node,
+    abstraction::{NodeConfigData, NodeRegistry, NodeConfig, defaults},
+    consts,
     effect::ModulationProperty,
 };
+use serde::Deserialize;
 
+#[derive(Deserialize, Clone)]
 pub struct Lfo {
+    #[serde(default = "defaults::none_id")]
+    pub node_id: Option<u64>,
+    pub source: NodeConfigData,
+}
+
+impl NodeConfig for Lfo {
+    fn to_node(&self, registry: &NodeRegistry) -> Result<GraphNode, Error> {
+        let source = self.source.0.to_node(registry)?;
+        Ok(Box::new(LfoNode::new(self.node_id, source)?))
+    }
+
+    fn clone_child_configs(&self) -> Option<Vec<NodeConfigData>> {
+        Some(vec![
+            self.source.clone()
+        ])
+    }
+
+    fn duplicate(&self) -> Box<dyn NodeConfig> {
+        Box::new(self.clone())
+    }
+}
+
+pub struct LfoNode {
     node_id: u64,
     property: Option<ModulationProperty>,
     consumer: GraphNode,
@@ -17,7 +42,7 @@ pub struct Lfo {
     high: f32,
 }
 
-impl Lfo {
+impl LfoNode {
     pub fn new(node_id: Option<u64>, consumer: GraphNode) -> Result<Self, Error> {
         Ok(Self {
             node_id: node_id.unwrap_or_else(<Self as Node>::new_node_id),
@@ -35,7 +60,7 @@ impl Lfo {
     fn send_step_event(&mut self) {
         let period_value = self.current_step as f32 / self.cycle_steps as f32;
         let value = self.low
-            + (self.high - self.low) * ((period_value * 2.0 * f32::consts::PI).cos() * 0.5 + 0.5);
+            + (self.high - self.low) * ((period_value * 2.0 * std::f32::consts::PI).cos() * 0.5 + 0.5);
         let event = match self.property {
             Some(ModulationProperty::Volume) => Event::Volume(value),
             Some(ModulationProperty::Pan) => Event::SourceBalance(Balance::Pan(value)),
@@ -70,7 +95,7 @@ impl Lfo {
     }
 }
 
-impl Node for Lfo {
+impl Node for LfoNode {
     fn get_node_id(&self) -> u64 {
         self.node_id
     }

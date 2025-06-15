@@ -1,6 +1,56 @@
-use crate::{Balance, Error, Event, EventTarget, GraphNode, Message, Node, consts, util};
+use crate::{
+    Balance, Error, Event, EventTarget, GraphNode, Message, Node,
+    abstraction::{NodeRegistry, NodeConfig, NodeConfigData, defaults},
+    consts, util,
+};
+use serde::Deserialize;
 
-pub struct LfsrNoiseSource {
+#[derive(Deserialize, Clone)]
+pub struct LfsrNoise {
+    #[serde(default = "defaults::none_id")]
+    pub node_id: Option<u64>,
+    #[serde(default = "defaults::source_balance")]
+    pub balance: Balance,
+    #[serde(default = "defaults::amplitude")]
+    pub amplitude: f32,
+    pub inside_feedback: bool,
+    #[serde(default = "defaults::note_for_16_shifts")]
+    pub note_for_16_shifts: u8,
+}
+
+impl LfsrNoise {
+    pub fn stock(inside_feedback_mode: bool) -> NodeConfigData {
+        NodeConfigData(Box::new(Self {
+            node_id: defaults::none_id(),
+            balance: Balance::Both,
+            amplitude: defaults::amplitude(),
+            inside_feedback: inside_feedback_mode,
+            note_for_16_shifts: defaults::note_for_16_shifts(),
+        }))
+    }
+}
+
+impl NodeConfig for LfsrNoise {
+    fn to_node(&self, _registry: &NodeRegistry) -> Result<GraphNode, Error> {
+        Ok(Box::new(LfsrNoiseNode::new(
+            self.node_id,
+            self.balance,
+            self.amplitude,
+            self.inside_feedback,
+            self.note_for_16_shifts,
+        )))
+    }
+
+    fn clone_child_configs(&self) -> Option<Vec<crate::abstraction::NodeConfigData>> {
+        None
+    }
+
+    fn duplicate(&self) -> Box<dyn NodeConfig> {
+        Box::new(self.clone())
+    }
+}
+
+pub struct LfsrNoiseNode {
     node_id: u64,
     is_on: bool,
     note_of_16_shifts: u8,
@@ -16,7 +66,7 @@ pub struct LfsrNoiseSource {
     modulated_volume: f32,
 }
 
-impl LfsrNoiseSource {
+impl LfsrNoiseNode {
     pub fn new(
         node_id: Option<u64>,
         balance: Balance,
@@ -68,7 +118,7 @@ impl LfsrNoiseSource {
     }
 }
 
-impl Node for LfsrNoiseSource {
+impl Node for LfsrNoiseNode {
     fn get_node_id(&self) -> u64 {
         self.node_id
     }

@@ -1,25 +1,28 @@
 extern crate midi_graph;
 
 use midi_graph::{
-    Balance, BaseMixer, Event, EventTarget, Message, MessageSender, effect::AdsrEnvelope,
-    generator::TriangleWaveSource, group::Polyphony,
+    Balance, BaseMixer, Event, EventTarget, FileAssetLoader, Message, MessageSender,
+    effect::AdsrEnvelopeNode, generator::TriangleWaveNode, group::PolyphonyNode,
 };
 use std::{sync::Arc, thread::sleep, time::Duration};
 
 const POLYPHONY_NODE_ID: u64 = 100;
 
 fn main() {
-    let inner = AdsrEnvelope::from_parameters(
+    let inner = AdsrEnvelopeNode::from_parameters(
         None,
         0.05,
         0.2,
         0.8,
         0.2,
-        Box::new(TriangleWaveSource::new(None, Balance::Both, 0.75)),
+        Box::new(TriangleWaveNode::new(None, Balance::Both, 0.75)),
     );
-    let polyphony = Polyphony::new(Some(POLYPHONY_NODE_ID), 6, Box::new(inner)).unwrap();
-    let mixer =
-        BaseMixer::start_single_program(Box::new(polyphony)).expect("Could not open stream");
+    let polyphony = PolyphonyNode::new(Some(POLYPHONY_NODE_ID), 6, Box::new(inner)).unwrap();
+    let mixer = BaseMixer::builder(FileAssetLoader, |_| {})
+        .unwrap()
+        .set_initial_program(1, Box::new(polyphony))
+        .build(1)
+        .unwrap();
     let mut sender = mixer.get_event_sender();
     std::thread::spawn(move || {
         sleep(Duration::from_millis(50));

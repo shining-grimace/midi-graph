@@ -1,10 +1,11 @@
 extern crate midi_graph;
 
 use midi_graph::{
-    Balance, BaseMixer, Event, EventTarget, Message, MessageSender, NoteRange,
-    effect::{Fader, Lfo, ModulationProperty, TransitionEnvelope},
-    generator::{SawtoothWaveSource, SquareWaveSource, TriangleWaveSource},
-    group::{MixerSource, SoundFontBuilder},
+    Balance, BaseMixer, Event, EventTarget, FileAssetLoader, Message, MessageSender,
+    abstraction::NodeConfigData,
+    effect::{Fader, Lfo, ModulationProperty, Transition},
+    generator::{SawtoothWave, SquareWave, TriangleWave},
+    group::{Font, FontSource, Mixer, RangeSource},
 };
 use std::{sync::Arc, thread::sleep, time::Duration};
 
@@ -13,32 +14,62 @@ const FADER_NODE_ID: u64 = 101;
 const TRANSITION_NODE_ID: u64 = 102;
 
 fn main() {
-    let triangle_unison = Lfo::new(
-        Some(LFO_NODE_ID),
-        Box::new(MixerSource::new(
-            None,
-            0.375,
-            Box::new(TriangleWaveSource::new(None, Balance::Both, 0.75)),
-            Box::new(SawtoothWaveSource::new(None, Balance::Both, 0.1625)),
-        )),
-    )
-    .unwrap();
+    let triangle_unison = Lfo {
+        node_id: Some(LFO_NODE_ID),
+        source: NodeConfigData(Box::new(Mixer {
+            node_id: None,
+            balance: 0.375,
+            sources: [
+                NodeConfigData(Box::new(TriangleWave {
+                    node_id: None,
+                    balance: Balance::Both,
+                    amplitude: 0.75,
+                })),
+                NodeConfigData(Box::new(SawtoothWave {
+                    node_id: None,
+                    balance: Balance::Both,
+                    amplitude: 0.1625,
+                })),
+            ],
+        })),
+    };
 
-    let square_source = SquareWaveSource::new(None, Balance::Both, 0.375, 0.25);
-    let transition =
-        TransitionEnvelope::new(Some(TRANSITION_NODE_ID), Box::new(square_source)).unwrap();
-    let fader = Fader::new(Some(FADER_NODE_ID), 0.0, Box::new(transition));
-    let soundfont = SoundFontBuilder::new(None)
-        .add_range(
-            NoteRange::new_inclusive_range(0, 70),
-            Box::new(triangle_unison),
-        )
+    let square_source = SquareWave {
+        node_id: None,
+        balance: Balance::Both,
+        amplitude: 0.375,
+        duty_cycle: 0.25,
+    };
+    let transition = Transition {
+        node_id: Some(TRANSITION_NODE_ID),
+        source: NodeConfigData(Box::new(square_source)),
+    };
+    let fader = Fader {
+        node_id: Some(FADER_NODE_ID),
+        initial_volume: 0.0,
+        source: NodeConfigData(Box::new(transition)),
+    };
+    let soundfont = Font {
+        node_id: None,
+        config: FontSource::Ranges(vec![
+            RangeSource {
+                lower: 0,
+                upper: 70,
+                source: NodeConfigData(Box::new(triangle_unison)),
+            },
+            RangeSource {
+                lower: 71,
+                upper: 255,
+                source: NodeConfigData(Box::new(fader)),
+            },
+        ]),
+    };
+    let mixer = BaseMixer::builder(FileAssetLoader, |_| {})
         .unwrap()
-        .add_range(NoteRange::new_inclusive_range(71, 255), Box::new(fader))
+        .set_initial_program_from_config(1, NodeConfigData(Box::new(soundfont)))
         .unwrap()
-        .build();
-    let mixer =
-        BaseMixer::start_single_program(Box::new(soundfont)).expect("Could not open stream");
+        .build(1)
+        .expect("Could not open stream");
     let mut sender = mixer.get_event_sender();
     std::thread::spawn(move || {
         sleep(Duration::from_millis(50));

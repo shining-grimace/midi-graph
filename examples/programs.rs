@@ -1,9 +1,9 @@
 extern crate midi_graph;
 
 use midi_graph::{
-    Balance, BaseMixer, GraphNode, NoteRange,
-    generator::{LfsrNoiseSource, SquareWaveSource, TriangleWaveSource},
-    group::SoundFontBuilder,
+    Balance, BaseMixer, FileAssetLoader, GraphNode, NoteRange,
+    generator::{LfsrNoiseNode, SquareWaveNode, TriangleWaveNode},
+    group::FontNodeBuilder,
     util::midi_builder_from_file,
 };
 use std::time::Duration;
@@ -11,16 +11,17 @@ use std::time::Duration;
 const MIDI_0_FILE: &'static str = "resources/sample-in-c.mid";
 const MIDI_1_FILE: &'static str = "resources/LoopingMidi.mid";
 
+const INITIAL_EMPTY_PROGRAM: usize = 1;
 const PROGRAM_0: usize = 0;
 const PROGRAM_1: usize = 7;
 
 fn main() {
     fn square_font() -> GraphNode {
         Box::new(
-            SoundFontBuilder::new(None)
+            FontNodeBuilder::new(None)
                 .add_range(
                     NoteRange::new_full_range(),
-                    Box::new(SquareWaveSource::new(None, Balance::Right, 0.125, 0.0625)),
+                    Box::new(SquareWaveNode::new(None, Balance::Right, 0.125, 0.0625)),
                 )
                 .unwrap()
                 .build(),
@@ -28,10 +29,10 @@ fn main() {
     }
     fn triangle_font() -> GraphNode {
         Box::new(
-            SoundFontBuilder::new(None)
+            FontNodeBuilder::new(None)
                 .add_range(
                     NoteRange::new_full_range(),
-                    Box::new(TriangleWaveSource::new(None, Balance::Both, 1.0)),
+                    Box::new(TriangleWaveNode::new(None, Balance::Both, 1.0)),
                 )
                 .unwrap()
                 .build(),
@@ -39,10 +40,10 @@ fn main() {
     }
     fn noise_font() -> GraphNode {
         Box::new(
-            SoundFontBuilder::new(None)
+            FontNodeBuilder::new(None)
                 .add_range(
                     NoteRange::new_full_range(),
-                    Box::new(LfsrNoiseSource::new(None, Balance::Left, 0.25, false, 50)),
+                    Box::new(LfsrNoiseNode::new(None, Balance::Left, 0.25, false, 50)),
                 )
                 .unwrap()
                 .build(),
@@ -63,9 +64,13 @@ fn main() {
         .build()
         .unwrap();
 
-    let mut mixer = BaseMixer::start_empty().unwrap();
-    mixer.store_program(PROGRAM_0, Box::new(program_0));
-    mixer.store_program(PROGRAM_1, Box::new(program_1));
+    let mut mixer = BaseMixer::builder(FileAssetLoader, |_| {})
+        .unwrap()
+        .set_initial_empty_program(INITIAL_EMPTY_PROGRAM)
+        .store_program(PROGRAM_0, Box::new(program_0))
+        .store_program(PROGRAM_1, Box::new(program_1))
+        .build(INITIAL_EMPTY_PROGRAM)
+        .unwrap();
     std::thread::sleep(Duration::from_secs(1));
     mixer.change_program(PROGRAM_0).unwrap();
     std::thread::sleep(Duration::from_secs(6));

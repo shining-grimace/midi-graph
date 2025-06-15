@@ -1,9 +1,36 @@
 use crate::{
-    Balance, Error, Event, EventTarget, GraphNode, Message, Node, consts,
+    Balance, Error, Event, EventTarget, GraphNode, Message, Node,
+    abstraction::{NodeConfigData, NodeRegistry, NodeConfig, defaults},
+    consts,
     effect::ModulationProperty,
 };
+use serde::Deserialize;
 
-pub struct TransitionEnvelope {
+#[derive(Deserialize, Clone)]
+pub struct Transition {
+    #[serde(default = "defaults::none_id")]
+    pub node_id: Option<u64>,
+    pub source: NodeConfigData,
+}
+
+impl NodeConfig for Transition {
+    fn to_node(&self, registry: &NodeRegistry) -> Result<GraphNode, Error> {
+        let source = self.source.0.to_node(registry)?;
+        Ok(Box::new(TransitionNode::new(self.node_id, source)?))
+    }
+
+    fn clone_child_configs(&self) -> Option<Vec<NodeConfigData>> {
+        Some(vec![
+            self.source.clone()
+        ])
+    }
+
+    fn duplicate(&self) -> Box<dyn NodeConfig> {
+        Box::new(self.clone())
+    }
+}
+
+pub struct TransitionNode {
     node_id: u64,
     property: Option<ModulationProperty>,
     consumer: GraphNode,
@@ -15,7 +42,7 @@ pub struct TransitionEnvelope {
     to: f32,
 }
 
-impl TransitionEnvelope {
+impl TransitionNode {
     pub fn new(node_id: Option<u64>, consumer: GraphNode) -> Result<Self, Error> {
         Ok(Self {
             node_id: node_id.unwrap_or_else(<Self as Node>::new_node_id),
@@ -50,7 +77,7 @@ impl TransitionEnvelope {
     }
 }
 
-impl Node for TransitionEnvelope {
+impl Node for TransitionNode {
     fn get_node_id(&self) -> u64 {
         self.node_id
     }

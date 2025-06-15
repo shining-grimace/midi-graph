@@ -1,6 +1,53 @@
-use crate::{Balance, Error, Event, EventTarget, GraphNode, Message, Node, consts, util};
+use crate::{
+    Balance, Error, Event, EventTarget, GraphNode, Message, Node,
+    abstraction::{NodeConfig, NodeConfigData, NodeRegistry, defaults},
+    consts, util,
+};
+use serde::Deserialize;
 
-pub struct SquareWaveSource {
+#[derive(Debug, Deserialize, Clone)]
+pub struct SquareWave {
+    #[serde(default = "defaults::none_id")]
+    pub node_id: Option<u64>,
+    #[serde(default = "defaults::source_balance")]
+    pub balance: Balance,
+    #[serde(default = "defaults::amplitude")]
+    pub amplitude: f32,
+    #[serde(default = "defaults::duty_cycle")]
+    pub duty_cycle: f32,
+}
+
+impl SquareWave {
+    pub fn stock() -> NodeConfigData {
+        NodeConfigData(Box::new(Self {
+            node_id: defaults::none_id(),
+            balance: Balance::Both,
+            amplitude: defaults::amplitude(),
+            duty_cycle: defaults::duty_cycle(),
+        }))
+    }
+}
+
+impl NodeConfig for SquareWave {
+    fn to_node(&self, _registry: &NodeRegistry) -> Result<GraphNode, Error> {
+        Ok(Box::new(SquareWaveNode::new(
+            self.node_id,
+            self.balance,
+            self.amplitude,
+            self.duty_cycle,
+        )))
+    }
+
+    fn clone_child_configs(&self) -> Option<Vec<crate::abstraction::NodeConfigData>> {
+        None
+    }
+
+    fn duplicate(&self) -> Box<dyn NodeConfig> {
+        Box::new(self.clone())
+    }
+}
+
+pub struct SquareWaveNode {
     node_id: u64,
     is_on: bool,
     current_note: u8,
@@ -14,7 +61,7 @@ pub struct SquareWaveSource {
     duty_cycle: f32,
 }
 
-impl SquareWaveSource {
+impl SquareWaveNode {
     pub fn new(node_id: Option<u64>, balance: Balance, amplitude: f32, duty_cycle: f32) -> Self {
         Self {
             node_id: node_id.unwrap_or_else(<Self as Node>::new_node_id),
@@ -32,7 +79,7 @@ impl SquareWaveSource {
     }
 }
 
-impl Node for SquareWaveSource {
+impl Node for SquareWaveNode {
     fn get_node_id(&self) -> u64 {
         self.node_id
     }

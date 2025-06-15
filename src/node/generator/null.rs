@@ -1,10 +1,33 @@
-use crate::{Error, GraphNode, Message, Node};
+use crate::{
+    Error, GraphNode, Message, Node,
+    abstraction::{NodeRegistry, NodeConfig},
+};
+use serde::Deserialize;
 
-pub struct NullSource {
+#[derive(Deserialize, Clone)]
+pub struct Null {
+    pub node_id: Option<u64>,
+}
+
+impl NodeConfig for Null {
+    fn to_node(&self, _registry: &NodeRegistry) -> Result<GraphNode, Error> {
+        Ok(Box::new(NullNode::new(self.node_id)))
+    }
+
+    fn clone_child_configs(&self) -> Option<Vec<crate::abstraction::NodeConfigData>> {
+        None
+    }
+
+    fn duplicate(&self) -> Box<dyn NodeConfig> {
+        Box::new(self.clone())
+    }
+}
+
+pub struct NullNode {
     node_id: u64,
 }
 
-impl NullSource {
+impl NullNode {
     pub fn new(node_id: Option<u64>) -> Self {
         Self {
             node_id: node_id.unwrap_or_else(<Self as Node>::new_node_id),
@@ -12,7 +35,7 @@ impl NullSource {
     }
 }
 
-impl Node for NullSource {
+impl Node for NullNode {
     fn get_node_id(&self) -> u64 {
         self.node_id
     }

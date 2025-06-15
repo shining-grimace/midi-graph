@@ -1,8 +1,39 @@
-use crate::{Balance, Error, Event, GraphNode, Message, Node, consts};
+use crate::{
+    Balance, Error, Event, GraphNode, Message, Node,
+    abstraction::{NodeRegistry, NodeConfig, defaults},
+    consts, util
+};
 use hound::{SampleFormat, WavSpec};
+use serde::Deserialize;
 use soundfont::raw::{SampleHeader, SampleLink};
 
-pub struct OneShotSource {
+#[derive(Deserialize, Clone)]
+pub struct OneShot {
+    #[serde(default = "defaults::none_id")]
+    pub node_id: Option<u64>,
+    #[serde(default = "defaults::source_balance")]
+    pub balance: Balance,
+    pub path: String,
+}
+
+impl NodeConfig for OneShot {
+    fn to_node(&self, registry: &NodeRegistry) -> Result<GraphNode, Error> {
+        let bytes = registry.load_asset(&self.path)?;
+        let source = util::one_shot_from_bytes(&bytes, self.balance, self.node_id)?;
+        let source: GraphNode = Box::new(source);
+        Ok(source)
+    }
+
+    fn clone_child_configs(&self) -> Option<Vec<crate::abstraction::NodeConfigData>> {
+        None
+    }
+
+    fn duplicate(&self) -> Box<dyn NodeConfig> {
+        Box::new(self.clone())
+    }
+}
+
+pub struct OneShotNode {
     node_id: u64,
     source_channel_count: usize,
     balance: Balance,
@@ -11,7 +42,7 @@ pub struct OneShotSource {
     source_data: Vec<f32>,
 }
 
-impl OneShotSource {
+impl OneShotNode {
     pub fn new_from_raw_sf2_data(
         header: &SampleHeader,
         balance: Balance,
@@ -101,7 +132,7 @@ impl OneShotSource {
     }
 }
 
-impl Node for OneShotSource {
+impl Node for OneShotNode {
     fn get_node_id(&self) -> u64 {
         self.node_id
     }

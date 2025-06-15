@@ -74,50 +74,57 @@ pub type GraphNode = Box<dyn Node + Send + 'static>;
 
 pub use error::Error;
 pub use event::{Balance, Event, EventTarget, Message};
-pub use file::loader::FileGraphLoader;
-pub use loader::GraphLoader;
+pub use file::loader::FileAssetLoader;
+pub use loader::AssetLoader;
 pub use mix::base::BaseMixer;
 pub use node::{LoopRange, Node, NoteRange};
 
 /// Abstract, serialisable/deserialisable representation of a graph
-pub mod serialize {
-    pub use super::config::{Config, FontSource, Loop, MidiDataSource, RangeSource, SoundSource};
+pub mod abstraction {
+    pub mod defaults {
+        pub use crate::config::defaults::*;
+    }
+    pub use super::config::{NodeConfig, NodeConfigData, Config, Loop, registry::NodeRegistry};
 }
 
 /// Nodes that wrap other nodes and apply effects to them.
 pub mod effect {
     pub use crate::node::effect::{
         ModulationProperty,
-        adsr::AdsrEnvelope,
-        fader::Fader,
-        lfo::Lfo,
-        transition::TransitionEnvelope,
+        adsr::{AdsrEnvelope, AdsrEnvelopeNode},
+        fader::{Fader, FaderNode},
+        lfo::{Lfo, LfoNode},
+        transition::{Transition, TransitionNode},
     };
 }
 
 /// Nodes that create audio. These do not have child nodes; that is, they are leaf nodes.
 pub mod generator {
     pub use crate::node::generator::{
-        noise::LfsrNoiseSource, null::NullSource, one_shot::OneShotSource,
-        sawtooth::SawtoothWaveSource, square::SquareWaveSource, triangle::TriangleWaveSource,
-        wav::WavSource,
+        noise::{LfsrNoise, LfsrNoiseNode},
+        null::{Null, NullNode},
+        one_shot::{OneShot, OneShotNode},
+        sawtooth::{SawtoothWave, SawtoothWaveNode},
+        square::{SquareWave, SquareWaveNode},
+        triangle::{TriangleWave, TriangleWaveNode},
+        wav::{SampleLoop, SampleLoopNode},
     };
 }
 
 /// Nodes that wrap and orchestrate child nodes
 pub mod group {
     pub use crate::node::group::{
-        combiner::CombinerSource,
-        mixer::MixerSource,
-        polyphony::Polyphony,
-        font::{SoundFont, SoundFontBuilder}
+        combiner::{Combiner, CombinerNode},
+        mixer::{Mixer, MixerNode},
+        polyphony::{Polyphony, PolyphonyNode},
+        font::{Font, FontNode, FontNodeBuilder, FontSource, RangeSource},
     };
 }
 
 /// Special node that plays through a pre-defined, timed event sequence
 pub mod midi {
     pub use crate::node::midi::{
-        MidiSource, MidiSourceBuilder, cue::CueData, util::MidiEvent,
+        Midi, MidiNode, MidiNodeBuilder, MidiDataSource, cue::CueData, util::MidiEvent,
     };
 }
 

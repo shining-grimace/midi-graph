@@ -1,6 +1,50 @@
-use crate::{Error, Event, GraphNode, Message, Node, consts};
+use crate::{
+    Error, Event, GraphNode, Message, Node,
+    abstraction::{NodeConfigData, NodeRegistry, NodeConfig, defaults},
+    consts,
+};
+use serde::Deserialize;
 
+#[derive(Debug, Deserialize, Clone)]
 pub struct Fader {
+    #[serde(default = "defaults::none_id")]
+    pub node_id: Option<u64>,
+    pub initial_volume: f32,
+    pub source: NodeConfigData,
+}
+
+impl Fader {
+    pub fn stock(inner: NodeConfigData) -> NodeConfigData {
+        NodeConfigData(Box::new(Self {
+            node_id: defaults::none_id(),
+            initial_volume: 1.0,
+            source: inner,
+        }))
+    }
+}
+
+impl NodeConfig for Fader {
+    fn to_node(&self, registry: &NodeRegistry) -> Result<GraphNode, Error> {
+        let child_node = self.source.0.to_node(registry)?;
+        Ok(Box::new(FaderNode::new(
+            self.node_id,
+            self.initial_volume,
+            child_node,
+        )))
+    }
+
+    fn clone_child_configs(&self) -> Option<Vec<NodeConfigData>> {
+        Some(vec![
+            self.source.clone()
+        ])
+    }
+
+    fn duplicate(&self) -> Box<dyn NodeConfig> {
+        Box::new(self.clone())
+    }
+}
+
+pub struct FaderNode {
     node_id: u64,
     duration_seconds: f32,
     from_volume: f32,
@@ -10,7 +54,7 @@ pub struct Fader {
     intermediate_buffer: Vec<f32>,
 }
 
-impl Fader {
+impl FaderNode {
     pub fn new(node_id: Option<u64>, initial_volume: f32, consumer: GraphNode) -> Self {
         Self {
             node_id: node_id.unwrap_or_else(<Self as Node>::new_node_id),
@@ -24,7 +68,7 @@ impl Fader {
     }
 }
 
-impl Node for Fader {
+impl Node for FaderNode {
     fn get_node_id(&self) -> u64 {
         self.node_id
     }

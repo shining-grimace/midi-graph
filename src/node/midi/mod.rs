@@ -2,23 +2,71 @@ pub mod cue;
 pub mod util;
 
 use crate::{
-    Error, Event, EventTarget, GraphNode, Message, Node, consts,
+    Error, Event, EventTarget, GraphNode, Message, Node,
+    abstraction::{NodeConfigData, NodeRegistry, NodeConfig, defaults},
+    consts, util as file_util,
     midi::{CueData, MidiEvent},
 };
 use midly::Smf;
+use serde::Deserialize;
 use std::collections::HashMap;
 
 #[cfg(debug_assertions)]
 use crate::node::log;
 
-pub struct MidiSourceBuilder {
+#[derive(Deserialize, Clone)]
+pub enum MidiDataSource {
+    FilePath(String),
+}
+
+#[derive(Deserialize, Clone)]
+pub struct Midi {
+    #[serde(default = "defaults::none_id")]
+    pub node_id: Option<u64>,
+    pub source: MidiDataSource,
+    pub channels: HashMap<usize, NodeConfigData>,
+}
+
+impl NodeConfig for Midi {
+    fn to_node(&self, registry: &NodeRegistry) -> Result<GraphNode, Error> {
+        let mut midi_builder = match &self.source {
+            MidiDataSource::FilePath(file) => {
+                let bytes = registry.load_asset(&file)?;
+                file_util::midi_builder_from_bytes(self.node_id, &bytes)?
+            }
+        };
+        for (channel, source) in self.channels.iter() {
+            let source = source.0.to_node(registry)?;
+            midi_builder = midi_builder.add_channel_source(*channel, source);
+        }
+        let source = midi_builder.build()?;
+        let source: GraphNode = Box::new(source);
+        Ok(source)
+    }
+
+    fn clone_child_configs(&self) -> Option<Vec<NodeConfigData>> {
+        Some(
+            self
+                .channels
+                .iter()
+                .map(|(_, config)| config.clone())
+                .collect()
+        )
+    }
+
+    fn duplicate(&self) -> Box<dyn NodeConfig> {
+        Box::new(self.clone())
+    }
+}
+
+pub struct MidiNodeBuilder {
     node_id: Option<u64>,
     midi_events: Vec<MidiEvent>,
     channel_sources: HashMap<usize, GraphNode>,
     samples_per_tick: f64,
 }
 
-impl MidiSourceBuilder {
+impl MidiNodeBuilder {
     /// Capture a non-static Smf, extracting MIDI event that contain text strings.
     /// Do not call to_static() on the Smf object before passing it in here!
     pub fn new(node_id: Option<u64>, smf: Smf) -> Result<Self, Error> {
@@ -58,8 +106,8 @@ impl MidiSourceBuilder {
         self
     }
 
-    pub fn build(self) -> Result<MidiSource, Error> {
-        MidiSource::new(
+    pub fn build(self) -> Result<MidiNode, Error> {
+        MidiNode::new(
             self.node_id,
             self.midi_events,
             self.channel_sources,
@@ -68,7 +116,7 @@ impl MidiSourceBuilder {
     }
 }
 
-pub struct MidiSource {
+pub struct MidiNode {
     midi_events: Vec<MidiEvent>,
     node_id: u64,
     queued_ideal_seek: Option<u32>,
@@ -80,7 +128,7 @@ pub struct MidiSource {
     time_dilation: f32,
 }
 
-impl MidiSource {
+impl MidiNode {
     fn new(
         node_id: Option<u64>,
         midi_events: Vec<MidiEvent>,
@@ -108,8 +156,8 @@ impl MidiSource {
         })
     }
 
-    pub fn duplicate_without_sources(&self) -> MidiSourceBuilder {
-        MidiSourceBuilder::new_empty_from_prepared_data(
+    pub fn duplicate_without_sources(&self) -> MidiNodeBuilder {
+        MidiNodeBuilder::new_empty_from_prepared_data(
             Some(self.node_id),
             self.midi_events.clone(),
             self.samples_per_tick,
@@ -217,7 +265,7 @@ impl MidiSource {
     }
 }
 
-impl Node for MidiSource {
+impl Node for MidiNode {
     fn get_node_id(&self) -> u64 {
         self.node_id
     }

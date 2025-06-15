@@ -1,17 +1,61 @@
-use crate::{Error, Event, EventTarget, GraphNode, Message, Node};
+use crate::{
+    Error, Event, EventTarget, GraphNode, Message, Node,
+    abstraction::{NodeConfigData, NodeRegistry, NodeConfig, defaults},
+};
+use serde::Deserialize;
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Polyphony {
+    #[serde(default = "defaults::none_id")]
+    pub node_id: Option<u64>,
+    #[serde(default = "defaults::max_voices")]
+    pub max_voices: usize,
+    pub source: NodeConfigData,
+}
+
+impl Polyphony {
+    pub fn stock(inner: NodeConfigData) -> NodeConfigData {
+        NodeConfigData(Box::new(Self {
+            node_id: defaults::none_id(),
+            max_voices: defaults::max_voices(),
+            source: inner,
+        }))
+    }
+}
+
+impl NodeConfig for Polyphony {
+    fn to_node(&self, registry: &NodeRegistry) -> Result<GraphNode, Error> {
+        let child = self.source.0.to_node(registry)?;
+        Ok(Box::new(PolyphonyNode::new(
+            self.node_id,
+            self.max_voices,
+            child,
+        )?))
+    }
+
+    fn clone_child_configs(&self) -> Option<Vec<NodeConfigData>> {
+        Some(vec![
+            self.source.clone()
+        ])
+    }
+
+    fn duplicate(&self) -> Box<dyn NodeConfig> {
+        Box::new(self.clone())
+    }
+}
 
 struct Voice {
     pub current_note: Option<u8>,
     pub source: GraphNode,
 }
 
-pub struct Polyphony {
+pub struct PolyphonyNode {
     node_id: u64,
     voices: Vec<Voice>,
     next_on_index: usize,
 }
 
-impl Polyphony {
+impl PolyphonyNode {
     pub fn new(
         node_id: Option<u64>,
         max_voices: usize,
@@ -43,7 +87,7 @@ impl Polyphony {
     }
 }
 
-impl Node for Polyphony {
+impl Node for PolyphonyNode {
     fn get_node_id(&self) -> u64 {
         self.node_id
     }

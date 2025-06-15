@@ -1,6 +1,12 @@
 use crate::{
-    Error, GraphLoader, GraphNode, Message, MessageSender, consts, generator::NullSource,
-    serialize::Config,
+    AssetLoader, Error, GraphNode, Message, MessageSender,
+    abstraction::NodeRegistry,
+    config::{
+        NodeConfigData,
+        registry::{get_registry, init_node_registry},
+    },
+    consts,
+    generator::NullNode,
 };
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{Stream, StreamConfig};
@@ -14,6 +20,69 @@ use std::sync::{
 enum ConsumerCell {
     Source(GraphNode),
     Placeholder,
+}
+
+pub struct BaseMixerBuilder {
+    programs: HashMap<usize, GraphNode>,
+    initial_program: Option<usize>,
+}
+
+impl BaseMixerBuilder {
+    pub fn new<A, F>(asset_loader: A, mut registration: F) -> Result<Self, Error>
+    where
+        A: AssetLoader + Send + Sync + 'static,
+        F: FnMut(&mut NodeRegistry),
+    {
+        let asset_loader = Box::new(asset_loader);
+        let mut config_registry = NodeRegistry::new(asset_loader);
+        registration(&mut config_registry);
+        init_node_registry(config_registry)?;
+        Ok(Self {
+            programs: HashMap::new(),
+            initial_program: None,
+        })
+    }
+
+    pub fn set_initial_empty_program(mut self, program_no: usize) -> Self {
+        self.programs
+            .insert(program_no, Box::new(NullNode::new(None)));
+        self
+    }
+
+    pub fn store_program(mut self, program_no: usize, node: GraphNode) -> Self {
+        self.programs.insert(program_no, node);
+        self
+    }
+
+    pub fn set_initial_program(mut self, program_no: usize, node: GraphNode) -> Self {
+        self.initial_program = Some(program_no);
+        self.store_program(program_no, node)
+    }
+
+    pub fn store_program_from_config(
+        mut self,
+        program_no: usize,
+        config: NodeConfigData,
+    ) -> Result<Self, Error> {
+        let config_registry =
+            get_registry().ok_or_else(|| Error::Internal("Cannot get node registry".to_owned()))?;
+        let node = config.0.to_node(config_registry)?;
+        self.programs.insert(program_no, node);
+        Ok(self)
+    }
+
+    pub fn set_initial_program_from_config(
+        mut self,
+        program_no: usize,
+        config: NodeConfigData,
+    ) -> Result<Self, Error> {
+        self.initial_program = Some(program_no);
+        self.store_program_from_config(program_no, config)
+    }
+
+    pub fn build(self, initial_program_no: usize) -> Result<BaseMixer, Error> {
+        BaseMixer::start_new(self.programs, initial_program_no)
+    }
 }
 
 pub struct BaseMixer {
@@ -31,39 +100,35 @@ impl Drop for BaseMixer {
 }
 
 impl BaseMixer {
-    pub fn start_empty() -> Result<Self, Error> {
-        let consumer = Box::new(NullSource::new(None));
-        Self::start_single_program(consumer)
+    pub fn builder<A, F>(asset_loader: A, registration: F) -> Result<BaseMixerBuilder, Error>
+    where
+        A: AssetLoader + Send + Sync + 'static,
+        F: FnMut(&mut NodeRegistry),
+    {
+        BaseMixerBuilder::new(asset_loader, registration)
     }
 
-    pub fn start_single_program(consumer: GraphNode) -> Result<Self, Error> {
-        let swappable = super::swap::SwappableConsumer::new(consumer);
+    pub(crate) fn start_new(
+        programs: HashMap<usize, GraphNode>,
+        initial_program_no: usize,
+    ) -> Result<Self, Error> {
+        let null_node = Box::new(NullNode::new(None));
+        let swappable = super::swap::SwappableConsumer::new(null_node);
+        let program_sources = programs
+            .into_iter()
+            .map(|(program, node)| (program, ConsumerCell::Source(node)))
+            .collect::<HashMap<usize, ConsumerCell>>();
         let (event_sender, event_receiver) = unbounded();
         let stream = Self::open_stream(swappable.take_consumer(), event_receiver)?;
         stream.play()?;
-        Ok(Self {
+        let mut mixer = Self {
             stream: Mutex::new(stream),
-            program_sources: HashMap::new(),
+            program_sources,
             event_sender: Arc::new(event_sender),
             consumer: swappable,
-        })
-    }
-
-    pub fn start_single_program_from_config<L: GraphLoader>(
-        loader: &L,
-        program_no: Option<usize>,
-        config: &Config,
-    ) -> Result<Self, Error> {
-        let source = loader.load_source_with_dependencies(&config.root)?;
-        if let Some(program_no) = &program_no {
-            let mut mixer = Self::start_empty()?;
-            mixer.store_program(*program_no, source);
-            mixer.change_program(*program_no)?;
-            Ok(mixer)
-        } else {
-            let mixer = Self::start_single_program(source)?;
-            Ok(mixer)
-        }
+        };
+        mixer.change_program(initial_program_no)?;
+        Ok(mixer)
     }
 
     pub fn get_event_sender(&self) -> Arc<MessageSender> {

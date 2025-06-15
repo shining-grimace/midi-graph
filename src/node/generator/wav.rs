@@ -1,8 +1,43 @@
-use crate::{Balance, Error, Event, GraphNode, LoopRange, Message, Node, consts, util};
+use crate::{
+    Balance, Error, Event, GraphNode, LoopRange, Message, Node,
+    abstraction::{Loop, NodeRegistry, NodeConfig, defaults},
+    consts, util,
+};
 use hound::{SampleFormat, WavSpec};
+use serde::Deserialize;
 use soundfont::raw::{SampleHeader, SampleLink};
 
-pub struct WavSource {
+#[derive(Deserialize, Clone)]
+pub struct SampleLoop {
+    #[serde(default = "defaults::none_id")]
+    pub node_id: Option<u64>,
+    #[serde(default = "defaults::source_balance")]
+    pub balance: Balance,
+    pub path: String,
+    pub base_note: u8,
+    pub looping: Option<Loop>,
+}
+
+impl NodeConfig for SampleLoop {
+    fn to_node(&self, registry: &NodeRegistry) -> Result<GraphNode, Error> {
+        let loop_range = self.looping.as_ref().map(LoopRange::from_config);
+        let bytes = registry.load_asset(&self.path)?;
+        let source =
+            util::wav_from_bytes(&bytes, self.base_note, loop_range, self.balance, self.node_id)?;
+        let source: GraphNode = Box::new(source);
+        Ok(source)
+    }
+
+    fn clone_child_configs(&self) -> Option<Vec<crate::abstraction::NodeConfigData>> {
+        None
+    }
+
+    fn duplicate(&self) -> Box<dyn NodeConfig> {
+        Box::new(self.clone())
+    }
+}
+
+pub struct SampleLoopNode {
     node_id: u64,
     is_on: bool,
     source_note: u8,
@@ -18,7 +53,7 @@ pub struct WavSource {
     playback_scale: f64,
 }
 
-impl WavSource {
+impl SampleLoopNode {
     pub fn new_from_raw_sf2_data(
         header: &SampleHeader,
         balance: Balance,
@@ -195,7 +230,7 @@ impl WavSource {
     }
 }
 
-impl Node for WavSource {
+impl Node for SampleLoopNode {
     fn get_node_id(&self) -> u64 {
         self.node_id
     }

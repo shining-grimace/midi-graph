@@ -1,10 +1,10 @@
 extern crate midi_graph;
 
 use midi_graph::{
-    generator::LfsrNoiseSource,
-    group::SoundFontBuilder,
+    Balance, BaseMixer, FileAssetLoader, NoteRange,
+    generator::LfsrNoiseNode,
+    group::FontNodeBuilder,
     util::{midi_builder_from_file, soundfont_from_file},
-    Balance, BaseMixer, NoteRange,
 };
 use std::time::Duration;
 
@@ -18,10 +18,10 @@ const NOISE_CHANNEL: usize = 2;
 fn main() {
     let font_0 = soundfont_from_file(None, SF2_FILE, 0, 4).unwrap();
     let font_1 = soundfont_from_file(None, SF2_FILE, 0, 4).unwrap();
-    let noise_font = SoundFontBuilder::new(None)
+    let noise_font = FontNodeBuilder::new(None)
         .add_range(
             NoteRange::new_full_range(),
-            Box::new(LfsrNoiseSource::new(None, Balance::Both, 0.25, false, 50)),
+            Box::new(LfsrNoiseNode::new(None, Balance::Both, 0.25, false, 50)),
         )
         .unwrap()
         .build();
@@ -33,6 +33,10 @@ fn main() {
         .build()
         .unwrap();
 
-    let _mixer = BaseMixer::start_single_program(Box::new(midi)).expect("Could not open stream");
+    let _mixer = BaseMixer::builder(FileAssetLoader, |_| {})
+        .unwrap()
+        .set_initial_program(1, Box::new(midi))
+        .build(1)
+        .unwrap();
     std::thread::sleep(Duration::from_secs(16));
 }

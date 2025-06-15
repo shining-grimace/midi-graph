@@ -1,12 +1,43 @@
-use crate::{Error, GraphNode, Message, Node, consts};
+use crate::{
+    Error, GraphNode, Message, Node,
+    abstraction::{NodeConfigData, NodeRegistry, NodeConfig, defaults},
+    consts,
+};
+use serde::Deserialize;
 
-pub struct CombinerSource {
+#[derive(Debug, Deserialize, Clone)]
+pub struct Combiner {
+    #[serde(default = "defaults::none_id")]
+    pub node_id: Option<u64>,
+    pub sources: Vec<NodeConfigData>,
+}
+
+impl NodeConfig for Combiner {
+    fn to_node(&self, registry: &NodeRegistry) -> Result<GraphNode, Error> {
+        let children_nodes = self
+            .sources
+            .iter()
+            .map(|config| config.0.to_node(registry))
+            .collect::<Result<Vec<GraphNode>, Error>>()?;
+        Ok(Box::new(CombinerNode::new(self.node_id, children_nodes)))
+    }
+
+    fn clone_child_configs(&self) -> Option<Vec<NodeConfigData>> {
+        Some(self.sources.clone())
+    }
+
+    fn duplicate(&self) -> Box<dyn NodeConfig> {
+        Box::new(self.clone())
+    }
+}
+
+pub struct CombinerNode {
     node_id: u64,
     consumers: Vec<GraphNode>,
     intermediate_buffer: Vec<f32>,
 }
 
-impl CombinerSource {
+impl CombinerNode {
     pub fn new(node_id: Option<u64>, consumers: Vec<GraphNode>) -> Self {
         Self {
             node_id: node_id.unwrap_or_else(<Self as Node>::new_node_id),
@@ -16,7 +47,7 @@ impl CombinerSource {
     }
 }
 
-impl Node for CombinerSource {
+impl Node for CombinerNode {
     fn get_node_id(&self) -> u64 {
         self.node_id
     }

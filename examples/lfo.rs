@@ -1,23 +1,26 @@
 extern crate midi_graph;
 
 use midi_graph::{
-    Balance, BaseMixer, Event, EventTarget, Message, MessageSender,
-    effect::{Lfo, ModulationProperty},
-    generator::SquareWaveSource,
+    Balance, BaseMixer, Event, EventTarget, FileAssetLoader, Message, MessageSender,
+    effect::{LfoNode, ModulationProperty},
+    generator::SquareWaveNode,
 };
 use std::{sync::Arc, thread::sleep, time::Duration};
 
 const LFO_NODE_ID: u64 = 100;
 
 fn main() {
-    let lfo_square = Lfo::new(
+    let lfo_square = LfoNode::new(
         Some(LFO_NODE_ID),
-        Box::new(SquareWaveSource::new(None, Balance::Both, 0.375, 0.25)),
+        Box::new(SquareWaveNode::new(None, Balance::Both, 0.375, 0.25)),
     )
     .unwrap();
 
-    let mixer =
-        BaseMixer::start_single_program(Box::new(lfo_square)).expect("Could not open stream");
+    let mixer = BaseMixer::builder(FileAssetLoader, |_| {})
+        .unwrap()
+        .set_initial_program(1, Box::new(lfo_square))
+        .build(1)
+        .unwrap();
     let mut sender = mixer.get_event_sender();
     std::thread::spawn(move || {
         sleep(Duration::from_millis(50));

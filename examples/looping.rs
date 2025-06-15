@@ -1,9 +1,12 @@
 extern crate midi_graph;
 
 use midi_graph::{
-    Balance, BaseMixer, Event, EventTarget, FileGraphLoader, GraphLoader, Message, MessageSender,
-    midi::CueData,
-    serialize::{FontSource, MidiDataSource, RangeSource, SoundSource},
+    Balance, BaseMixer, Event, EventTarget, FileAssetLoader, Message, MessageSender,
+    abstraction::NodeConfigData,
+    effect::Fader,
+    generator::{LfsrNoise, SawtoothWave},
+    group::{Font, FontSource, RangeSource},
+    midi::{CueData, Midi, MidiDataSource},
 };
 use std::{collections::HashMap, sync::Arc, thread::sleep, time::Duration};
 
@@ -16,53 +19,54 @@ const MIDI_NODE_ID: u64 = 100;
 const FADER_NODE_ID: u64 = 101;
 
 fn main() {
-    let config = Box::new(SoundSource::Midi {
+    let config = NodeConfigData(Box::new(Midi {
         node_id: Some(MIDI_NODE_ID),
         source: MidiDataSource::FilePath(MIDI_FILE.to_owned()),
         channels: HashMap::from([
             (
                 NOISE_CHANNEL,
-                SoundSource::Font {
+                NodeConfigData(Box::new(Font {
                     node_id: None,
                     config: FontSource::Ranges(vec![RangeSource {
-                        source: SoundSource::Fader {
+                        source: NodeConfigData(Box::new(Fader {
                             node_id: Some(FADER_NODE_ID),
                             initial_volume: 0.0,
-                            source: Box::new(SoundSource::LfsrNoise {
+                            source: NodeConfigData(Box::new(LfsrNoise {
                                 node_id: None,
                                 balance: Balance::Left,
                                 amplitude: 0.5,
                                 inside_feedback: true,
                                 note_for_16_shifts: 70,
-                            }),
-                        },
+                            })),
+                        })),
                         lower: 0,
                         upper: 127,
                     }]),
-                },
+                })),
             ),
             (
                 LEAD_CHANNEL,
-                SoundSource::Font {
+                NodeConfigData(Box::new(Font {
                     node_id: None,
                     config: FontSource::Ranges(vec![RangeSource {
-                        source: SoundSource::SawtoothWave {
+                        source: NodeConfigData(Box::new(SawtoothWave {
                             node_id: None,
                             balance: Balance::Right,
                             amplitude: 0.5,
-                        },
+                        })),
                         lower: 0,
                         upper: 127,
                     }]),
-                },
+                })),
             ),
         ]),
-    });
-    let loader = FileGraphLoader::default();
-    let source = loader
-        .load_source_with_dependencies(&config)
-        .expect("Could not create MIDI");
-    let mixer = BaseMixer::start_single_program(source).expect("Could not start stream");
+    }));
+    let mixer = BaseMixer::builder(FileAssetLoader, |_| {})
+        .unwrap()
+        .set_initial_program_from_config(1, config)
+        .unwrap()
+        .build(1)
+        .unwrap();
     let mut sender = mixer.get_event_sender();
     std::thread::spawn(move || {
         sleep(Duration::from_millis(500));

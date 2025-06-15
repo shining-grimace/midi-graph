@@ -1,6 +1,53 @@
-use crate::{Error, Event, GraphNode, Message, Node, consts};
+use crate::{
+    Error, Event, GraphNode, Message, Node,
+    abstraction::{NodeConfigData, NodeRegistry, NodeConfig, defaults},
+    consts,
+};
+use serde::Deserialize;
 
-pub struct MixerSource {
+#[derive(Debug, Deserialize, Clone)]
+pub struct Mixer {
+    #[serde(default = "defaults::none_id")]
+    pub node_id: Option<u64>,
+    #[serde(default = "defaults::mixer_balance")]
+    pub balance: f32,
+    pub sources: [NodeConfigData; 2]
+}
+
+impl Mixer {
+    pub fn stock(inner_0: NodeConfigData, inner_1: NodeConfigData) -> NodeConfigData {
+        NodeConfigData(Box::new(Self {
+            node_id: defaults::none_id(),
+            balance: defaults::mixer_balance(),
+            sources: [
+                inner_0,
+                inner_1
+            ]
+        }))
+    }
+}
+
+impl NodeConfig for Mixer {
+    fn to_node(&self, registry: &NodeRegistry) -> Result<GraphNode, Error> {
+        let consumer_0 = self.sources[0].0.to_node(registry)?;
+        let consumer_1 = self.sources[1].0.to_node(registry)?;
+        Ok(Box::new(MixerNode::new(
+            self.node_id, self.balance, consumer_0, consumer_1)))
+    }
+
+    fn clone_child_configs(&self) -> Option<Vec<NodeConfigData>> {
+        Some(vec![
+            self.sources[0].clone(),
+            self.sources[1].clone()
+        ])
+    }
+
+    fn duplicate(&self) -> Box<dyn NodeConfig> {
+        Box::new(self.clone())
+    }
+}
+
+pub struct MixerNode {
     node_id: u64,
     balance: f32,
     consumer_0: GraphNode,
@@ -8,7 +55,7 @@ pub struct MixerSource {
     intermediate_buffer: Vec<f32>,
 }
 
-impl MixerSource {
+impl MixerNode {
     pub fn new(
         node_id: Option<u64>,
         balance: f32,
@@ -25,7 +72,7 @@ impl MixerSource {
     }
 }
 
-impl Node for MixerSource {
+impl Node for MixerNode {
     fn get_node_id(&self) -> u64 {
         self.node_id
     }

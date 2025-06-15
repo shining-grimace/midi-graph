@@ -9,7 +9,8 @@ pub mod log;
 
 use crate::{
     Error, EventTarget, GraphNode, Message,
-    serialize::{Loop, RangeSource},
+    group::RangeSource,
+    abstraction::Loop,
 };
 use std::sync::atomic::{AtomicU64, Ordering};
 

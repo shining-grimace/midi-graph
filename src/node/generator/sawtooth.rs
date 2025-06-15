@@ -1,6 +1,49 @@
-use crate::{Balance, Error, Event, EventTarget, GraphNode, Message, Node, consts, util};
+use crate::{
+    Balance, Error, Event, EventTarget, GraphNode, Message, Node,
+    abstraction::{NodeRegistry, NodeConfig, NodeConfigData, defaults},
+    consts, util,
+};
+use serde::Deserialize;
 
-pub struct SawtoothWaveSource {
+#[derive(Deserialize, Clone)]
+pub struct SawtoothWave {
+    #[serde(default = "defaults::none_id")]
+    pub node_id: Option<u64>,
+    #[serde(default = "defaults::source_balance")]
+    pub balance: Balance,
+    #[serde(default = "defaults::amplitude")]
+    pub amplitude: f32,
+}
+
+impl SawtoothWave {
+    pub fn stock() -> NodeConfigData {
+        NodeConfigData(Box::new(Self {
+            node_id: defaults::none_id(),
+            balance: Balance::Both,
+            amplitude: defaults::amplitude(),
+        }))
+    }
+}
+
+impl NodeConfig for SawtoothWave {
+    fn to_node(&self, _registry: &NodeRegistry) -> Result<GraphNode, Error> {
+        Ok(Box::new(SawtoothWaveNode::new(
+            self.node_id,
+            self.balance,
+            self.amplitude,
+        )))
+    }
+
+    fn clone_child_configs(&self) -> Option<Vec<crate::abstraction::NodeConfigData>> {
+        None
+    }
+
+    fn duplicate(&self) -> Box<dyn NodeConfig> {
+        Box::new(self.clone())
+    }
+}
+
+pub struct SawtoothWaveNode {
     node_id: u64,
     is_on: bool,
     current_note: u8,
@@ -13,7 +56,7 @@ pub struct SawtoothWaveSource {
     modulated_volume: f32,
 }
 
-impl SawtoothWaveSource {
+impl SawtoothWaveNode {
     pub fn new(node_id: Option<u64>, balance: Balance, amplitude: f32) -> Self {
         Self {
             node_id: node_id.unwrap_or_else(<Self as Node>::new_node_id),
@@ -30,7 +73,7 @@ impl SawtoothWaveSource {
     }
 }
 
-impl Node for SawtoothWaveSource {
+impl Node for SawtoothWaveNode {
     fn get_node_id(&self) -> u64 {
         self.node_id
     }

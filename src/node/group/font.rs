@@ -1,17 +1,109 @@
-use crate::{Error, Event, GraphNode, Message, Node, NoteRange};
+use crate::{
+    Error, Event, GraphNode, Message, Node, NoteRange,
+    abstraction::{NodeConfig, NodeConfigData, NodeRegistry, defaults},
+    util,
+};
+use serde::Deserialize;
 
-pub struct SoundFontBuilder {
+#[derive(Deserialize, Clone)]
+pub struct RangeSource {
+    pub source: NodeConfigData,
+    pub lower: u8,
+    pub upper: u8,
+}
+
+#[derive(Deserialize, Clone)]
+pub enum FontSource {
+    Ranges(Vec<RangeSource>),
+    Sf2FilePath {
+        path: String,
+        instrument_index: usize,
+        #[serde(default = "defaults::soundfont_polyphony_voices")]
+        polyphony_voices: usize,
+    },
+}
+
+#[derive(Deserialize, Clone)]
+pub struct Font {
+    #[serde(default = "defaults::none_id")]
+    pub node_id: Option<u64>,
+    pub config: FontSource,
+}
+
+impl Font {
+    pub fn stock_full_range(source: NodeConfigData) -> NodeConfigData {
+        NodeConfigData(Box::new(Self {
+            node_id: defaults::none_id(),
+            config: FontSource::Ranges(vec![RangeSource {
+                source,
+                lower: 0,
+                upper: 127,
+            }]),
+        }))
+    }
+}
+
+impl NodeConfig for Font {
+    fn to_node(&self, registry: &NodeRegistry) -> Result<GraphNode, Error> {
+        let node: GraphNode = match &self.config {
+            FontSource::Ranges(range_configs) => {
+                let mut builder = FontNodeBuilder::new(self.node_id);
+                for range_config in range_configs.iter() {
+                    let source = range_config.source.0.to_node(registry)?;
+                    let range = NoteRange::from_config(range_config);
+                    builder = builder.add_range(range, source)?;
+                }
+                Box::new(builder.build())
+            }
+            FontSource::Sf2FilePath {
+                path,
+                instrument_index,
+                polyphony_voices,
+            } => {
+                let bytes = registry.load_asset(path)?;
+                let source = util::soundfont_from_bytes(
+                    self.node_id,
+                    &bytes,
+                    *instrument_index,
+                    *polyphony_voices,
+                )?;
+                let source: GraphNode = Box::new(source);
+                source
+            }
+        };
+        Ok(node)
+    }
+
+    fn clone_child_configs(&self) -> Option<Vec<NodeConfigData>> {
+        match &self.config {
+            FontSource::Ranges(range_sources) => {
+                let sources = range_sources
+                    .iter()
+                    .map(|range_source| range_source.source.clone())
+                    .collect();
+                Some(sources)
+            }
+            FontSource::Sf2FilePath { .. } => None,
+        }
+    }
+
+    fn duplicate(&self) -> Box<dyn NodeConfig> {
+        Box::new(self.clone())
+    }
+}
+
+pub struct FontNodeBuilder {
     node_id: Option<u64>,
     ranges: Vec<(NoteRange, GraphNode)>,
 }
 
-impl Default for SoundFontBuilder {
+impl Default for FontNodeBuilder {
     fn default() -> Self {
         Self::new(None)
     }
 }
 
-impl SoundFontBuilder {
+impl FontNodeBuilder {
     pub fn new(node_id: Option<u64>) -> Self {
         Self {
             node_id,
@@ -24,17 +116,17 @@ impl SoundFontBuilder {
         Ok(self)
     }
 
-    pub fn build(self) -> SoundFont {
-        SoundFont::new(self.node_id, self.ranges)
+    pub fn build(self) -> FontNode {
+        FontNode::new(self.node_id, self.ranges)
     }
 }
 
-pub struct SoundFont {
+pub struct FontNode {
     node_id: u64,
     ranges: Vec<(NoteRange, GraphNode)>,
 }
 
-impl SoundFont {
+impl FontNode {
     fn new(node_id: Option<u64>, ranges: Vec<(NoteRange, GraphNode)>) -> Self {
         Self {
             node_id: node_id.unwrap_or_else(<Self as Node>::new_node_id),
@@ -43,7 +135,7 @@ impl SoundFont {
     }
 }
 
-impl Node for SoundFont {
+impl Node for FontNode {
     fn get_node_id(&self) -> u64 {
         self.node_id
     }

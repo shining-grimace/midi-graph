@@ -1,6 +1,61 @@
-use crate::{Error, Event, GraphNode, Message, Node, consts};
+use crate::{
+    Error, Event, GraphNode, Message, Node,
+    abstraction::{NodeConfig, NodeConfigData, NodeRegistry, defaults},
+    consts,
+};
+use serde::Deserialize;
 
 const PEAK_AMPLITUDE: f32 = 1.0;
+
+#[derive(Deserialize, Clone)]
+pub struct AdsrEnvelope {
+    #[serde(default = "defaults::none_id")]
+    pub node_id: Option<u64>,
+    #[serde(default = "defaults::attack")]
+    pub attack_time: f32,
+    #[serde(default = "defaults::decay")]
+    pub decay_time: f32,
+    #[serde(default = "defaults::sustain")]
+    pub sustain_multiplier: f32,
+    #[serde(default = "defaults::release")]
+    pub release_time: f32,
+    pub source: Box<NodeConfigData>,
+}
+
+impl AdsrEnvelope {
+    pub fn stock(inner: NodeConfigData) -> NodeConfigData {
+        NodeConfigData(Box::new(Self {
+            node_id: defaults::none_id(),
+            attack_time: defaults::attack(),
+            decay_time: defaults::decay(),
+            sustain_multiplier: defaults::sustain(),
+            release_time: defaults::release(),
+            source: Box::new(inner),
+        }))
+    }
+}
+
+impl NodeConfig for AdsrEnvelope {
+    fn to_node(&self, registry: &NodeRegistry) -> Result<GraphNode, Error> {
+        let child = self.source.0.to_node(registry)?;
+        Ok(Box::new(AdsrEnvelopeNode::from_parameters(
+            self.node_id,
+            self.attack_time,
+            self.decay_time,
+            self.sustain_multiplier,
+            self.release_time,
+            child,
+        )))
+    }
+
+    fn clone_child_configs(&self) -> Option<Vec<NodeConfigData>> {
+        Some(vec![*self.source.clone()])
+    }
+
+    fn duplicate(&self) -> Box<dyn NodeConfig> {
+        Box::new(self.clone())
+    }
+}
 
 enum EnvelopeMode {
     Attack,
@@ -10,7 +65,7 @@ enum EnvelopeMode {
     Finished,
 }
 
-pub struct AdsrEnvelope {
+pub struct AdsrEnvelopeNode {
     node_id: u64,
     attack_gradient: f32,
     decay_gradient: f32,
@@ -22,7 +77,7 @@ pub struct AdsrEnvelope {
     samples_progress_in_mode: isize,
 }
 
-impl AdsrEnvelope {
+impl AdsrEnvelopeNode {
     pub fn from_parameters(
         node_id: Option<u64>,
         attack_time: f32,
@@ -71,7 +126,7 @@ impl AdsrEnvelope {
     }
 }
 
-impl Node for AdsrEnvelope {
+impl Node for AdsrEnvelopeNode {
     fn get_node_id(&self) -> u64 {
         self.node_id
     }

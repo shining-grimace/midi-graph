@@ -1,6 +1,49 @@
-use crate::{Balance, Error, Event, EventTarget, GraphNode, Message, Node, consts, util};
+use crate::{
+    Balance, Error, Event, EventTarget, GraphNode, Message, Node,
+    abstraction::{NodeRegistry, NodeConfig, NodeConfigData, defaults},
+    consts, util,
+};
+use serde::Deserialize;
 
-pub struct TriangleWaveSource {
+#[derive(Deserialize, Clone)]
+pub struct TriangleWave {
+    #[serde(default = "defaults::none_id")]
+    pub node_id: Option<u64>,
+    #[serde(default = "defaults::source_balance")]
+    pub balance: Balance,
+    #[serde(default = "defaults::amplitude")]
+    pub amplitude: f32,
+}
+
+impl TriangleWave {
+    pub fn stock() -> NodeConfigData {
+        NodeConfigData(Box::new(Self {
+            node_id: defaults::none_id(),
+            balance: Balance::Both,
+            amplitude: defaults::amplitude(),
+        }))
+    }
+}
+
+impl NodeConfig for TriangleWave {
+    fn to_node(&self, _registry: &NodeRegistry) -> Result<GraphNode, Error> {
+        Ok(Box::new(TriangleWaveNode::new(
+            self.node_id,
+            self.balance,
+            self.amplitude,
+        )))
+    }
+
+    fn clone_child_configs(&self) -> Option<Vec<crate::abstraction::NodeConfigData>> {
+        None
+    }
+
+    fn duplicate(&self) -> Box<dyn NodeConfig> {
+        Box::new(self.clone())
+    }
+}
+
+pub struct TriangleWaveNode {
     node_id: u64,
     is_on: bool,
     current_note: u8,
@@ -13,7 +56,7 @@ pub struct TriangleWaveSource {
     modulated_volume: f32,
 }
 
-impl TriangleWaveSource {
+impl TriangleWaveNode {
     pub fn new(node_id: Option<u64>, balance: Balance, amplitude: f32) -> Self {
         Self {
             node_id: node_id.unwrap_or_else(<Self as Node>::new_node_id),
@@ -30,7 +73,7 @@ impl TriangleWaveSource {
     }
 }
 
-impl Node for TriangleWaveSource {
+impl Node for TriangleWaveNode {
     fn get_node_id(&self) -> u64 {
         self.node_id
     }
