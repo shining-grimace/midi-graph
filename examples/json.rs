@@ -6,7 +6,7 @@ use std::time::Duration;
 const JSON_FILE: &'static str = "resources/json-example.json";
 
 fn main() {
-    let subtree = Subtree::new(JSON_FILE);
+    let subtree = Subtree::as_path(JSON_FILE);
     let _mixer = BaseMixer::builder(FileAssetLoader::default(), |_| {})
         .unwrap()
         .set_initial_program_from_config(1, NodeConfigData(Box::new(subtree)))

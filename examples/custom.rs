@@ -19,7 +19,7 @@ const MIDI_FILE: &'static str = "resources/sample-in-c.mid";
 const JSON_SUBTREE_FILE: &'static str = "resources/custom-example-subtree.json";
 
 fn main() {
-    let subtree_config = Subtree::new(JSON_SUBTREE_FILE);
+    let subtree_config = Subtree::as_path(JSON_SUBTREE_FILE);
     let config = NodeConfigData(Box::new(Midi {
         node_id: None,
         source: MidiDataSource::FilePath(MIDI_FILE.to_owned()),

@@ -118,7 +118,7 @@ pub mod group {
         mixer::{Mixer, MixerNode},
         polyphony::{Polyphony, PolyphonyNode},
         font::{Font, FontNode, FontNodeBuilder, FontSource, RangeSource},
-        subtree::Subtree
+        subtree::{Subtree, SubtreeData}
     };
 }
 

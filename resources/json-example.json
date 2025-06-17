@@ -13,7 +13,9 @@
             "upper": 50,
             "source": {
               "type": "Subtree",
-              "file_path": "resources/json-example-subtree.json"
+              "source": {
+                "FilePath": "resources/json-example-subtree.json"
+              }
             }
           },
           {
