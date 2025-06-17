@@ -3,7 +3,7 @@ extern crate midi_graph;
 use midi_graph::{BaseMixer, FileAssetLoader, abstraction::NodeConfigData, group::Subtree};
 use std::time::Duration;
 
-const JSON_FILE: &'static str = "resources/example.json";
+const JSON_FILE: &'static str = "resources/json-example.json";
 
 fn main() {
     let subtree = Subtree::new(JSON_FILE);

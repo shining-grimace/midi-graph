@@ -1,0 +1,5 @@
+{
+  "type": "SineWave",
+  "amplitude": 0.125,
+  "frequency": 440.0
+}
