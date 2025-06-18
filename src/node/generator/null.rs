@@ -1,7 +1,4 @@
-use crate::{
-    Error, GraphNode, Message, Node,
-    abstraction::{NodeRegistry, NodeConfig},
-};
+use crate::{AssetLoader, Error, GraphNode, Message, Node, abstraction::NodeConfig};
 use serde::Deserialize;
 
 #[derive(Deserialize, Clone)]
@@ -10,7 +7,7 @@ pub struct Null {
 }
 
 impl NodeConfig for Null {
-    fn to_node(&self, _registry: &NodeRegistry) -> Result<GraphNode, Error> {
+    fn to_node(&self, _asset_loader: &Box<dyn AssetLoader>) -> Result<GraphNode, Error> {
         Ok(Box::new(NullNode::new(self.node_id)))
     }
 

@@ -1,6 +1,6 @@
 use crate::{
-    Balance, Error, Event, EventTarget, GraphNode, Message, Node,
-    abstraction::{NodeConfigData, NodeRegistry, NodeConfig, defaults},
+    AssetLoader, Balance, Error, Event, EventTarget, GraphNode, Message, Node,
+    abstraction::{NodeConfig, NodeConfigData, defaults},
     consts,
     effect::ModulationProperty,
 };
@@ -14,15 +14,13 @@ pub struct Transition {
 }
 
 impl NodeConfig for Transition {
-    fn to_node(&self, registry: &NodeRegistry) -> Result<GraphNode, Error> {
-        let source = self.source.0.to_node(registry)?;
+    fn to_node(&self, asset_loader: &Box<dyn AssetLoader>) -> Result<GraphNode, Error> {
+        let source = self.source.0.to_node(asset_loader)?;
         Ok(Box::new(TransitionNode::new(self.node_id, source)?))
     }
 
     fn clone_child_configs(&self) -> Option<Vec<NodeConfigData>> {
-        Some(vec![
-            self.source.clone()
-        ])
+        Some(vec![self.source.clone()])
     }
 
     fn duplicate(&self) -> Box<dyn NodeConfig + Send + Sync + 'static> {

@@ -1,6 +1,6 @@
 use crate::{
-    Balance, Error, Event, EventTarget, GraphNode, Message, Node,
-    abstraction::{NodeConfigData, NodeRegistry, NodeConfig, defaults},
+    AssetLoader, Balance, Error, Event, EventTarget, GraphNode, Message, Node,
+    abstraction::{NodeConfig, NodeConfigData, defaults},
     consts,
     effect::ModulationProperty,
 };
@@ -14,15 +14,13 @@ pub struct Lfo {
 }
 
 impl NodeConfig for Lfo {
-    fn to_node(&self, registry: &NodeRegistry) -> Result<GraphNode, Error> {
-        let source = self.source.0.to_node(registry)?;
+    fn to_node(&self, asset_loader: &Box<dyn AssetLoader>) -> Result<GraphNode, Error> {
+        let source = self.source.0.to_node(asset_loader)?;
         Ok(Box::new(LfoNode::new(self.node_id, source)?))
     }
 
     fn clone_child_configs(&self) -> Option<Vec<NodeConfigData>> {
-        Some(vec![
-            self.source.clone()
-        ])
+        Some(vec![self.source.clone()])
     }
 
     fn duplicate(&self) -> Box<dyn NodeConfig + Send + Sync + 'static> {
@@ -60,7 +58,8 @@ impl LfoNode {
     fn send_step_event(&mut self) {
         let period_value = self.current_step as f32 / self.cycle_steps as f32;
         let value = self.low
-            + (self.high - self.low) * ((period_value * 2.0 * std::f32::consts::PI).cos() * 0.5 + 0.5);
+            + (self.high - self.low)
+                * ((period_value * 2.0 * std::f32::consts::PI).cos() * 0.5 + 0.5);
         let event = match self.property {
             Some(ModulationProperty::Volume) => Event::Volume(value),
             Some(ModulationProperty::Pan) => Event::SourceBalance(Balance::Pan(value)),

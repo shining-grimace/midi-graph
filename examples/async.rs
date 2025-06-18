@@ -1,7 +1,7 @@
 extern crate midi_graph;
 
 use midi_graph::{
-    Balance, BaseMixer, Event, EventTarget, FileAssetLoader, Message, MessageSender,
+    AssetLoader, Balance, BaseMixer, Event, EventTarget, FileAssetLoader, Message, MessageSender,
     abstraction::NodeConfigData,
     effect::{Fader, Lfo, ModulationProperty, Transition},
     generator::{SawtoothWave, SquareWave, TriangleWave},
@@ -64,9 +64,10 @@ fn main() {
             },
         ]),
     };
-    let mixer = BaseMixer::builder(FileAssetLoader, |_| {})
+    let asset_loader: Box<dyn AssetLoader> = Box::new(FileAssetLoader);
+    let mixer = BaseMixer::builder(|_| {})
         .unwrap()
-        .set_initial_program_from_config(1, NodeConfigData(Box::new(soundfont)))
+        .set_initial_program_from_config(1, NodeConfigData(Box::new(soundfont)), &asset_loader)
         .unwrap()
         .start(Some(1))
         .expect("Could not open stream");

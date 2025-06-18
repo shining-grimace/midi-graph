@@ -1,7 +1,7 @@
 extern crate midi_graph;
 
 use midi_graph::{
-    Balance, BaseMixer, FileAssetLoader, GraphNode, NoteRange,
+    Balance, BaseMixer, GraphNode, NoteRange,
     generator::{LfsrNoiseNode, SquareWaveNode, TriangleWaveNode},
     group::FontNodeBuilder,
     util::midi_builder_from_file,
@@ -63,7 +63,7 @@ fn main() {
         .build()
         .unwrap();
 
-    let mut mixer = BaseMixer::builder(FileAssetLoader, |_| {})
+    let mut mixer = BaseMixer::builder(|_| {})
         .unwrap()
         .store_program(PROGRAM_0, Box::new(program_0))
         .store_program(PROGRAM_1, Box::new(program_1))

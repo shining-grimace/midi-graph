@@ -1,11 +1,7 @@
 use crate::{
     AssetLoader, Error, GraphNode, Message, MessageSender,
     abstraction::NodeRegistry,
-    config::{
-        NodeConfigData,
-        registry::{get_registry, init_node_registry},
-        builtin::register_builtin_types
-    },
+    config::{NodeConfigData, builtin::register_builtin_types, registry::init_node_registry},
     consts,
     generator::NullNode,
 };
@@ -29,13 +25,11 @@ pub struct BaseMixerBuilder {
 }
 
 impl BaseMixerBuilder {
-    pub fn new<A, F>(asset_loader: A, mut registration: F) -> Result<Self, Error>
+    pub fn new<F>(mut registration: F) -> Result<Self, Error>
     where
-        A: AssetLoader + Send + Sync + 'static,
         F: FnMut(&mut NodeRegistry),
     {
-        let asset_loader = Box::new(asset_loader);
-        let mut config_registry = NodeRegistry::new(asset_loader);
+        let mut config_registry = NodeRegistry::new();
         register_builtin_types(&mut config_registry);
         registration(&mut config_registry);
         init_node_registry(config_registry)?;
@@ -59,10 +53,9 @@ impl BaseMixerBuilder {
         mut self,
         program_no: usize,
         config: NodeConfigData,
+        asset_loader: &Box<dyn AssetLoader>,
     ) -> Result<Self, Error> {
-        let config_registry =
-            get_registry().ok_or_else(|| Error::Internal("Cannot get node registry".to_owned()))?;
-        let node = config.0.to_node(config_registry)?;
+        let node = config.0.to_node(asset_loader)?;
         self.programs.insert(program_no, node);
         Ok(self)
     }
@@ -71,9 +64,10 @@ impl BaseMixerBuilder {
         mut self,
         program_no: usize,
         config: NodeConfigData,
+        asset_loader: &Box<dyn AssetLoader>,
     ) -> Result<Self, Error> {
         self.initial_program = Some(program_no);
-        self.store_program_from_config(program_no, config)
+        self.store_program_from_config(program_no, config, asset_loader)
     }
 
     pub fn start(self, initial_program_no: Option<usize>) -> Result<BaseMixer, Error> {
@@ -96,15 +90,11 @@ impl Drop for BaseMixer {
 }
 
 impl BaseMixer {
-    pub fn builder<A, F>(
-        asset_loader: A,
-        registration: F
-    ) -> Result<BaseMixerBuilder, Error>
-        where
-            A: AssetLoader + Send + Sync + 'static,
-            F: FnMut(&mut NodeRegistry)
+    pub fn builder<F>(registration: F) -> Result<BaseMixerBuilder, Error>
+    where
+        F: FnMut(&mut NodeRegistry),
     {
-        BaseMixerBuilder::new(asset_loader, registration)
+        BaseMixerBuilder::new(registration)
     }
 
     pub(crate) fn start_new(

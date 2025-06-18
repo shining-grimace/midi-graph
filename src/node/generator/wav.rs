@@ -1,6 +1,6 @@
 use crate::{
-    Balance, Error, Event, GraphNode, LoopRange, Message, Node,
-    abstraction::{Loop, NodeRegistry, NodeConfig, defaults},
+    AssetLoader, Balance, Error, Event, GraphNode, LoopRange, Message, Node,
+    abstraction::{Loop, NodeConfig, defaults},
     consts, util,
 };
 use hound::{SampleFormat, WavSpec};
@@ -19,11 +19,16 @@ pub struct SampleLoop {
 }
 
 impl NodeConfig for SampleLoop {
-    fn to_node(&self, registry: &NodeRegistry) -> Result<GraphNode, Error> {
+    fn to_node(&self, asset_loader: &Box<dyn AssetLoader>) -> Result<GraphNode, Error> {
         let loop_range = self.looping.as_ref().map(LoopRange::from_config);
-        let bytes = registry.load_asset(&self.path)?;
-        let source =
-            util::wav_from_bytes(&bytes, self.base_note, loop_range, self.balance, self.node_id)?;
+        let bytes = asset_loader.load_asset_data(&self.path)?;
+        let source = util::wav_from_bytes(
+            &bytes,
+            self.base_note,
+            loop_range,
+            self.balance,
+            self.node_id,
+        )?;
         let source: GraphNode = Box::new(source);
         Ok(source)
     }

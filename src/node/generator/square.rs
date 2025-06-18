@@ -1,6 +1,6 @@
 use crate::{
-    Balance, Error, Event, EventTarget, GraphNode, Message, Node,
-    abstraction::{NodeConfig, NodeConfigData, NodeRegistry, defaults},
+    AssetLoader, Balance, Error, Event, EventTarget, GraphNode, Message, Node,
+    abstraction::{NodeConfig, NodeConfigData, defaults},
     consts, util,
 };
 use serde::Deserialize;
@@ -29,7 +29,7 @@ impl SquareWave {
 }
 
 impl NodeConfig for SquareWave {
-    fn to_node(&self, _registry: &NodeRegistry) -> Result<GraphNode, Error> {
+    fn to_node(&self, _asset_loader: &Box<dyn AssetLoader>) -> Result<GraphNode, Error> {
         Ok(Box::new(SquareWaveNode::new(
             self.node_id,
             self.balance,

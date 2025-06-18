@@ -1,6 +1,6 @@
 use crate::{
-    Error, Event, GraphNode, Message, Node, NoteRange,
-    abstraction::{NodeConfig, NodeConfigData, NodeRegistry, defaults},
+    AssetLoader, Error, Event, GraphNode, Message, Node, NoteRange,
+    abstraction::{NodeConfig, NodeConfigData, defaults},
     util,
 };
 use serde::Deserialize;
@@ -44,12 +44,12 @@ impl Font {
 }
 
 impl NodeConfig for Font {
-    fn to_node(&self, registry: &NodeRegistry) -> Result<GraphNode, Error> {
+    fn to_node(&self, asset_loader: &Box<dyn AssetLoader>) -> Result<GraphNode, Error> {
         let node: GraphNode = match &self.config {
             FontSource::Ranges(range_configs) => {
                 let mut builder = FontNodeBuilder::new(self.node_id);
                 for range_config in range_configs.iter() {
-                    let source = range_config.source.0.to_node(registry)?;
+                    let source = range_config.source.0.to_node(asset_loader)?;
                     let range = NoteRange::from_config(range_config);
                     builder = builder.add_range(range, source)?;
                 }
@@ -60,7 +60,7 @@ impl NodeConfig for Font {
                 instrument_index,
                 polyphony_voices,
             } => {
-                let bytes = registry.load_asset(path)?;
+                let bytes = asset_loader.load_asset_data(path)?;
                 let source = util::soundfont_from_bytes(
                     self.node_id,
                     &bytes,

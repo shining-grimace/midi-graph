@@ -1,7 +1,7 @@
 extern crate midi_graph;
 
 use midi_graph::{
-    Balance, BaseMixer, Event, EventTarget, FileAssetLoader, Message, MessageSender,
+    Balance, BaseMixer, Event, EventTarget, Message, MessageSender,
     effect::{LfoNode, ModulationProperty},
     generator::SquareWaveNode,
 };
@@ -16,7 +16,7 @@ fn main() {
     )
     .unwrap();
 
-    let mixer = BaseMixer::builder(FileAssetLoader, |_| {})
+    let mixer = BaseMixer::builder(|_| {})
         .unwrap()
         .set_initial_program(1, Box::new(lfo_square))
         .start(Some(1))

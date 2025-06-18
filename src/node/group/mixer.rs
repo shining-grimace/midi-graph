@@ -1,6 +1,6 @@
 use crate::{
-    Error, Event, GraphNode, Message, Node,
-    abstraction::{NodeConfigData, NodeRegistry, NodeConfig, defaults},
+    AssetLoader, Error, Event, GraphNode, Message, Node,
+    abstraction::{NodeConfig, NodeConfigData, defaults},
     consts,
 };
 use serde::Deserialize;
@@ -11,7 +11,7 @@ pub struct Mixer {
     pub node_id: Option<u64>,
     #[serde(default = "defaults::mixer_balance")]
     pub balance: f32,
-    pub sources: [NodeConfigData; 2]
+    pub sources: [NodeConfigData; 2],
 }
 
 impl Mixer {
@@ -19,27 +19,25 @@ impl Mixer {
         NodeConfigData(Box::new(Self {
             node_id: defaults::none_id(),
             balance: defaults::mixer_balance(),
-            sources: [
-                inner_0,
-                inner_1
-            ]
+            sources: [inner_0, inner_1],
         }))
     }
 }
 
 impl NodeConfig for Mixer {
-    fn to_node(&self, registry: &NodeRegistry) -> Result<GraphNode, Error> {
-        let consumer_0 = self.sources[0].0.to_node(registry)?;
-        let consumer_1 = self.sources[1].0.to_node(registry)?;
+    fn to_node(&self, asset_loader: &Box<dyn AssetLoader>) -> Result<GraphNode, Error> {
+        let consumer_0 = self.sources[0].0.to_node(asset_loader)?;
+        let consumer_1 = self.sources[1].0.to_node(asset_loader)?;
         Ok(Box::new(MixerNode::new(
-            self.node_id, self.balance, consumer_0, consumer_1)))
+            self.node_id,
+            self.balance,
+            consumer_0,
+            consumer_1,
+        )))
     }
 
     fn clone_child_configs(&self) -> Option<Vec<NodeConfigData>> {
-        Some(vec![
-            self.sources[0].clone(),
-            self.sources[1].clone()
-        ])
+        Some(vec![self.sources[0].clone(), self.sources[1].clone()])
     }
 
     fn duplicate(&self) -> Box<dyn NodeConfig + Send + Sync + 'static> {

@@ -1,6 +1,6 @@
 use crate::{
-    Error, Event, EventTarget, GraphNode, Message, Node,
-    abstraction::{NodeConfigData, NodeRegistry, NodeConfig, defaults},
+    AssetLoader, Error, Event, EventTarget, GraphNode, Message, Node,
+    abstraction::{NodeConfig, NodeConfigData, defaults},
 };
 use serde::Deserialize;
 
@@ -24,8 +24,8 @@ impl Polyphony {
 }
 
 impl NodeConfig for Polyphony {
-    fn to_node(&self, registry: &NodeRegistry) -> Result<GraphNode, Error> {
-        let child = self.source.0.to_node(registry)?;
+    fn to_node(&self, asset_loader: &Box<dyn AssetLoader>) -> Result<GraphNode, Error> {
+        let child = self.source.0.to_node(asset_loader)?;
         Ok(Box::new(PolyphonyNode::new(
             self.node_id,
             self.max_voices,
@@ -34,9 +34,7 @@ impl NodeConfig for Polyphony {
     }
 
     fn clone_child_configs(&self) -> Option<Vec<NodeConfigData>> {
-        Some(vec![
-            self.source.clone()
-        ])
+        Some(vec![self.source.clone()])
     }
 
     fn duplicate(&self) -> Box<dyn NodeConfig + Send + Sync + 'static> {

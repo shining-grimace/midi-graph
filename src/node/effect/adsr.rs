@@ -1,6 +1,6 @@
 use crate::{
-    Error, Event, GraphNode, Message, Node,
-    abstraction::{NodeConfig, NodeConfigData, NodeRegistry, defaults},
+    AssetLoader, Error, Event, GraphNode, Message, Node,
+    abstraction::{NodeConfig, NodeConfigData, defaults},
     consts,
 };
 use serde::Deserialize;
@@ -36,8 +36,8 @@ impl AdsrEnvelope {
 }
 
 impl NodeConfig for AdsrEnvelope {
-    fn to_node(&self, registry: &NodeRegistry) -> Result<GraphNode, Error> {
-        let child = self.source.0.to_node(registry)?;
+    fn to_node(&self, asset_loader: &Box<dyn AssetLoader>) -> Result<GraphNode, Error> {
+        let child = self.source.0.to_node(asset_loader)?;
         Ok(Box::new(AdsrEnvelopeNode::from_parameters(
             self.node_id,
             self.attack_time,

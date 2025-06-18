@@ -1,7 +1,7 @@
 use crate::{
-    Balance, Error, Event, GraphNode, Message, Node,
-    abstraction::{NodeRegistry, NodeConfig, defaults},
-    consts, util
+    AssetLoader, Balance, Error, Event, GraphNode, Message, Node,
+    abstraction::{NodeConfig, defaults},
+    consts, util,
 };
 use hound::{SampleFormat, WavSpec};
 use serde::Deserialize;
@@ -17,8 +17,8 @@ pub struct OneShot {
 }
 
 impl NodeConfig for OneShot {
-    fn to_node(&self, registry: &NodeRegistry) -> Result<GraphNode, Error> {
-        let bytes = registry.load_asset(&self.path)?;
+    fn to_node(&self, asset_loader: &Box<dyn AssetLoader>) -> Result<GraphNode, Error> {
+        let bytes = asset_loader.load_asset_data(&self.path)?;
         let source = util::one_shot_from_bytes(&bytes, self.balance, self.node_id)?;
         let source: GraphNode = Box::new(source);
         Ok(source)

@@ -1,6 +1,6 @@
 use crate::{
-    Balance, Error, Event, EventTarget, GraphNode, Message, Node,
-    abstraction::{NodeRegistry, NodeConfig, NodeConfigData, defaults},
+    AssetLoader, Balance, Error, Event, EventTarget, GraphNode, Message, Node,
+    abstraction::{NodeConfig, NodeConfigData, defaults},
     consts, util,
 };
 use serde::Deserialize;
@@ -31,7 +31,7 @@ impl LfsrNoise {
 }
 
 impl NodeConfig for LfsrNoise {
-    fn to_node(&self, _registry: &NodeRegistry) -> Result<GraphNode, Error> {
+    fn to_node(&self, _asset_loader: &Box<dyn AssetLoader>) -> Result<GraphNode, Error> {
         Ok(Box::new(LfsrNoiseNode::new(
             self.node_id,
             self.balance,

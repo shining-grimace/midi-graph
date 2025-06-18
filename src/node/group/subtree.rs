@@ -1,6 +1,6 @@
 use crate::{
-    Error, GraphNode,
-    abstraction::{NodeConfigData, NodeConfig, NodeRegistry}
+    AssetLoader, Error, GraphNode,
+    abstraction::{NodeConfigData, NodeConfig}
 };
 use serde::Deserialize;
 
@@ -30,14 +30,14 @@ impl Subtree {
 }
 
 impl NodeConfig for Subtree {
-    fn to_node(&self, registry: &NodeRegistry) -> Result<GraphNode, Error> {
+    fn to_node(&self, asset_loader: &Box<dyn AssetLoader>) -> Result<GraphNode, Error> {
         match &self.source {
             SubtreeData::FilePath(file_path) => {
-                let asset_data = registry.load_asset(file_path)?;
+                let asset_data = asset_loader.load_asset_data(file_path)?;
                 let config: NodeConfigData = serde_json::from_slice(&asset_data)?;
-                config.0.to_node(registry)
+                config.0.to_node(asset_loader)
             }
-            SubtreeData::Config(config) => config.0.to_node(registry)
+            SubtreeData::Config(config) => config.0.to_node(asset_loader)
         }
     }
 

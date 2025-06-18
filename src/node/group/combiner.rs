@@ -1,6 +1,6 @@
 use crate::{
-    Error, GraphNode, Message, Node,
-    abstraction::{NodeConfigData, NodeRegistry, NodeConfig, defaults},
+    AssetLoader, Error, GraphNode, Message, Node,
+    abstraction::{NodeConfig, NodeConfigData, defaults},
     consts,
 };
 use serde::Deserialize;
@@ -13,11 +13,11 @@ pub struct Combiner {
 }
 
 impl NodeConfig for Combiner {
-    fn to_node(&self, registry: &NodeRegistry) -> Result<GraphNode, Error> {
+    fn to_node(&self, asset_loader: &Box<dyn AssetLoader>) -> Result<GraphNode, Error> {
         let children_nodes = self
             .sources
             .iter()
-            .map(|config| config.0.to_node(registry))
+            .map(|config| config.0.to_node(asset_loader))
             .collect::<Result<Vec<GraphNode>, Error>>()?;
         Ok(Box::new(CombinerNode::new(self.node_id, children_nodes)))
     }

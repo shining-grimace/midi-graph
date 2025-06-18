@@ -2,13 +2,13 @@ pub mod builtin;
 pub mod defaults;
 pub mod registry;
 
-use crate::{Error, GraphNode, abstraction::NodeRegistry, config::registry::get_registry};
+use crate::{abstraction::NodeRegistry, config::registry::get_registry, AssetLoader, Error, GraphNode};
 use serde::{Deserialize, Serialize, de};
 use serde_json::Value;
 use std::fmt::Formatter;
 
 pub trait NodeConfig: Send + 'static {
-    fn to_node(&self, registry: &NodeRegistry) -> Result<GraphNode, Error>;
+    fn to_node(&self, asset_loader: &Box<dyn AssetLoader>) -> Result<GraphNode, Error>;
     fn clone_child_configs(&self) -> Option<Vec<NodeConfigData>>;
     fn duplicate(&self) -> Box<dyn NodeConfig + Send + Sync + 'static>;
 }

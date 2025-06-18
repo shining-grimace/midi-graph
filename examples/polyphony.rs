@@ -1,8 +1,8 @@
 extern crate midi_graph;
 
 use midi_graph::{
-    Balance, BaseMixer, Event, EventTarget, FileAssetLoader, Message, MessageSender,
-    effect::AdsrEnvelopeNode, generator::TriangleWaveNode, group::PolyphonyNode,
+    Balance, BaseMixer, Event, EventTarget, Message, MessageSender, effect::AdsrEnvelopeNode,
+    generator::TriangleWaveNode, group::PolyphonyNode,
 };
 use std::{sync::Arc, thread::sleep, time::Duration};
 
@@ -18,7 +18,7 @@ fn main() {
         Box::new(TriangleWaveNode::new(None, Balance::Both, 0.75)),
     );
     let polyphony = PolyphonyNode::new(Some(POLYPHONY_NODE_ID), 6, Box::new(inner)).unwrap();
-    let mixer = BaseMixer::builder(FileAssetLoader, |_| {})
+    let mixer = BaseMixer::builder(|_| {})
         .unwrap()
         .set_initial_program(1, Box::new(polyphony))
         .start(Some(1))

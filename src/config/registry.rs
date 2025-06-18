@@ -1,5 +1,5 @@
 use crate::{
-    AssetLoader, Error,
+    Error,
     abstraction::{NodeConfig, NodeConfigData},
 };
 use std::collections::HashMap;
@@ -17,19 +17,22 @@ pub(crate) fn get_registry() -> Option<&'static NodeRegistry> {
     NODE_REGISTRY.get()
 }
 
-pub type ConfigDeserializerFn =
-    Box<dyn Fn(&serde_json::Value) -> Result<Box<dyn NodeConfig + Send + Sync + 'static>, serde_json::Error> + Send + Sync>;
+pub type ConfigDeserializerFn = Box<
+    dyn Fn(
+            &serde_json::Value,
+        ) -> Result<Box<dyn NodeConfig + Send + Sync + 'static>, serde_json::Error>
+        + Send
+        + Sync,
+>;
 
 pub struct NodeRegistry {
     config_fns: HashMap<String, ConfigDeserializerFn>,
-    asset_loader: Box<dyn AssetLoader + Send + Sync>,
 }
 
 impl NodeRegistry {
-    pub fn new(asset_loader: Box<dyn AssetLoader + Send + Sync + 'static>) -> Self {
+    pub fn new() -> Self {
         Self {
             config_fns: HashMap::new(),
-            asset_loader,
         }
     }
 
@@ -49,10 +52,6 @@ impl NodeRegistry {
 
     pub fn get_deserialize_fn(&self, type_name: &str) -> Option<&ConfigDeserializerFn> {
         self.config_fns.get(type_name)
-    }
-
-    pub fn load_asset(&self, path: &str) -> Result<Vec<u8>, Error> {
-        self.asset_loader.load_asset_data(path)
     }
 
     pub fn traverse_config_tree(

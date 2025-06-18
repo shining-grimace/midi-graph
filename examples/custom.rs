@@ -1,8 +1,8 @@
 extern crate midi_graph;
 
 use midi_graph::{
-    BaseMixer, Error, Event, EventTarget, FileAssetLoader, GraphNode, Message, Node,
-    abstraction::{NodeConfig, NodeConfigData, NodeRegistry, defaults},
+    AssetLoader, BaseMixer, Error, Event, EventTarget, FileAssetLoader, GraphNode, Message, Node,
+    abstraction::{NodeConfig, NodeConfigData, defaults},
     consts,
     group::Subtree,
     midi::{Midi, MidiDataSource},
@@ -24,24 +24,22 @@ fn main() {
         node_id: None,
         source: MidiDataSource::FilePath(MIDI_FILE.to_owned()),
         channels: HashMap::from([
-            (
-                CHANNEL_0,
-                NodeConfigData(Box::new(subtree_config))
-            ),
+            (CHANNEL_0, NodeConfigData(Box::new(subtree_config))),
             (
                 CHANNEL_1,
                 NodeConfigData(Box::new(SineWave {
                     node_id: None,
-                    amplitude: 0.5
-                }))
-            )
-        ])
+                    amplitude: 0.5,
+                })),
+            ),
+        ]),
     }));
-    let _mixer = BaseMixer::builder(FileAssetLoader::default(), |registry| {
+    let asset_loader: Box<dyn AssetLoader> = Box::new(FileAssetLoader);
+    let _mixer = BaseMixer::builder(|registry| {
         registry.register_node_type::<SineWave>("SineWave");
     })
     .unwrap()
-    .set_initial_program_from_config(1, config)
+    .set_initial_program_from_config(1, config, &asset_loader)
     .unwrap()
     .start(Some(1))
     .unwrap();
@@ -57,7 +55,7 @@ pub struct SineWave {
 }
 
 impl NodeConfig for SineWave {
-    fn to_node(&self, _registry: &NodeRegistry) -> Result<GraphNode, Error> {
+    fn to_node(&self, _asset_loader: &Box<dyn AssetLoader>) -> Result<GraphNode, Error> {
         Ok(Box::new(SineWaveNode::new(self.node_id, self.amplitude)))
     }
 

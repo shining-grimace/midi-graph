@@ -2,10 +2,11 @@ pub mod cue;
 pub mod util;
 
 use crate::{
-    Error, Event, EventTarget, GraphNode, Message, Node,
-    abstraction::{NodeConfigData, NodeRegistry, NodeConfig, defaults},
-    consts, util as file_util,
+    AssetLoader, Error, Event, EventTarget, GraphNode, Message, Node,
+    abstraction::{NodeConfig, NodeConfigData, defaults},
+    consts,
     midi::{CueData, MidiEvent},
+    util as file_util,
 };
 use midly::Smf;
 use serde::Deserialize;
@@ -28,15 +29,15 @@ pub struct Midi {
 }
 
 impl NodeConfig for Midi {
-    fn to_node(&self, registry: &NodeRegistry) -> Result<GraphNode, Error> {
+    fn to_node(&self, asset_loader: &Box<dyn AssetLoader>) -> Result<GraphNode, Error> {
         let mut midi_builder = match &self.source {
             MidiDataSource::FilePath(file) => {
-                let bytes = registry.load_asset(&file)?;
+                let bytes = asset_loader.load_asset_data(&file)?;
                 file_util::midi_builder_from_bytes(self.node_id, &bytes)?
             }
         };
         for (channel, source) in self.channels.iter() {
-            let source = source.0.to_node(registry)?;
+            let source = source.0.to_node(asset_loader)?;
             midi_builder = midi_builder.add_channel_source(*channel, source);
         }
         let source = midi_builder.build()?;
@@ -46,11 +47,10 @@ impl NodeConfig for Midi {
 
     fn clone_child_configs(&self) -> Option<Vec<NodeConfigData>> {
         Some(
-            self
-                .channels
+            self.channels
                 .iter()
                 .map(|(_, config)| config.clone())
-                .collect()
+                .collect(),
         )
     }
 
