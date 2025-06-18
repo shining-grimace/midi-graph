@@ -18,7 +18,7 @@ pub(crate) fn get_registry() -> Option<&'static NodeRegistry> {
 }
 
 pub type ConfigDeserializerFn =
-    Box<dyn Fn(&serde_json::Value) -> Result<Box<dyn NodeConfig>, serde_json::Error> + Send + Sync>;
+    Box<dyn Fn(&serde_json::Value) -> Result<Box<dyn NodeConfig + Send + Sync + 'static>, serde_json::Error> + Send + Sync>;
 
 pub struct NodeRegistry {
     config_fns: HashMap<String, ConfigDeserializerFn>,
@@ -35,7 +35,7 @@ impl NodeRegistry {
 
     pub fn register_node_type<C>(&mut self, type_name: &str)
     where
-        C: NodeConfig + serde::de::DeserializeOwned + 'static,
+        C: NodeConfig + serde::de::DeserializeOwned + Send + Sync + 'static,
     {
         let name = type_name.to_string();
         self.config_fns.insert(

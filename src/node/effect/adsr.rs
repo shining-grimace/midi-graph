@@ -52,7 +52,7 @@ impl NodeConfig for AdsrEnvelope {
         Some(vec![*self.source.clone()])
     }
 
-    fn duplicate(&self) -> Box<dyn NodeConfig> {
+    fn duplicate(&self) -> Box<dyn NodeConfig + Send + Sync + 'static> {
         Box::new(self.clone())
     }
 }

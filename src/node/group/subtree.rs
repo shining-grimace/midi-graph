@@ -45,7 +45,7 @@ impl NodeConfig for Subtree {
         None
     }
 
-    fn duplicate(&self) -> Box<dyn NodeConfig> {
+    fn duplicate(&self) -> Box<dyn NodeConfig + Send + Sync + 'static> {
         let new_self: Self = match &self.source {
             SubtreeData::FilePath(file_path) => Self::as_path(file_path),
             SubtreeData::Config(config) => Self::as_config(config.clone())

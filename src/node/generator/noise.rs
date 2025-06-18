@@ -45,7 +45,7 @@ impl NodeConfig for LfsrNoise {
         None
     }
 
-    fn duplicate(&self) -> Box<dyn NodeConfig> {
+    fn duplicate(&self) -> Box<dyn NodeConfig + Send + Sync + 'static> {
         Box::new(self.clone())
     }
 }

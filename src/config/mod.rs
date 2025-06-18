@@ -10,7 +10,7 @@ use std::fmt::Formatter;
 pub trait NodeConfig: Send + 'static {
     fn to_node(&self, registry: &NodeRegistry) -> Result<GraphNode, Error>;
     fn clone_child_configs(&self) -> Option<Vec<NodeConfigData>>;
-    fn duplicate(&self) -> Box<dyn NodeConfig>;
+    fn duplicate(&self) -> Box<dyn NodeConfig + Send + Sync + 'static>;
 }
 
 /// Loop range, defined as the inclusive start and exclusive end.
@@ -21,7 +21,7 @@ pub struct Loop {
     pub end: usize,
 }
 
-pub struct NodeConfigData(pub Box<dyn NodeConfig>);
+pub struct NodeConfigData(pub Box<dyn NodeConfig + Send + Sync + 'static>);
 
 impl Clone for NodeConfigData {
     fn clone(&self) -> Self {
