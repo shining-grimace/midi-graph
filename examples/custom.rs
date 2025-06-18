@@ -43,7 +43,7 @@ fn main() {
     .unwrap()
     .set_initial_program_from_config(1, config)
     .unwrap()
-    .build(1)
+    .start(Some(1))
     .unwrap();
     std::thread::sleep(Duration::from_secs(16));
 }

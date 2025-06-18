@@ -45,12 +45,6 @@ impl BaseMixerBuilder {
         })
     }
 
-    pub fn set_initial_empty_program(mut self, program_no: usize) -> Self {
-        self.programs
-            .insert(program_no, Box::new(NullNode::new(None)));
-        self
-    }
-
     pub fn store_program(mut self, program_no: usize, node: GraphNode) -> Self {
         self.programs.insert(program_no, node);
         self
@@ -82,7 +76,7 @@ impl BaseMixerBuilder {
         self.store_program_from_config(program_no, config)
     }
 
-    pub fn build(self, initial_program_no: usize) -> Result<BaseMixer, Error> {
+    pub fn start(self, initial_program_no: Option<usize>) -> Result<BaseMixer, Error> {
         BaseMixer::start_new(self.programs, initial_program_no)
     }
 }
@@ -115,7 +109,7 @@ impl BaseMixer {
 
     pub(crate) fn start_new(
         programs: HashMap<usize, GraphNode>,
-        initial_program_no: usize,
+        initial_program_no: Option<usize>,
     ) -> Result<Self, Error> {
         let null_node = Box::new(NullNode::new(None));
         let swappable = super::swap::SwappableConsumer::new(null_node);
@@ -132,7 +126,9 @@ impl BaseMixer {
             event_sender: Arc::new(event_sender),
             consumer: swappable,
         };
-        mixer.change_program(initial_program_no)?;
+        if let Some(program) = initial_program_no {
+            mixer.change_program(program)?;
+        }
         Ok(mixer)
     }
 

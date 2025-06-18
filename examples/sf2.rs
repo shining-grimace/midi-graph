@@ -36,7 +36,7 @@ fn main() {
     let _mixer = BaseMixer::builder(FileAssetLoader, |_| {})
         .unwrap()
         .set_initial_program(1, Box::new(midi))
-        .build(1)
+        .start(Some(1))
         .unwrap();
     std::thread::sleep(Duration::from_secs(16));
 }

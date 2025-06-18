@@ -65,7 +65,7 @@ fn main() {
         .unwrap()
         .set_initial_program_from_config(1, config)
         .unwrap()
-        .build(1)
+        .start(Some(1))
         .unwrap();
     let mut sender = mixer.get_event_sender();
     std::thread::spawn(move || {

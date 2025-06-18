@@ -68,7 +68,7 @@ fn main() {
         .unwrap()
         .set_initial_program_from_config(1, NodeConfigData(Box::new(soundfont)))
         .unwrap()
-        .build(1)
+        .start(Some(1))
         .expect("Could not open stream");
     let mut sender = mixer.get_event_sender();
     std::thread::spawn(move || {

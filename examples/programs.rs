@@ -11,7 +11,6 @@ use std::time::Duration;
 const MIDI_0_FILE: &'static str = "resources/sample-in-c.mid";
 const MIDI_1_FILE: &'static str = "resources/LoopingMidi.mid";
 
-const INITIAL_EMPTY_PROGRAM: usize = 1;
 const PROGRAM_0: usize = 0;
 const PROGRAM_1: usize = 7;
 
@@ -66,10 +65,9 @@ fn main() {
 
     let mut mixer = BaseMixer::builder(FileAssetLoader, |_| {})
         .unwrap()
-        .set_initial_empty_program(INITIAL_EMPTY_PROGRAM)
         .store_program(PROGRAM_0, Box::new(program_0))
         .store_program(PROGRAM_1, Box::new(program_1))
-        .build(INITIAL_EMPTY_PROGRAM)
+        .start(None)
         .unwrap();
     std::thread::sleep(Duration::from_secs(1));
     mixer.change_program(PROGRAM_0).unwrap();

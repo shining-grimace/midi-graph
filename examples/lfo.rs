@@ -19,7 +19,7 @@ fn main() {
     let mixer = BaseMixer::builder(FileAssetLoader, |_| {})
         .unwrap()
         .set_initial_program(1, Box::new(lfo_square))
-        .build(1)
+        .start(Some(1))
         .unwrap();
     let mut sender = mixer.get_event_sender();
     std::thread::spawn(move || {
