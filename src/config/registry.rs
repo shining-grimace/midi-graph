@@ -1,7 +1,4 @@
-use crate::{
-    Error,
-    abstraction::{NodeConfig, NodeConfigData},
-};
+use crate::{Error, abstraction::NodeConfig};
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
@@ -52,19 +49,5 @@ impl NodeRegistry {
 
     pub fn get_deserialize_fn(&self, type_name: &str) -> Option<&ConfigDeserializerFn> {
         self.config_fns.get(type_name)
-    }
-
-    pub fn traverse_config_tree(
-        &self,
-        config: &NodeConfigData,
-        touch_node: &mut dyn FnMut(&NodeConfigData),
-    ) -> Result<(), Error> {
-        touch_node(config);
-        if let Some(children) = config.0.clone_child_configs() {
-            for child in children.iter() {
-                touch_node(child);
-            }
-        }
-        Ok(())
     }
 }

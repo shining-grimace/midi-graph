@@ -2,7 +2,9 @@ pub mod builtin;
 pub mod defaults;
 pub mod registry;
 
-use crate::{abstraction::NodeRegistry, config::registry::get_registry, AssetLoader, Error, GraphNode};
+use crate::{
+    AssetLoader, Error, GraphNode, abstraction::NodeRegistry, config::registry::get_registry,
+};
 use serde::{Deserialize, Serialize, de};
 use serde_json::Value;
 use std::fmt::Formatter;
@@ -22,6 +24,21 @@ pub struct Loop {
 }
 
 pub struct NodeConfigData(pub Box<dyn NodeConfig + Send + Sync + 'static>);
+
+impl NodeConfigData {
+    pub fn traverse_config_tree(
+        config: &Self,
+        touch_node: &mut dyn FnMut(&Self),
+    ) -> Result<(), Error> {
+        touch_node(config);
+        if let Some(children) = config.0.clone_child_configs() {
+            for child in children.iter() {
+                touch_node(child);
+            }
+        }
+        Ok(())
+    }
+}
 
 impl Clone for NodeConfigData {
     fn clone(&self) -> Self {
