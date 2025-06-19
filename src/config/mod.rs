@@ -12,6 +12,7 @@ use std::fmt::Formatter;
 pub trait NodeConfig: Send + 'static {
     fn to_node(&self, asset_loader: &Box<dyn AssetLoader>) -> Result<GraphNode, Error>;
     fn clone_child_configs(&self) -> Option<Vec<NodeConfigData>>;
+    fn asset_source(&self) -> Option<&str>;
     fn duplicate(&self) -> Box<dyn NodeConfig + Send + Sync + 'static>;
 }
 

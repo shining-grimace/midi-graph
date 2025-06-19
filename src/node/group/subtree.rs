@@ -1,30 +1,30 @@
 use crate::{
     AssetLoader, Error, GraphNode,
-    abstraction::{NodeConfigData, NodeConfig}
+    abstraction::{NodeConfig, NodeConfigData},
 };
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Clone)]
 pub enum SubtreeData {
     FilePath(String),
-    Config(NodeConfigData)
+    Config(NodeConfigData),
 }
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Subtree {
-    pub source: SubtreeData
+    pub source: SubtreeData,
 }
 
 impl Subtree {
     pub fn as_path(file_path: &str) -> Self {
         Self {
-            source: SubtreeData::FilePath(file_path.to_owned())
+            source: SubtreeData::FilePath(file_path.to_owned()),
         }
     }
 
     pub fn as_config(config: NodeConfigData) -> Self {
         Self {
-            source: SubtreeData::Config(config)
+            source: SubtreeData::Config(config),
         }
     }
 }
@@ -37,7 +37,7 @@ impl NodeConfig for Subtree {
                 let config: NodeConfigData = serde_json::from_slice(&asset_data)?;
                 config.0.to_node(asset_loader)
             }
-            SubtreeData::Config(config) => config.0.to_node(asset_loader)
+            SubtreeData::Config(config) => config.0.to_node(asset_loader),
         }
     }
 
@@ -45,12 +45,18 @@ impl NodeConfig for Subtree {
         None
     }
 
+    fn asset_source(&self) -> Option<&str> {
+        match &self.source {
+            SubtreeData::FilePath(path) => Some(path),
+            SubtreeData::Config(_) => None,
+        }
+    }
+
     fn duplicate(&self) -> Box<dyn NodeConfig + Send + Sync + 'static> {
         let new_self: Self = match &self.source {
             SubtreeData::FilePath(file_path) => Self::as_path(file_path),
-            SubtreeData::Config(config) => Self::as_config(config.clone())
+            SubtreeData::Config(config) => Self::as_config(config.clone()),
         };
         Box::new(new_self)
     }
 }
-

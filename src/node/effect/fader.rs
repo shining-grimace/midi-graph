@@ -37,6 +37,10 @@ impl NodeConfig for Fader {
         Some(vec![self.source.clone()])
     }
 
+    fn asset_source(&self) -> Option<&str> {
+        None
+    }
+
     fn duplicate(&self) -> Box<dyn NodeConfig + Send + Sync + 'static> {
         Box::new(self.clone())
     }

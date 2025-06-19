@@ -40,6 +40,10 @@ impl NodeConfig for Mixer {
         Some(vec![self.sources[0].clone(), self.sources[1].clone()])
     }
 
+    fn asset_source(&self) -> Option<&str> {
+        None
+    }
+
     fn duplicate(&self) -> Box<dyn NodeConfig + Send + Sync + 'static> {
         Box::new(self.clone())
     }

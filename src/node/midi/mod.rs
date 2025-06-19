@@ -54,6 +54,12 @@ impl NodeConfig for Midi {
         )
     }
 
+    fn asset_source(&self) -> Option<&str> {
+        match &self.source {
+            MidiDataSource::FilePath(path) => Some(path),
+        }
+    }
+
     fn duplicate(&self) -> Box<dyn NodeConfig + Send + Sync + 'static> {
         Box::new(self.clone())
     }

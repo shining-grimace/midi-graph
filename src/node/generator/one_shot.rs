@@ -28,6 +28,10 @@ impl NodeConfig for OneShot {
         None
     }
 
+    fn asset_source(&self) -> Option<&str> {
+        Some(&self.path)
+    }
+
     fn duplicate(&self) -> Box<dyn NodeConfig + Send + Sync + 'static> {
         Box::new(self.clone())
     }

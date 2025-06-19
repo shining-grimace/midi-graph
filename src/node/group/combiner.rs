@@ -26,6 +26,10 @@ impl NodeConfig for Combiner {
         Some(self.sources.clone())
     }
 
+    fn asset_source(&self) -> Option<&str> {
+        None
+    }
+
     fn duplicate(&self) -> Box<dyn NodeConfig + Send + Sync + 'static> {
         Box::new(self.clone())
     }

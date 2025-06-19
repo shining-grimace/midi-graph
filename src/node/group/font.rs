@@ -87,6 +87,13 @@ impl NodeConfig for Font {
         }
     }
 
+    fn asset_source(&self) -> Option<&str> {
+        match &self.config {
+            FontSource::Ranges(_) => None,
+            FontSource::Sf2FilePath { path, .. } => Some(path),
+        }
+    }
+
     fn duplicate(&self) -> Box<dyn NodeConfig + Send + Sync + 'static> {
         Box::new(self.clone())
     }
