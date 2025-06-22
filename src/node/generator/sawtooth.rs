@@ -26,7 +26,7 @@ impl SawtoothWave {
 }
 
 impl NodeConfig for SawtoothWave {
-    fn to_node(&self, _asset_loader: &Box<dyn AssetLoader>) -> Result<GraphNode, Error> {
+    fn to_node(&self, _asset_loader: &dyn AssetLoader) -> Result<GraphNode, Error> {
         Ok(Box::new(SawtoothWaveNode::new(
             self.node_id,
             self.balance,

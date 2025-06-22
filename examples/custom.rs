@@ -34,12 +34,11 @@ fn main() {
             ),
         ]),
     }));
-    let asset_loader: Box<dyn AssetLoader> = Box::new(FileAssetLoader);
     let _mixer = BaseMixer::builder(|registry| {
         registry.register_node_type::<SineWave>("SineWave");
     })
     .unwrap()
-    .set_initial_program_from_config(1, config, &asset_loader)
+    .set_initial_program_from_config(1, config, &FileAssetLoader)
     .unwrap()
     .start(Some(1))
     .unwrap();
@@ -55,11 +54,15 @@ pub struct SineWave {
 }
 
 impl NodeConfig for SineWave {
-    fn to_node(&self, _asset_loader: &Box<dyn AssetLoader>) -> Result<GraphNode, Error> {
+    fn to_node(&self, _asset_loader: &dyn AssetLoader) -> Result<GraphNode, Error> {
         Ok(Box::new(SineWaveNode::new(self.node_id, self.amplitude)))
     }
 
     fn clone_child_configs(&self) -> Option<Vec<NodeConfigData>> {
+        None
+    }
+
+    fn asset_source(&self) -> Option<&str> {
         None
     }
 

@@ -14,7 +14,7 @@ pub struct Lfo {
 }
 
 impl NodeConfig for Lfo {
-    fn to_node(&self, asset_loader: &Box<dyn AssetLoader>) -> Result<GraphNode, Error> {
+    fn to_node(&self, asset_loader: &dyn AssetLoader) -> Result<GraphNode, Error> {
         let source = self.source.0.to_node(asset_loader)?;
         Ok(Box::new(LfoNode::new(self.node_id, source)?))
     }

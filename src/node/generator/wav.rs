@@ -19,7 +19,7 @@ pub struct SampleLoop {
 }
 
 impl NodeConfig for SampleLoop {
-    fn to_node(&self, asset_loader: &Box<dyn AssetLoader>) -> Result<GraphNode, Error> {
+    fn to_node(&self, asset_loader: &dyn AssetLoader) -> Result<GraphNode, Error> {
         let loop_range = self.looping.as_ref().map(LoopRange::from_config);
         let bytes = asset_loader.load_asset_data(&self.path)?;
         let source = util::wav_from_bytes(

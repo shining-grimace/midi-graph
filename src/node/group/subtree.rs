@@ -30,7 +30,7 @@ impl Subtree {
 }
 
 impl NodeConfig for Subtree {
-    fn to_node(&self, asset_loader: &Box<dyn AssetLoader>) -> Result<GraphNode, Error> {
+    fn to_node(&self, asset_loader: &dyn AssetLoader) -> Result<GraphNode, Error> {
         match &self.source {
             SubtreeData::FilePath(file_path) => {
                 let asset_data = asset_loader.load_asset_data(file_path)?;

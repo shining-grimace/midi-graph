@@ -13,7 +13,7 @@ pub struct Combiner {
 }
 
 impl NodeConfig for Combiner {
-    fn to_node(&self, asset_loader: &Box<dyn AssetLoader>) -> Result<GraphNode, Error> {
+    fn to_node(&self, asset_loader: &dyn AssetLoader) -> Result<GraphNode, Error> {
         let children_nodes = self
             .sources
             .iter()

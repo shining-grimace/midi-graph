@@ -29,7 +29,7 @@ pub struct Midi {
 }
 
 impl NodeConfig for Midi {
-    fn to_node(&self, asset_loader: &Box<dyn AssetLoader>) -> Result<GraphNode, Error> {
+    fn to_node(&self, asset_loader: &dyn AssetLoader) -> Result<GraphNode, Error> {
         let mut midi_builder = match &self.source {
             MidiDataSource::FilePath(file) => {
                 let bytes = asset_loader.load_asset_data(&file)?;

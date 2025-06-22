@@ -24,7 +24,7 @@ impl Polyphony {
 }
 
 impl NodeConfig for Polyphony {
-    fn to_node(&self, asset_loader: &Box<dyn AssetLoader>) -> Result<GraphNode, Error> {
+    fn to_node(&self, asset_loader: &dyn AssetLoader) -> Result<GraphNode, Error> {
         let child = self.source.0.to_node(asset_loader)?;
         Ok(Box::new(PolyphonyNode::new(
             self.node_id,

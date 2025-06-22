@@ -44,7 +44,7 @@ impl Font {
 }
 
 impl NodeConfig for Font {
-    fn to_node(&self, asset_loader: &Box<dyn AssetLoader>) -> Result<GraphNode, Error> {
+    fn to_node(&self, asset_loader: &dyn AssetLoader) -> Result<GraphNode, Error> {
         let node: GraphNode = match &self.config {
             FontSource::Ranges(range_configs) => {
                 let mut builder = FontNodeBuilder::new(self.node_id);

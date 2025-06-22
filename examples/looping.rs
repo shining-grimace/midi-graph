@@ -1,7 +1,7 @@
 extern crate midi_graph;
 
 use midi_graph::{
-    AssetLoader, Balance, BaseMixer, Event, EventTarget, FileAssetLoader, Message, MessageSender,
+    Balance, BaseMixer, Event, EventTarget, FileAssetLoader, Message, MessageSender,
     abstraction::NodeConfigData,
     effect::Fader,
     generator::{LfsrNoise, SawtoothWave},
@@ -61,10 +61,9 @@ fn main() {
             ),
         ]),
     }));
-    let asset_loader: Box<dyn AssetLoader> = Box::new(FileAssetLoader);
     let mixer = BaseMixer::builder(|_| {})
         .unwrap()
-        .set_initial_program_from_config(1, config, &asset_loader)
+        .set_initial_program_from_config(1, config, &FileAssetLoader)
         .unwrap()
         .start(Some(1))
         .unwrap();

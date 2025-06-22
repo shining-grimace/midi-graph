@@ -53,7 +53,7 @@ impl BaseMixerBuilder {
         mut self,
         program_no: usize,
         config: NodeConfigData,
-        asset_loader: &Box<dyn AssetLoader>,
+        asset_loader: &dyn AssetLoader,
     ) -> Result<Self, Error> {
         let node = config.0.to_node(asset_loader)?;
         self.programs.insert(program_no, node);
@@ -64,7 +64,7 @@ impl BaseMixerBuilder {
         mut self,
         program_no: usize,
         config: NodeConfigData,
-        asset_loader: &Box<dyn AssetLoader>,
+        asset_loader: &dyn AssetLoader,
     ) -> Result<Self, Error> {
         self.initial_program = Some(program_no);
         self.store_program_from_config(program_no, config, asset_loader)

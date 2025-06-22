@@ -7,7 +7,7 @@ pub struct Null {
 }
 
 impl NodeConfig for Null {
-    fn to_node(&self, _asset_loader: &Box<dyn AssetLoader>) -> Result<GraphNode, Error> {
+    fn to_node(&self, _asset_loader: &dyn AssetLoader) -> Result<GraphNode, Error> {
         Ok(Box::new(NullNode::new(self.node_id)))
     }
 
