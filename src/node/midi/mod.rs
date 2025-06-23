@@ -294,7 +294,6 @@ impl Node for MidiNode {
     }
 
     fn try_consume_event(&mut self, event: &Message) -> bool {
-        println!("Received event {:?}", event);
         match &event.data {
             Event::CueData(cue) => {
                 self.process_cue_event(cue);
