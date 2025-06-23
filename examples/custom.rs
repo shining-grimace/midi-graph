@@ -34,7 +34,7 @@ fn main() {
             ),
         ]),
     }));
-    let _mixer = BaseMixer::builder(|registry| {
+    let _mixer = BaseMixer::builder_with_custom_registry(|registry| {
         registry.register_node_type::<SineWave>("SineWave");
     })
     .unwrap()

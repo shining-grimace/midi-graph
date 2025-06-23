@@ -16,7 +16,7 @@ fn main() {
     )
     .unwrap();
 
-    let mixer = BaseMixer::builder(|_| {})
+    let mixer = BaseMixer::builder_with_default_registry()
         .unwrap()
         .set_initial_program(1, Box::new(lfo_square))
         .start(Some(1))

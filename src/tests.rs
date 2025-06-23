@@ -1,8 +1,8 @@
 use crate::{
-    font::SoundFontBuilder,
-    generator::SquareWaveSource,
+    Balance, BaseMixer, NoteRange,
+    generator::SquareWaveNode,
+    group::FontNodeBuilder,
     util::{midi_builder_from_file, wav_from_file},
-    Balance, BaseMixer, NoteRange
 };
 use std::time::Duration;
 
@@ -28,10 +28,10 @@ fn can_play_square_stream() {
         .add_channel_source(
             0,
             Box::new(
-                SoundFontBuilder::new(None)
+                FontNodeBuilder::new(None)
                     .add_range(
                         NoteRange::new_full_range(),
-                        Box::new(SquareWaveSource::new(None, Balance::Both, 0.25, 0.125)),
+                        Box::new(SquareWaveNode::new(None, Balance::Both, 0.25, 0.125)),
                     )
                     .unwrap()
                     .build(),
@@ -39,7 +39,10 @@ fn can_play_square_stream() {
         )
         .build()
         .unwrap();
-    let mixer = BaseMixer::start_single_program(Box::new(midi));
+    let mixer = BaseMixer::builder_with_default_registry()
+        .unwrap()
+        .set_initial_program(1, Box::new(midi))
+        .start(Some(1));
     assert!(mixer.is_ok());
 
     std::thread::sleep(Duration::from_secs(3));
@@ -52,7 +55,7 @@ fn can_play_wav_stream() {
         .add_channel_source(
             0,
             Box::new(
-                SoundFontBuilder::new(None)
+                FontNodeBuilder::new(None)
                     .add_range(
                         NoteRange::new_full_range(),
                         Box::new(wav_from_file(WAV_FILE, 69, None, Balance::Both, None).unwrap()),
@@ -63,7 +66,9 @@ fn can_play_wav_stream() {
         )
         .build()
         .unwrap();
-    let mixer = BaseMixer::start_single_program(Box::new(midi));
+    let mixer = BaseMixer::builder_with_existing_registry()
+        .set_initial_program(1, Box::new(midi))
+        .start(Some(1));
     assert!(mixer.is_ok());
 
     std::thread::sleep(Duration::from_secs(3));

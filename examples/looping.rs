@@ -61,7 +61,7 @@ fn main() {
             ),
         ]),
     }));
-    let mixer = BaseMixer::builder(|_| {})
+    let mixer = BaseMixer::builder_with_default_registry()
         .unwrap()
         .set_initial_program_from_config(1, config, &FileAssetLoader)
         .unwrap()

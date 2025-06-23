@@ -56,7 +56,7 @@ fn main() {
         .add_channel_source(NOISE_CHANNEL, Box::new(noise_font))
         .build()
         .unwrap();
-    let _mixer = BaseMixer::builder(|_| {})
+    let _mixer = BaseMixer::builder_with_default_registry()
         .unwrap()
         .set_initial_program(1, Box::new(midi))
         .start(Some(1))

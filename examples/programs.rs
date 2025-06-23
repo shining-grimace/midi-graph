@@ -63,7 +63,7 @@ fn main() {
         .build()
         .unwrap();
 
-    let mut mixer = BaseMixer::builder(|_| {})
+    let mut mixer = BaseMixer::builder_with_default_registry()
         .unwrap()
         .store_program(PROGRAM_0, Box::new(program_0))
         .store_program(PROGRAM_1, Box::new(program_1))

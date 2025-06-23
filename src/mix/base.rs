@@ -25,18 +25,22 @@ pub struct BaseMixerBuilder {
 }
 
 impl BaseMixerBuilder {
-    pub fn new<F>(mut registration: F) -> Result<Self, Error>
+    pub(crate) fn with_new_registry<F>(mut customisation: F) -> Result<Self, Error>
     where
         F: FnMut(&mut NodeRegistry),
     {
         let mut config_registry = NodeRegistry::new();
         register_builtin_types(&mut config_registry);
-        registration(&mut config_registry);
+        customisation(&mut config_registry);
         init_node_registry(config_registry)?;
-        Ok(Self {
+        Ok(Self::with_existing_registry())
+    }
+
+    pub(crate) fn with_existing_registry() -> Self {
+        Self {
             programs: HashMap::new(),
             initial_program: None,
-        })
+        }
     }
 
     pub fn store_program(mut self, program_no: usize, node: GraphNode) -> Self {
@@ -90,11 +94,19 @@ impl Drop for BaseMixer {
 }
 
 impl BaseMixer {
-    pub fn builder<F>(registration: F) -> Result<BaseMixerBuilder, Error>
+    pub fn builder_with_default_registry() -> Result<BaseMixerBuilder, Error> {
+        BaseMixerBuilder::with_new_registry(|_| {})
+    }
+
+    pub fn builder_with_custom_registry<F>(customisation: F) -> Result<BaseMixerBuilder, Error>
     where
         F: FnMut(&mut NodeRegistry),
     {
-        BaseMixerBuilder::new(registration)
+        BaseMixerBuilder::with_new_registry(customisation)
+    }
+
+    pub fn builder_with_existing_registry() -> BaseMixerBuilder {
+        BaseMixerBuilder::with_existing_registry()
     }
 
     pub(crate) fn start_new(

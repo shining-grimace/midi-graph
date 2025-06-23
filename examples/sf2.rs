@@ -33,7 +33,7 @@ fn main() {
         .build()
         .unwrap();
 
-    let _mixer = BaseMixer::builder(|_| {})
+    let _mixer = BaseMixer::builder_with_default_registry()
         .unwrap()
         .set_initial_program(1, Box::new(midi))
         .start(Some(1))

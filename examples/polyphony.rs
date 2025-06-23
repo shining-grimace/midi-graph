@@ -18,7 +18,7 @@ fn main() {
         Box::new(TriangleWaveNode::new(None, Balance::Both, 0.75)),
     );
     let polyphony = PolyphonyNode::new(Some(POLYPHONY_NODE_ID), 6, Box::new(inner)).unwrap();
-    let mixer = BaseMixer::builder(|_| {})
+    let mixer = BaseMixer::builder_with_default_registry()
         .unwrap()
         .set_initial_program(1, Box::new(polyphony))
         .start(Some(1))
