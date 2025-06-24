@@ -1,4 +1,4 @@
-use crate::{Balance, BaseMixer, generator::SquareWaveSource, util::midi_builder_from_bytes};
+use crate::{Balance, BaseMixer, generator::SquareWaveNode, util::midi_builder_from_bytes};
 use std::time::Duration;
 use wasm_bindgen::prelude::*;
 
@@ -10,10 +10,14 @@ pub fn play_stream() {
         .unwrap()
         .add_channel_source(
             0,
-            Box::new(SquareWaveSource::new(None, Balance::Both, 0.25, 0.125)),
+            Box::new(SquareWaveNode::new(None, Balance::Both, 0.25, 0.125)),
         )
         .build()
         .unwrap();
-    let _mixer = BaseMixer::start_single_program(Box::new(midi_source));
+    let _mixer = BaseMixer::builder_with_default_registry()
+        .unwrap()
+        .set_initial_program(1, Box::new(midi_source))
+        .start(Some(1))
+        .unwrap();
     std::thread::sleep(Duration::from_secs(5));
 }
