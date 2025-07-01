@@ -1,4 +1,4 @@
-use crate::{midi::CueData, effect::ModulationProperty};
+use crate::{effect::ModulationProperty, midi::CueData};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug)]
@@ -56,6 +56,7 @@ pub enum Event {
     Volume(f32),
     PitchMultiplier(f32),
     TimeDilation(f32),
+    FilterFrequencyShift(f32),
     Fade {
         from: f32,
         to: f32,
@@ -75,6 +76,10 @@ pub enum Event {
         period_secs: f32,
         steps: usize,
     },
+    Filter {
+        filter: IirFilter,
+        cutoff_frequency: f32,
+    },
     EndModulation,
     Unknown,
 }
@@ -85,4 +90,18 @@ pub enum Balance {
     Left,
     Right,
     Pan(f32),
+}
+
+#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
+pub enum IirFilter {
+    SinglePoleLowPassApprox,
+    SinglePoleLowPass,
+    LowPass,
+    HighPass,
+    BandPass,
+    Notch,
+    AllPass,
+    LowShelf { db_gain: f32 },
+    HighShelf { db_gain: f32 },
+    PeakingEQ { db_gain: f32 },
 }

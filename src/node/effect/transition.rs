@@ -68,6 +68,7 @@ impl TransitionNode {
             Some(ModulationProperty::PitchMultiplier) => Event::PitchMultiplier(value),
             Some(ModulationProperty::MixBalance) => Event::MixerBalance(value),
             Some(ModulationProperty::TimeDilation) => Event::TimeDilation(value),
+            Some(ModulationProperty::FilterFrequencyShift) => Event::FilterFrequencyShift(value),
             None => {
                 return;
             }

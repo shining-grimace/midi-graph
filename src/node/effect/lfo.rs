@@ -70,6 +70,7 @@ impl LfoNode {
             Some(ModulationProperty::PitchMultiplier) => Event::PitchMultiplier(value),
             Some(ModulationProperty::MixBalance) => Event::MixerBalance(value),
             Some(ModulationProperty::TimeDilation) => Event::TimeDilation(value),
+            Some(ModulationProperty::FilterFrequencyShift) => Event::FilterFrequencyShift(value),
             None => {
                 return;
             }
@@ -87,6 +88,7 @@ impl LfoNode {
             Some(ModulationProperty::PitchMultiplier) => Event::PitchMultiplier(1.0),
             Some(ModulationProperty::MixBalance) => Event::MixerBalance(0.5),
             Some(ModulationProperty::TimeDilation) => Event::TimeDilation(1.0),
+            Some(ModulationProperty::FilterFrequencyShift) => Event::FilterFrequencyShift(0.0),
             None => {
                 return;
             }

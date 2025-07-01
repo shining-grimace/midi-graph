@@ -1,6 +1,6 @@
-
 pub mod adsr;
 pub mod fader;
+pub mod filter;
 pub mod lfo;
 pub mod transition;
 
@@ -10,6 +10,6 @@ pub enum ModulationProperty {
     Pan,
     PitchMultiplier,
     MixBalance,
-    TimeDilation
+    TimeDilation,
+    FilterFrequencyShift,
 }
-

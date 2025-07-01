@@ -1,6 +1,6 @@
 use crate::{
     config::NodeRegistry,
-    effect::{AdsrEnvelope, Fader, Lfo, Transition},
+    effect::{AdsrEnvelope, Fader, Filter, Lfo, Transition},
     generator::{LfsrNoise, Null, OneShot, SampleLoop, SawtoothWave, SquareWave, TriangleWave},
     group::{Combiner, Font, Mixer, Polyphony, Subtree},
     midi::Midi,
@@ -9,6 +9,7 @@ use crate::{
 pub(crate) fn register_builtin_types(registry: &mut NodeRegistry) {
     registry.register_node_type::<AdsrEnvelope>("AdsrEnvelope");
     registry.register_node_type::<Fader>("Fader");
+    registry.register_node_type::<Filter>("Filter");
     registry.register_node_type::<Lfo>("Lfo");
     registry.register_node_type::<Transition>("Transition");
     registry.register_node_type::<LfsrNoise>("LfsrNoise");

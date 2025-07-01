@@ -73,7 +73,7 @@ pub type GraphNode = Box<dyn Node + Send + 'static>;
 // General exports below
 
 pub use error::Error;
-pub use event::{Balance, Event, EventTarget, Message};
+pub use event::{Balance, Event, EventTarget, IirFilter, Message};
 pub use file::loader::FileAssetLoader;
 pub use loader::AssetLoader;
 pub use mix::base::BaseMixer;
@@ -84,7 +84,7 @@ pub mod abstraction {
     pub mod defaults {
         pub use crate::config::defaults::*;
     }
-    pub use super::config::{NodeConfig, NodeConfigData, Loop, registry::NodeRegistry};
+    pub use super::config::{Loop, NodeConfig, NodeConfigData, registry::NodeRegistry};
 }
 
 /// Nodes that wrap other nodes and apply effects to them.
@@ -93,6 +93,7 @@ pub mod effect {
         ModulationProperty,
         adsr::{AdsrEnvelope, AdsrEnvelopeNode},
         fader::{Fader, FaderNode},
+        filter::{Filter, FilterNode},
         lfo::{Lfo, LfoNode},
         transition::{Transition, TransitionNode},
     };
@@ -115,17 +116,17 @@ pub mod generator {
 pub mod group {
     pub use crate::node::group::{
         combiner::{Combiner, CombinerNode},
+        font::{Font, FontNode, FontNodeBuilder, FontSource, RangeSource},
         mixer::{Mixer, MixerNode},
         polyphony::{Polyphony, PolyphonyNode},
-        font::{Font, FontNode, FontNodeBuilder, FontSource, RangeSource},
-        subtree::{Subtree, SubtreeData}
+        subtree::{Subtree, SubtreeData},
     };
 }
 
 /// Special node that plays through a pre-defined, timed event sequence
 pub mod midi {
     pub use crate::node::midi::{
-        Midi, MidiNode, MidiNodeBuilder, MidiDataSource, cue::CueData, util::MidiEvent,
+        Midi, MidiDataSource, MidiNode, MidiNodeBuilder, cue::CueData, util::MidiEvent,
     };
 }
 

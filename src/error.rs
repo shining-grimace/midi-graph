@@ -1,4 +1,3 @@
-
 #[derive(Debug)]
 pub enum Error {
     User(String),
@@ -8,6 +7,7 @@ pub enum Error {
     Midly(midly::Error),
     Hound(hound::Error),
     Soundfont(soundfont::Error),
+    Filter(biquad::Errors),
     CpalBuild(cpal::BuildStreamError),
     CpalPlay(cpal::PlayStreamError),
     NoDevice,
@@ -23,6 +23,7 @@ impl std::fmt::Display for Error {
             Error::Midly(e) => e.fmt(fmt),
             Error::Hound(e) => e.fmt(fmt),
             Error::Soundfont(e) => fmt.write_fmt(format_args!("{:?}", e)),
+            Error::Filter(e) => fmt.write_fmt(format_args!("{:?}", e)),
             Error::CpalBuild(e) => e.fmt(fmt),
             Error::CpalPlay(e) => e.fmt(fmt),
             Error::NoDevice => "No audio device available".fmt(fmt),
@@ -59,6 +60,12 @@ impl From<midly::Error> for Error {
 impl From<soundfont::Error> for Error {
     fn from(value: soundfont::Error) -> Self {
         Error::Soundfont(value)
+    }
+}
+
+impl From<biquad::Errors> for Error {
+    fn from(value: biquad::Errors) -> Self {
+        Error::Filter(value)
     }
 }
 
