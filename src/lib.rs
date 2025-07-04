@@ -126,7 +126,7 @@ pub mod group {
 /// Special node that plays through a pre-defined, timed event sequence
 pub mod midi {
     pub use crate::node::midi::{
-        Midi, MidiDataSource, MidiNode, MidiNodeBuilder, cue::CueData, util::MidiEvent,
+        Midi, MidiDataSource, MidiNode, MidiNodeBuilder, cue::CueData, event::MidiEvent,
     };
 }
 

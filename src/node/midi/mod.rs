@@ -1,4 +1,5 @@
 pub mod cue;
+pub mod event;
 pub mod util;
 
 use crate::{
@@ -84,7 +85,7 @@ impl MidiNodeBuilder {
             println!("WARNING: MIDI: Only the first track containing notes will be used");
         }
         let samples_per_tick = util::get_samples_per_tick(&smf)?;
-        let midi_events = util::midi_events_from_midi(smf, track_no)?;
+        let midi_events = event::midi_events_from_midi(smf, track_no)?;
         Ok(Self {
             node_id,
             midi_events,
