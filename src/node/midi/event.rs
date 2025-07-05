@@ -7,8 +7,9 @@ pub fn midi_events_from_midi(smf: Smf, track_index: usize) -> Result<Vec<MidiEve
         .tracks
         .get(track_index)
         .ok_or_else(|| Error::User(format!("ERROR: MIDI: No track no. {}", track_index)))?;
+    let mut event_delta: isize = 0;
     for event in track {
-        let event_delta = u32::from(event.delta) as isize;
+        event_delta += u32::from(event.delta) as isize;
         match event.kind {
             // Special case for cue labels since they encode multiple events
             TrackEventKind::Meta(MetaMessage::CuePoint(label)) => {
@@ -17,10 +18,12 @@ pub fn midi_events_from_midi(smf: Smf, track_index: usize) -> Result<Vec<MidiEve
                 for cue_event in events.into_iter() {
                     midi_events.push(cue_event);
                 }
+                event_delta = 0;
             }
             _ => {
                 if let Some(graph_event) = MidiEvent::from_midi_event(event_delta, &event.kind) {
                     midi_events.push(graph_event);
+                    event_delta = 0;
                 }
             }
         }
