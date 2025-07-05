@@ -53,7 +53,7 @@ fn main() {
         )
         .unwrap()
         .build();
-    let midi = midi_builder_from_file(None, MIDI_FILE)
+    let midi = midi_builder_from_file(None, MIDI_FILE, 0)
         .unwrap()
         .add_channel_source(TRIANGLE_CHANNEL, Box::new(triangle_font))
         .add_channel_source(SQUARE_CHANNEL, Box::new(square_node))

@@ -1,12 +1,12 @@
 use crate::{Error, Event, EventTarget, Message, midi::CueData};
 use midly::{MetaMessage, MidiMessage, Smf, TrackEventKind};
 
-pub fn midi_events_from_midi(smf: Smf, track_no: usize) -> Result<Vec<MidiEvent>, Error> {
+pub fn midi_events_from_midi(smf: Smf, track_index: usize) -> Result<Vec<MidiEvent>, Error> {
     let mut midi_events: Vec<MidiEvent> = vec![];
     let track = smf
         .tracks
-        .get(track_no)
-        .ok_or_else(|| Error::User(format!("ERROR: MIDI: No track no. {}", track_no)))?;
+        .get(track_index)
+        .ok_or_else(|| Error::User(format!("ERROR: MIDI: No track no. {}", track_index)))?;
     for event in track {
         let event_delta = u32::from(event.delta) as isize;
         match event.kind {

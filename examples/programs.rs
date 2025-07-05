@@ -49,14 +49,14 @@ fn main() {
         )
     }
 
-    let program_0 = midi_builder_from_file(None, MIDI_0_FILE)
+    let program_0 = midi_builder_from_file(None, MIDI_0_FILE, 0)
         .unwrap()
         .add_channel_source(0, triangle_font())
         .add_channel_source(1, square_font())
         .add_channel_source(2, noise_font())
         .build()
         .unwrap();
-    let program_1 = midi_builder_from_file(None, MIDI_1_FILE)
+    let program_1 = midi_builder_from_file(None, MIDI_1_FILE, 0)
         .unwrap()
         .add_channel_source(0, noise_font())
         .add_channel_source(1, square_font())

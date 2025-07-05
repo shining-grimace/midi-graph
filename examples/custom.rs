@@ -22,7 +22,10 @@ fn main() {
     let subtree_config = Subtree::as_path(JSON_SUBTREE_FILE);
     let config = NodeConfigData(Box::new(Midi {
         node_id: None,
-        source: MidiDataSource::FilePath(MIDI_FILE.to_owned()),
+        source: MidiDataSource::FilePath {
+            path: MIDI_FILE.to_owned(),
+            track_index: 0,
+        },
         channels: HashMap::from([
             (CHANNEL_0, NodeConfigData(Box::new(subtree_config))),
             (

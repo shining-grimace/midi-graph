@@ -51,28 +51,29 @@ fn scan_for_data<T>(smf: &Smf, extractor: fn(&TrackEventKind) -> Option<T>) -> O
     None
 }
 
-pub fn choose_track_index(smf: &Smf) -> Result<usize, Error> {
+pub fn track_contains_notes(smf: &Smf, track_index: usize) -> Result<bool, Error> {
     if smf.tracks.is_empty() {
         return Err(Error::User("No tracks in MIDI file".to_owned()));
     }
-    for (i, track) in smf.tracks.iter().enumerate() {
-        let any_note_on_events = track.iter().any(|event| {
-            matches!(
-                event,
-                TrackEvent {
-                    kind: TrackEventKind::Midi {
-                        message: MidiMessage::NoteOn { key: _, vel: _ },
-                        ..
-                    },
-                    ..
-                }
-            )
-        });
-        if any_note_on_events {
-            return Ok(i);
-        }
+    if smf.tracks.len() <= track_index {
+        return Err(Error::User(format!(
+            "Track {} out of bounds (0-{})",
+            track_index,
+            smf.tracks.len() - 1,
+        )));
     }
-    Err(Error::User(
-        "MIDI file does not have any tracks with NoteOn events".to_owned(),
-    ))
+    let track = smf.tracks.get(track_index).unwrap();
+    let any_note_on_events = track.iter().any(|event| {
+        matches!(
+            event,
+            TrackEvent {
+                kind: TrackEventKind::Midi {
+                    message: MidiMessage::NoteOn { key: _, vel: _ },
+                    ..
+                },
+                ..
+            }
+        )
+    });
+    Ok(any_note_on_events)
 }

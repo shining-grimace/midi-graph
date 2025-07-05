@@ -21,7 +21,10 @@ const FADER_NODE_ID: u64 = 101;
 fn main() {
     let config = NodeConfigData(Box::new(Midi {
         node_id: Some(MIDI_NODE_ID),
-        source: MidiDataSource::FilePath(MIDI_FILE.to_owned()),
+        source: MidiDataSource::FilePath {
+            path: MIDI_FILE.to_owned(),
+            track_index: 0,
+        },
         channels: HashMap::from([
             (
                 NOISE_CHANNEL,

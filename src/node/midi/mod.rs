@@ -18,7 +18,7 @@ use crate::node::log;
 
 #[derive(Deserialize, Clone)]
 pub enum MidiDataSource {
-    FilePath(String),
+    FilePath { path: String, track_index: usize },
 }
 
 #[derive(Deserialize, Clone)]
@@ -32,9 +32,9 @@ pub struct Midi {
 impl NodeConfig for Midi {
     fn to_node(&self, asset_loader: &dyn AssetLoader) -> Result<GraphNode, Error> {
         let mut midi_builder = match &self.source {
-            MidiDataSource::FilePath(file) => {
-                let bytes = asset_loader.load_asset_data(&file)?;
-                file_util::midi_builder_from_bytes(self.node_id, &bytes)?
+            MidiDataSource::FilePath { path, track_index } => {
+                let bytes = asset_loader.load_asset_data(path)?;
+                file_util::midi_builder_from_bytes(self.node_id, &bytes, *track_index)?
             }
         };
         for (channel, source) in self.channels.iter() {
@@ -57,7 +57,10 @@ impl NodeConfig for Midi {
 
     fn asset_source(&self) -> Option<&str> {
         match &self.source {
-            MidiDataSource::FilePath(path) => Some(path),
+            MidiDataSource::FilePath {
+                path,
+                track_index: _,
+            } => Some(path),
         }
     }
 
@@ -76,16 +79,20 @@ pub struct MidiNodeBuilder {
 impl MidiNodeBuilder {
     /// Capture a non-static Smf, extracting MIDI event that contain text strings.
     /// Do not call to_static() on the Smf object before passing it in here!
-    pub fn new(node_id: Option<u64>, smf: Smf) -> Result<Self, Error> {
+    pub fn new(node_id: Option<u64>, smf: Smf, track_index: usize) -> Result<Self, Error> {
         #[cfg(debug_assertions)]
-        log::log_loaded_midi(&smf);
+        log::log_loaded_midi_track(&smf, track_index);
 
-        let track_no = util::choose_track_index(&smf)?;
-        if smf.tracks.len() > track_no + 1 {
-            println!("WARNING: MIDI: Only the first track containing notes will be used");
+        let contains_notes = util::track_contains_notes(&smf, track_index)?;
+        if !contains_notes {
+            println!(
+                "WARNING: MIDI: Track {} does not contain any notes",
+                track_index
+            );
         }
+
         let samples_per_tick = util::get_samples_per_tick(&smf)?;
-        let midi_events = event::midi_events_from_midi(smf, track_no)?;
+        let midi_events = event::midi_events_from_midi(smf, track_index)?;
         Ok(Self {
             node_id,
             midi_events,

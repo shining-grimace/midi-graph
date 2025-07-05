@@ -1,20 +1,25 @@
-use midly::{num::u24, Fps, MetaMessage, MidiMessage, Smf, Timing, TrackEvent, TrackEventKind};
+use midly::{Fps, MetaMessage, MidiMessage, Smf, Timing, TrackEvent, TrackEventKind, num::u24};
 
-pub fn log_loaded_midi(smf: &Smf) {
-    println!("MIDI: {}", get_log_for_header(smf));
-    for track_events in smf.tracks.iter() {
-        for event in track_events.iter() {
-            if let Some(message) = get_log_for_event(event) {
-                println!("MIDI: {}", message);
-            }
-        }
-    }
+pub fn log_loaded_midi_track(smf: &Smf, track_index: usize) {
     println!("MIDI: File loaded.");
+    println!("MIDI: {}", get_log_for_header(smf));
     if smf.tracks.is_empty() {
         println!("WARNING: MIDI: There are no tracks to play.");
-    } else {
-        for (index, track) in smf.tracks.iter().enumerate() {
-            println!("MIDI: Track {} has {} events.", index, track.len());
+        return;
+    } else if smf.tracks.len() <= track_index {
+        println!(
+            "WARNING: MIDI: Track index {} out of bounds (0-{})",
+            track_index,
+            smf.tracks.len() - 1
+        );
+        return;
+    }
+    println!("MIDI: {} tracks in file", smf.tracks.len());
+    let track = smf.tracks.get(track_index).unwrap();
+    println!("MIDI: Track {} has {} events.", track_index, track.len());
+    for event in track.iter() {
+        if let Some(message) = get_log_for_event(event) {
+            println!("  MIDI: {}", message);
         }
     }
 }

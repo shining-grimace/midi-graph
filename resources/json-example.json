@@ -1,7 +1,10 @@
 {
   "type": "Midi",
   "source": {
-    "FilePath": "resources/sample-in-c.mid"
+    "FilePath": {
+      "path": "resources/sample-in-c.mid",
+      "track_index": 0
+    }
   },
   "channels": {
     "0": {
