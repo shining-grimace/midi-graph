@@ -83,29 +83,47 @@ with MIDI Graph.
 
 ### REAPER 7
 
-#### Workflow Tips
+#### MIDI Graph Cues
 
 Add project Markers ("Insert" > "Marker (prompt for name)") at a desired playback position and
 use the name to specify MIDI Graph custom cue components.
 
-For a workflow to compose all notes in a single Track, add one Track for composing notes, and
-then one additional Track per sound that will be used. Send the composition Track to every other
-track. Add the MIDI Channel Filter LV2 plugin to the receiving Tracks, setting each one to a
-different channel, and add plugins for the desired sound for each channel Track. Now in the piano
-roll for the composition Track, set the "Color" option to "Channel" so notes are easier to
-distinguish by channel.
+#### Managing Instruments Per Channel
+
+MIDI Graph loads a single MIDI file track into a MIDI node, with a separate child node assigned
+to each channel used.
+
+To simulate this in REAPER, compose all notes in one track, but use a separate channel for each
+desired instrument. Then, add an additional track for each instrument. Send the original track
+where the notes are to each additional track, and add the MIDI Channel Filter LV2 plugin to the
+main track.
+
+To make channels easier to work with, in the piano roll for your composition track, set the
+"Color" option to "Channel", and it will be easier to tell which notes are for the same instrument
+given that they're all mixed together in one view.
+
+#### Project Configuration
+
+The above notes on Managing Instruments Per Channel describes the setup for a single track to be
+exported. This can be duplicated to implement multiple composition tracks in one project, though
+each composition track (track with MIDI notes) will need to be loaded into a separate MIDI node
+on the MIDI Graph side.
+
+It is not necessary to set up per-channel instruments on blank tracks (with no MIDI items on the
+track). There will be other ways to simulate in REAPER what is desired to be heard in MIDI Graph,
+though the setup will depend on what kinds of instruments are used (samplers, synths, etc.) and
+what configuration options your specific plugins support.
 
 #### Export Settings
 
 When exporting ("File" > "Export Project MIDI..."):
-- If notes were composed in a single track using multiple channels, select the main composition
-  track before exporting, and then in the export dialog choose "Selected tracks only" under the
-  "Consolidate MIDI items" setting, and "Merge to single MIDI track (type 0 MIDI file)" under
-  "Output"
 - Check the "Embed project tempo/time signature changes" option
 - Check the "Export project markers as MIDI", choose "cues" instead of "markers", and uncheck
   the "Only export project markers that begin with '#'" setting to export cue components
   correctly
+- Both "Merge to single MIDI track (type 0 MIDI file)" and "Multitrack MIDI file (type 1 MIDI
+  file)" are supported, though in the multitrack case only tracks with note data should be
+  loaded into a MIDI node in MIDI Graph, and only one track can be loaded be node
 
 ## Examples
 
