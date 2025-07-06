@@ -24,6 +24,7 @@ pub struct Midi {
     #[serde(default = "defaults::none_id")]
     pub node_id: Option<u64>,
     pub source: MidiDataSource,
+    pub track_index: usize,
     pub channels: HashMap<usize, NodeConfigData>,
 }
 
@@ -68,6 +69,7 @@ impl NodeConfig for Midi {
 }
 
 pub struct MidiNodeBuilder {
+    from_track_index: usize,
     node_id: Option<u64>,
     midi_events: Vec<MidiEvent>,
     channel_sources: HashMap<usize, GraphNode>,
@@ -93,6 +95,7 @@ impl MidiNodeBuilder {
         let samples_per_tick = util::get_samples_per_tick(&smf)?;
         let midi_events = event::midi_events_from_midi(smf, track_index)?;
         Ok(Self {
+            from_track_index: track_index,
             node_id,
             midi_events,
             channel_sources: HashMap::new(),
@@ -107,6 +110,7 @@ impl MidiNodeBuilder {
         samples_per_tick: f64,
     ) -> Self {
         Self {
+            from_track_index: 69,
             node_id,
             midi_events,
             channel_sources: HashMap::new(),
@@ -121,6 +125,7 @@ impl MidiNodeBuilder {
 
     pub fn build(self) -> Result<MidiNode, Error> {
         MidiNode::new(
+            self.from_track_index,
             self.node_id,
             self.midi_events,
             self.channel_sources,
@@ -130,6 +135,8 @@ impl MidiNodeBuilder {
 }
 
 pub struct MidiNode {
+    from_track_index: usize,
+    cumulative_samples: u64,
     midi_events: Vec<MidiEvent>,
     node_id: u64,
     queued_ideal_seek: Option<u32>,
@@ -143,6 +150,7 @@ pub struct MidiNode {
 
 impl MidiNode {
     fn new(
+        from_track_index: usize,
         node_id: Option<u64>,
         midi_events: Vec<MidiEvent>,
         channel_sources: HashMap<usize, GraphNode>,
@@ -157,6 +165,8 @@ impl MidiNode {
         }
 
         Ok(Self {
+            from_track_index,
+            cumulative_samples: 0,
             midi_events,
             node_id: node_id.unwrap_or_else(<Self as Node>::new_node_id),
             queued_ideal_seek: None,
@@ -206,6 +216,12 @@ impl MidiNode {
         let Some(source) = self.channel_sources.get_mut(&event.channel) else {
             return;
         };
+        if DebugLogging::get_log_on_midi_event() {
+            println!(
+                "MIDI event: track {} after {} samples: {:?}",
+                self.from_track_index, self.cumulative_samples, &event.message,
+            );
+        }
         source.on_event(&event.message);
     }
 
@@ -249,6 +265,7 @@ impl MidiNode {
 
                 {
                     if samples_until_event > samples_available_per_channel {
+                        self.cumulative_samples += samples_available_per_channel as u64;
                         for (_, source) in self.channel_sources.iter_mut() {
                             source.fill_buffer(buffer);
                         }
@@ -259,6 +276,7 @@ impl MidiNode {
                     }
 
                     let buffer_samples_to_fill = samples_until_event * consts::CHANNEL_COUNT;
+                    self.cumulative_samples += samples_until_event as u64;
                     for (_, source) in self.channel_sources.iter_mut() {
                         source.fill_buffer(&mut buffer[0..buffer_samples_to_fill]);
                     }
@@ -292,6 +310,7 @@ impl Node for MidiNode {
             return Err(Error::User("MidiSource cannot be duplicated".to_owned()));
         }
         let source = Self::new(
+            self.from_track_index,
             Some(self.node_id),
             self.midi_events.clone(),
             HashMap::new(),
