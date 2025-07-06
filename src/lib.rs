@@ -61,6 +61,7 @@ mod error;
 mod event;
 mod file;
 mod loader;
+mod log;
 mod mix;
 mod node;
 
@@ -76,6 +77,7 @@ pub use error::Error;
 pub use event::{Balance, Event, EventTarget, IirFilter, Message};
 pub use file::loader::FileAssetLoader;
 pub use loader::AssetLoader;
+pub use log::DebugLogging;
 pub use mix::base::BaseMixer;
 pub use node::{LoopRange, Node, NoteRange};
 

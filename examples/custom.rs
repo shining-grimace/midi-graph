@@ -144,13 +144,6 @@ impl Node for SineWaveNode {
         let mut stretched_progress =
             self.cycle_progress_samples * pitch_period_samples / self.period_samples_a440;
 
-        #[cfg(debug_assertions)]
-        assert_eq!(size % consts::CHANNEL_COUNT, 0);
-
-        // Currently only-supported channel configuration
-        #[cfg(debug_assertions)]
-        assert_eq!(consts::CHANNEL_COUNT, 2);
-
         let current_amplitude = self.peak_amplitude * self.note_velocity;
         for i in (0..size).step_by(consts::CHANNEL_COUNT) {
             stretched_progress += 1.0;

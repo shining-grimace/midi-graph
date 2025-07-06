@@ -1,7 +1,7 @@
 use crate::{
-    Balance, Error, GraphNode, NoteRange,
+    Balance, DebugLogging, Error, GraphNode, NoteRange,
     file::wav::wav_from_i16_samples,
-    group::{PolyphonyNode, FontNode, FontNodeBuilder},
+    group::{FontNode, FontNodeBuilder, PolyphonyNode},
 };
 use byteorder::{LittleEndian, ReadBytesExt};
 use soundfont::{
@@ -45,8 +45,10 @@ where
 {
     let sf2 = SoundFont2::load(&mut reader)?;
     validate_sf2_file(&sf2)?;
-    #[cfg(debug_assertions)]
-    log_opened_sf2(&sf2);
+
+    if DebugLogging::get_log_on_init() {
+        log_opened_sf2(&sf2);
+    }
 
     let sample_chunk_metadata = &sf2
         .sample_data
@@ -59,8 +61,10 @@ where
             sf2.instruments.len()
         )));
     };
-    #[cfg(debug_assertions)]
-    println!("SF2: Using instrument from file: {:?}", &instrument.header);
+
+    if DebugLogging::get_log_on_init() {
+        println!("SF2: Using instrument from file: {:?}", &instrument.header);
+    }
 
     let mut soundfont_builder = FontNodeBuilder::new(node_id);
     for zone in instrument.zones.iter() {
@@ -140,7 +144,6 @@ fn note_range_for_zone(zone: &Zone) -> Result<NoteRange, Error> {
     ))
 }
 
-#[cfg(debug_assertions)]
 fn log_opened_sf2(sf2: &SoundFont2) {
     println!(
         "SF2: Contains {} presets, {} instruments and {} samples",

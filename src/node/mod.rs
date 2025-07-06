@@ -1,17 +1,11 @@
 pub mod effect;
 pub mod generator;
 pub mod group;
+pub mod log;
 pub mod midi;
 pub mod util;
 
-#[cfg(debug_assertions)]
-pub mod log;
-
-use crate::{
-    Error, EventTarget, GraphNode, Message,
-    group::RangeSource,
-    abstraction::Loop,
-};
+use crate::{Error, EventTarget, GraphNode, Message, abstraction::Loop, group::RangeSource};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 const START_GENERATED_NODE_IDS: u64 = 0x10000;

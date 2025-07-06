@@ -3,18 +3,16 @@ pub mod event;
 pub mod util;
 
 use crate::{
-    AssetLoader, Error, Event, EventTarget, GraphNode, Message, Node,
+    AssetLoader, DebugLogging, Error, Event, EventTarget, GraphNode, Message, Node,
     abstraction::{NodeConfig, NodeConfigData, defaults},
     consts,
     midi::{CueData, MidiEvent},
+    node::log,
     util as file_util,
 };
 use midly::Smf;
 use serde::Deserialize;
 use std::collections::HashMap;
-
-#[cfg(debug_assertions)]
-use crate::node::log;
 
 #[derive(Deserialize, Clone)]
 pub enum MidiDataSource {
@@ -80,8 +78,9 @@ impl MidiNodeBuilder {
     /// Capture a non-static Smf, extracting MIDI event that contain text strings.
     /// Do not call to_static() on the Smf object before passing it in here!
     pub fn new(node_id: Option<u64>, smf: Smf, track_index: usize) -> Result<Self, Error> {
-        #[cfg(debug_assertions)]
-        log::log_loaded_midi_track(&smf, track_index);
+        if DebugLogging::get_log_on_init() {
+            log::log_loaded_midi_track(&smf, track_index);
+        }
 
         let contains_notes = util::track_contains_notes(&smf, track_index)?;
         if !contains_notes {
