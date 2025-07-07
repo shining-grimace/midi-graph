@@ -254,6 +254,7 @@ impl MidiNode {
         #[cfg(debug_assertions)]
         assert_eq!(consts::CHANNEL_COUNT, 2);
 
+        let mut output_buffer: &mut [f32] = buffer;
         loop {
             let reached_note_event = {
                 let next_channel_event = &self.midi_events[self.next_event_index];
@@ -261,24 +262,25 @@ impl MidiNode {
                 let samples_until_event = (ticks_until_event as f64
                     * (self.samples_per_tick / self.time_dilation as f64))
                     as usize;
-                let samples_available_per_channel = buffer.len() / consts::CHANNEL_COUNT;
+                let samples_available_per_channel = output_buffer.len() / consts::CHANNEL_COUNT;
 
                 {
                     if samples_until_event > samples_available_per_channel {
                         self.cumulative_samples += samples_available_per_channel as u64;
                         for (_, source) in self.channel_sources.iter_mut() {
-                            source.fill_buffer(buffer);
+                            source.fill_buffer(output_buffer);
                         }
-                        self.event_ticks_progress += (samples_available_per_channel as f64
+                        let delta_ticks = (samples_available_per_channel as f64
                             / (self.samples_per_tick / self.time_dilation as f64))
                             as isize;
+                        self.event_ticks_progress += delta_ticks;
                         return;
                     }
 
                     let buffer_samples_to_fill = samples_until_event * consts::CHANNEL_COUNT;
                     self.cumulative_samples += samples_until_event as u64;
                     for (_, source) in self.channel_sources.iter_mut() {
-                        source.fill_buffer(&mut buffer[0..buffer_samples_to_fill]);
+                        source.fill_buffer(&mut output_buffer[0..buffer_samples_to_fill]);
                     }
                 }
 
@@ -289,6 +291,9 @@ impl MidiNode {
                     return;
                 }
 
+                output_buffer = &mut buffer[((samples_available_per_channel
+                    - samples_until_event)
+                    * consts::CHANNEL_COUNT)..];
                 next_channel_event
             };
             self.on_internal_event_reached(reached_note_event.clone());
