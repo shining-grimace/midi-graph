@@ -24,7 +24,6 @@ pub struct Midi {
     #[serde(default = "defaults::none_id")]
     pub node_id: Option<u64>,
     pub source: MidiDataSource,
-    pub track_index: usize,
     pub channels: HashMap<usize, NodeConfigData>,
 }
 
