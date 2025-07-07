@@ -144,7 +144,7 @@ pub struct MidiNode {
     has_finished: bool,
     samples_per_tick: f64,
     next_event_index: usize,
-    event_ticks_progress: isize,
+    event_samples_progress: isize,
     time_dilation: f32,
 }
 
@@ -174,7 +174,7 @@ impl MidiNode {
             has_finished: false,
             samples_per_tick,
             next_event_index: 0,
-            event_ticks_progress: 0,
+            event_samples_progress: 0,
             time_dilation: 1.0,
         })
     }
@@ -196,7 +196,7 @@ impl MidiNode {
             } => a == anchor,
             _ => false,
         }) {
-            self.event_ticks_progress = 0;
+            self.event_samples_progress = 0;
             self.next_event_index = index + 1;
             let broadcast_cutoff = Message {
                 target: EventTarget::Broadcast,
@@ -258,33 +258,31 @@ impl MidiNode {
         loop {
             let reached_note_event = {
                 let next_channel_event = &self.midi_events[self.next_event_index];
-                let ticks_until_event = next_channel_event.delta_ticks - self.event_ticks_progress;
-                let samples_until_event = (ticks_until_event as f64
+                let delta_samples = (next_channel_event.delta_ticks as f64
                     * (self.samples_per_tick / self.time_dilation as f64))
-                    as usize;
+                    as isize;
+                let samples_until_event = delta_samples - self.event_samples_progress;
                 let samples_available_per_channel = output_buffer.len() / consts::CHANNEL_COUNT;
 
                 {
-                    if samples_until_event > samples_available_per_channel {
+                    if samples_until_event > samples_available_per_channel as isize {
                         self.cumulative_samples += samples_available_per_channel as u64;
                         for (_, source) in self.channel_sources.iter_mut() {
                             source.fill_buffer(output_buffer);
                         }
-                        let delta_ticks = (samples_available_per_channel as f64
-                            / (self.samples_per_tick / self.time_dilation as f64))
-                            as isize;
-                        self.event_ticks_progress += delta_ticks;
+                        self.event_samples_progress += samples_available_per_channel as isize;
                         return;
                     }
 
-                    let buffer_samples_to_fill = samples_until_event * consts::CHANNEL_COUNT;
+                    let buffer_samples_to_fill =
+                        samples_until_event as usize * consts::CHANNEL_COUNT;
                     self.cumulative_samples += samples_until_event as u64;
                     for (_, source) in self.channel_sources.iter_mut() {
                         source.fill_buffer(&mut output_buffer[0..buffer_samples_to_fill]);
                     }
                 }
 
-                self.event_ticks_progress = 0;
+                self.event_samples_progress = 0;
                 self.next_event_index += 1;
                 if self.next_event_index >= self.midi_events.len() {
                     self.has_finished = true;
@@ -292,7 +290,7 @@ impl MidiNode {
                 }
 
                 output_buffer = &mut buffer[((samples_available_per_channel
-                    - samples_until_event)
+                    - samples_until_event as usize)
                     * consts::CHANNEL_COUNT)..];
                 next_channel_event
             };
