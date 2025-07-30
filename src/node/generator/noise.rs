@@ -31,7 +31,7 @@ impl LfsrNoise {
 }
 
 impl NodeConfig for LfsrNoise {
-    fn to_node(&self, _asset_loader: &dyn AssetLoader) -> Result<GraphNode, Error> {
+    fn to_node(&self, _asset_loader: &mut dyn AssetLoader) -> Result<GraphNode, Error> {
         Ok(Box::new(LfsrNoiseNode::new(
             self.node_id,
             self.balance,

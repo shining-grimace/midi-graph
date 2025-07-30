@@ -29,7 +29,7 @@ impl SquareWave {
 }
 
 impl NodeConfig for SquareWave {
-    fn to_node(&self, _asset_loader: &dyn AssetLoader) -> Result<GraphNode, Error> {
+    fn to_node(&self, _asset_loader: &mut dyn AssetLoader) -> Result<GraphNode, Error> {
         Ok(Box::new(SquareWaveNode::new(
             self.node_id,
             self.balance,

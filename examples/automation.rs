@@ -1,12 +1,13 @@
 extern crate midi_graph;
 
 use midi_graph::{
-    Balance, BaseMixer,
-    generator::{SquareWaveNode, TriangleWaveNode},
+    Balance, BaseMixer, FileAssetLoader,
+    abstraction::{NodeConfig, NodeConfigData},
+    generator::{SquareWave, TriangleWave},
     group::CombinerNode,
-    util::midi_builder_from_file,
+    midi::{Midi, MidiDataSource},
 };
-use std::time::Duration;
+use std::{collections::HashMap, time::Duration};
 
 // MIDI file with two tracks, and these kinds of events:
 // - Tempo change
@@ -22,22 +23,37 @@ const TRACK_NO_BASS: usize = 1;
 const TRACK_NO_LEAD: usize = 2;
 
 fn main() {
-    let bass_track_node = TriangleWaveNode::new(Some(NODE_ID_BASS), Balance::Both, 1.0);
-    let bass_track_midi = midi_builder_from_file(None, MIDI_FILE, TRACK_NO_BASS)
-        .unwrap()
-        .add_channel_source(CHANNEL_NO, Box::new(bass_track_node))
-        .build()
-        .unwrap();
-    let lead_track_node = SquareWaveNode::new(Some(NODE_ID_LEAD), Balance::Both, 0.25, 0.0625);
-    let lead_track_midi = midi_builder_from_file(None, MIDI_FILE, TRACK_NO_LEAD)
-        .unwrap()
-        .add_channel_source(CHANNEL_NO, Box::new(lead_track_node))
-        .build()
-        .unwrap();
-    let combiner_node = CombinerNode::new(
-        None,
-        vec![Box::new(bass_track_midi), Box::new(lead_track_midi)],
-    );
+    let mut asset_loader = FileAssetLoader::default();
+    let bass_track_instrument = TriangleWave {
+        node_id: Some(NODE_ID_BASS),
+        balance: Balance::Both,
+        amplitude: 1.0,
+    };
+    let bass_track_midi = Midi {
+        node_id: None,
+        source: MidiDataSource::FilePath {
+            path: MIDI_FILE.to_owned(),
+            track_index: TRACK_NO_BASS,
+        },
+        channels: HashMap::from([(CHANNEL_NO, NodeConfigData(Box::new(bass_track_instrument)))]),
+    };
+    let bass_track_midi_node = bass_track_midi.to_node(&mut asset_loader).unwrap();
+    let lead_track_instrument = SquareWave {
+        node_id: Some(NODE_ID_LEAD),
+        balance: Balance::Both,
+        amplitude: 0.25,
+        duty_cycle: 0.0625,
+    };
+    let lead_track_midi = Midi {
+        node_id: None,
+        source: MidiDataSource::FilePath {
+            path: MIDI_FILE.to_owned(),
+            track_index: TRACK_NO_LEAD,
+        },
+        channels: HashMap::from([(CHANNEL_NO, NodeConfigData(Box::new(lead_track_instrument)))]),
+    };
+    let lead_track_midi_node = lead_track_midi.to_node(&mut asset_loader).unwrap();
+    let combiner_node = CombinerNode::new(None, vec![bass_track_midi_node, lead_track_midi_node]);
     let _mixer = BaseMixer::builder_with_default_registry()
         .unwrap()
         .set_initial_program(1, Box::new(combiner_node))

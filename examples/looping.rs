@@ -64,9 +64,10 @@ fn main() {
             ),
         ]),
     }));
+    let mut asset_loader = FileAssetLoader::default();
     let mixer = BaseMixer::builder_with_default_registry()
         .unwrap()
-        .set_initial_program_from_config(1, config, &FileAssetLoader)
+        .set_initial_program_from_config(1, config, &mut asset_loader)
         .unwrap()
         .start(Some(1))
         .unwrap();

@@ -24,7 +24,7 @@ impl Fader {
 }
 
 impl NodeConfig for Fader {
-    fn to_node(&self, asset_loader: &dyn AssetLoader) -> Result<GraphNode, Error> {
+    fn to_node(&self, asset_loader: &mut dyn AssetLoader) -> Result<GraphNode, Error> {
         let child_node = self.source.0.to_node(asset_loader)?;
         Ok(Box::new(FaderNode::new(
             self.node_id,

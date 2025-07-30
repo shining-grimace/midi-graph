@@ -1,11 +1,27 @@
 use crate::{
-    AssetLoader, Balance, Error, Event, GraphNode, LoopRange, Message, Node,
+    AssetLoadPayload, AssetLoader, Balance, Error, Event, GraphNode, LoopRange, Message, Node,
+    SampleBuffer,
     abstraction::{Loop, NodeConfig, defaults},
     consts, util,
 };
-use hound::{SampleFormat, WavSpec};
-use serde::Deserialize;
-use soundfont::raw::{SampleHeader, SampleLink};
+use hound::{SampleFormat, WavReader, WavSpec};
+use serde::{Deserialize, Serialize};
+use std::{io::Cursor, sync::Arc};
+
+#[derive(Deserialize, Serialize, Clone)]
+pub struct SampleLoopFileMetadata {
+    sample_rate: u32,
+    channels: usize,
+}
+
+impl SampleLoopFileMetadata {
+    pub fn from_spec(spec: WavSpec) -> Self {
+        Self {
+            sample_rate: spec.sample_rate,
+            channels: spec.channels as usize,
+        }
+    }
+}
 
 #[derive(Deserialize, Clone)]
 pub struct SampleLoop {
@@ -19,15 +35,37 @@ pub struct SampleLoop {
 }
 
 impl NodeConfig for SampleLoop {
-    fn to_node(&self, asset_loader: &dyn AssetLoader) -> Result<GraphNode, Error> {
+    fn to_node(&self, asset_loader: &mut dyn AssetLoader) -> Result<GraphNode, Error> {
+        let (metadata, sample_buffer) = match asset_loader.load_asset_data(&self.path)? {
+            AssetLoadPayload::RawAssetData(raw_data) => {
+                let cursor = Cursor::new(raw_data);
+                let wav = WavReader::new(cursor)?;
+                let spec = wav.spec();
+                SampleLoopNode::validate_spec(&spec)?;
+                let metadata = SampleLoopFileMetadata::from_spec(spec);
+                let data: Vec<f32> = wav.into_samples().map(|s| s.unwrap()).collect();
+                let sample_buffer = Arc::new(data);
+                let raw_metadata = Arc::new(serde_json::to_vec(&metadata)?);
+                asset_loader.store_prepared_data(
+                    &self.path,
+                    raw_metadata.clone(),
+                    sample_buffer.clone(),
+                );
+                (metadata, sample_buffer)
+            }
+            AssetLoadPayload::PreparedData((raw_metadata, sample_buffer)) => {
+                let metadata: SampleLoopFileMetadata = serde_json::from_slice(&raw_metadata)?;
+                (metadata, sample_buffer)
+            }
+        };
         let loop_range = self.looping.as_ref().map(LoopRange::from_config);
-        let bytes = asset_loader.load_asset_data(&self.path)?;
-        let source = util::wav_from_bytes(
-            &bytes,
+        let source = SampleLoopNode::new_from_data(
+            self.node_id,
+            self.balance,
             self.base_note,
             loop_range,
-            self.balance,
-            self.node_id,
+            metadata,
+            sample_buffer,
         )?;
         let source: GraphNode = Box::new(source);
         Ok(source)
@@ -52,114 +90,105 @@ pub struct SampleLoopNode {
     source_note: u8,
     source_channel_count: usize,
     balance: Balance,
-    loop_start_data_position: usize,
-    loop_end_data_position: usize,
+    loop_start_buffer_index: usize,
+    loop_end_buffer_index: usize,
     data_position: usize,
     current_note: u8,
     pitch_multiplier: f32,
     volume: f32,
-    source_data: Vec<f32>,
+    sample_buffer: SampleBuffer,
+    buffer_start_index: usize,
+    buffer_length_samples: usize,
     playback_scale: f64,
 }
 
 impl SampleLoopNode {
-    pub fn new_from_raw_sf2_data(
-        header: &SampleHeader,
-        balance: Balance,
-        data: Vec<f32>,
-    ) -> Result<Self, Error> {
-        Self::validate_header(header)?;
-        let source_channel_count = match header.sample_type {
-            SampleLink::MonoSample => 1,
-            _ => {
-                return Err(Error::User(format!(
-                    "Unsupported sample type {:?} in SF2 file (only mono is supported)",
-                    header.sample_type
-                )));
-            }
-        };
-        let sample_offset = header.start as usize;
-        let loop_range = LoopRange::new_frame_range(
-            (header.loop_start as usize - sample_offset) / source_channel_count,
-            (header.loop_end as usize - sample_offset) / source_channel_count,
-        );
-        Self::validate_loop_range(&data, source_channel_count, &loop_range)?;
-        Ok(Self::new(
-            None,
-            header.sample_rate,
-            source_channel_count,
-            header.origpitch,
-            loop_range,
-            balance,
-            data,
-        ))
-    }
-
     /// Make a new WavSource holding the given sample data.
     /// Data in the spec will be checked for compatibility.
     /// The note is a MIDI key, where A440 is 69.
     pub fn new_from_data(
-        spec: WavSpec,
-        source_note: u8,
-        balance: Balance,
-        data: Vec<f32>,
-        loop_range: Option<LoopRange>,
         node_id: Option<u64>,
+        balance: Balance,
+        source_note: u8,
+        loop_range: Option<LoopRange>,
+        metadata: SampleLoopFileMetadata,
+        sample_buffer: SampleBuffer,
     ) -> Result<Self, Error> {
-        Self::validate_spec(&spec)?;
         if let Some(range) = &loop_range {
-            Self::validate_loop_range(&data, spec.channels as usize, range)?;
+            Self::validate_loop_range(&sample_buffer, metadata.channels, range)?;
         }
-        let loop_range = match loop_range {
-            Some(range) => range,
-            None => LoopRange::new_frame_range(0, usize::MAX / spec.channels as usize),
-        };
+        let buffer_length = sample_buffer.len();
         Ok(Self::new(
             node_id,
-            spec.sample_rate,
-            spec.channels as usize,
+            metadata.sample_rate,
+            metadata.channels,
             source_note,
             loop_range,
             balance,
-            data,
-        ))
+            sample_buffer,
+            0,
+            buffer_length,
+        )?)
     }
 
-    fn new(
+    pub fn new(
         node_id: Option<u64>,
         sample_rate: u32,
         channels: usize,
         source_note: u8,
-        loop_range: LoopRange,
+        loop_range: Option<LoopRange>,
         balance: Balance,
-        data: Vec<f32>,
-    ) -> Self {
+        sample_buffer: SampleBuffer,
+        buffer_start_index: usize,
+        buffer_length_samples: usize,
+    ) -> Result<Self, Error> {
         let playback_scale = consts::PLAYBACK_SAMPLE_RATE as f64 / sample_rate as f64;
-        Self {
+        if sample_buffer.len() < buffer_start_index + buffer_length_samples {
+            return Err(Error::User(format!(
+                "ERROR: WAV: Buffer of size {} too small for sample of size {} at index {}",
+                sample_buffer.len(),
+                buffer_length_samples,
+                buffer_start_index
+            )));
+        }
+        if let Some(looping) = &loop_range {
+            if looping.start_frame >= looping.end_frame {
+                return Err(Error::User(format!(
+                    "ERROR: WAV: Loop start {} must be before end {}",
+                    looping.start_frame, looping.end_frame
+                )));
+            }
+            if looping.end_frame * channels > buffer_length_samples {
+                return Err(Error::User(format!(
+                    "ERROR: WAV: Loop end index {} cannot be greater than buffer size {}",
+                    looping.end_frame * channels,
+                    buffer_length_samples
+                )));
+            }
+        }
+        let buffer_loop_start_index = loop_range.as_ref().map_or(0, |looping| {
+            buffer_start_index + looping.start_frame * channels
+        });
+        let buffer_loop_end_index = loop_range.as_ref().map_or(usize::MAX, |looping| {
+            buffer_start_index + looping.end_frame * channels
+        });
+        Ok(Self {
             node_id: node_id.unwrap_or_else(<Self as Node>::new_node_id),
             is_on: false,
             source_note,
             source_channel_count: channels,
             balance,
-            loop_start_data_position: loop_range.start_frame * channels,
-            loop_end_data_position: loop_range.end_frame * channels,
-            data_position: data.len(),
+            loop_start_buffer_index: buffer_loop_start_index,
+            loop_end_buffer_index: buffer_loop_end_index,
+            data_position: sample_buffer.len(),
             current_note: 0,
             pitch_multiplier: 1.0,
             volume: 1.0,
-            source_data: data,
+            sample_buffer,
+            buffer_start_index,
+            buffer_length_samples,
             playback_scale,
-        }
-    }
-
-    fn validate_header(header: &SampleHeader) -> Result<(), Error> {
-        match header.sample_type {
-            SampleLink::MonoSample => Ok(()),
-            _ => Err(Error::User(format!(
-                "Unsupported sample type {:?} in SF2 file (only mono is supported)",
-                header.sample_type
-            ))),
-        }
+        })
     }
 
     fn validate_loop_range(
@@ -250,10 +279,13 @@ impl Node for SampleLoopNode {
 
     fn duplicate(&self) -> Result<GraphNode, Error> {
         let sample_rate = (consts::PLAYBACK_SAMPLE_RATE as f64 / self.playback_scale) as u32;
-        let loop_range = LoopRange::new_frame_range(
-            self.loop_start_data_position / self.source_channel_count,
-            self.loop_end_data_position / self.source_channel_count,
-        );
+        let loop_range = match self.loop_end_buffer_index == usize::MAX {
+            true => None,
+            false => Some(LoopRange::new_frame_range(
+                self.loop_start_buffer_index / self.source_channel_count,
+                self.loop_end_buffer_index / self.source_channel_count,
+            )),
+        };
         let source = Self::new(
             Some(self.node_id),
             sample_rate,
@@ -261,8 +293,10 @@ impl Node for SampleLoopNode {
             self.source_note,
             loop_range,
             self.balance,
-            self.source_data.clone(),
-        );
+            self.sample_buffer.clone(),
+            self.buffer_start_index,
+            self.buffer_length_samples,
+        )?;
         Ok(Box::new(source))
     }
 
@@ -270,7 +304,7 @@ impl Node for SampleLoopNode {
         match event.data {
             Event::NoteOn { note, vel: _ } => {
                 self.is_on = true;
-                self.data_position = 0;
+                self.data_position = self.buffer_start_index;
                 self.current_note = note;
                 self.pitch_multiplier = 1.0;
             }
@@ -300,8 +334,8 @@ impl Node for SampleLoopNode {
             return;
         }
 
-        if self.is_on && self.data_position >= self.loop_end_data_position {
-            self.data_position -= self.loop_end_data_position - self.loop_start_data_position;
+        if self.is_on && self.data_position >= self.loop_end_buffer_index {
+            self.data_position -= self.loop_end_buffer_index - self.loop_start_buffer_index;
         }
 
         // Scaling
@@ -314,18 +348,19 @@ impl Node for SampleLoopNode {
 
         let mut remaining_buffer = &mut buffer[0..];
         while !remaining_buffer.is_empty() {
-            if self.data_position >= self.source_data.len() {
+            let sample_end_index = self.buffer_start_index + self.buffer_length_samples;
+            if self.data_position >= sample_end_index {
                 self.is_on = false;
                 return;
             }
 
             let source_end_point = match self.is_on {
-                true => self.source_data.len().min(self.loop_end_data_position),
-                false => self.source_data.len(),
+                true => sample_end_index.min(self.loop_end_buffer_index),
+                false => sample_end_index,
             };
 
             let (src_data_points_advanced, dst_data_points_advanced) = self.stretch_buffer(
-                &self.source_data[self.data_position..source_end_point],
+                &self.sample_buffer[self.data_position..source_end_point],
                 self.source_channel_count,
                 remaining_buffer,
                 source_frames_per_output_frame,
@@ -336,8 +371,8 @@ impl Node for SampleLoopNode {
             if self.data_position != source_end_point {
                 break;
             }
-            if self.is_on && source_end_point == self.loop_end_data_position {
-                self.data_position = self.loop_start_data_position;
+            if self.is_on && source_end_point == self.loop_end_buffer_index {
+                self.data_position = self.loop_start_buffer_index;
                 let remaining_dst_data_points = remaining_buffer.len() - dst_data_points_advanced;
                 let dst_buffer_index = buffer.len() - remaining_dst_data_points;
                 remaining_buffer = &mut buffer[dst_buffer_index..];

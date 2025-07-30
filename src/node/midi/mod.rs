@@ -3,12 +3,12 @@ pub mod event;
 pub mod util;
 
 use crate::{
-    AssetLoader, DebugLogging, Error, Event, EventTarget, GraphNode, Message, Node,
+    AssetLoadPayload, AssetLoader, DebugLogging, Error, Event, EventTarget, GraphNode, Message,
+    Node,
     abstraction::{NodeConfig, NodeConfigData, defaults},
     consts,
     midi::{CueData, MidiEvent},
     node::log,
-    util as file_util,
 };
 use midly::Smf;
 use serde::Deserialize;
@@ -28,11 +28,19 @@ pub struct Midi {
 }
 
 impl NodeConfig for Midi {
-    fn to_node(&self, asset_loader: &dyn AssetLoader) -> Result<GraphNode, Error> {
+    fn to_node(&self, asset_loader: &mut dyn AssetLoader) -> Result<GraphNode, Error> {
         let mut midi_builder = match &self.source {
             MidiDataSource::FilePath { path, track_index } => {
-                let bytes = asset_loader.load_asset_data(path)?;
-                file_util::midi_builder_from_bytes(self.node_id, &bytes, *track_index)?
+                let bytes = match asset_loader.load_asset_data(path)? {
+                    AssetLoadPayload::RawAssetData(bytes) => bytes,
+                    AssetLoadPayload::PreparedData(_) => {
+                        return Err(Error::User(
+                            "ERROR: MIDI: MIDI files cannot be prepared.".to_owned(),
+                        ));
+                    }
+                };
+                let smf = Smf::parse(&bytes)?;
+                MidiNodeBuilder::new(self.node_id, smf, *track_index)?
             }
         };
         for (channel, source) in self.channels.iter() {

@@ -1,11 +1,25 @@
 use crate::{
-    AssetLoader, Balance, Error, Event, GraphNode, Message, Node,
+    AssetLoadPayload, AssetLoader, Balance, Error, Event, GraphNode, Message, Node, SampleBuffer,
     abstraction::{NodeConfig, defaults},
-    consts, util,
+    consts,
 };
-use hound::{SampleFormat, WavSpec};
-use serde::Deserialize;
-use soundfont::raw::{SampleHeader, SampleLink};
+use hound::{SampleFormat, WavReader, WavSpec};
+use serde::{Deserialize, Serialize};
+use std::{io::Cursor, sync::Arc};
+
+#[derive(Deserialize, Serialize, Clone)]
+pub struct OneShotFileMetadata {
+    pub channels: usize,
+}
+
+impl OneShotFileMetadata {
+    pub fn from_spec(spec: WavSpec) -> Result<Self, Error> {
+        OneShotNode::validate_spec(&spec)?;
+        Ok(Self {
+            channels: spec.channels as usize,
+        })
+    }
+}
 
 #[derive(Deserialize, Clone)]
 pub struct OneShot {
@@ -17,9 +31,30 @@ pub struct OneShot {
 }
 
 impl NodeConfig for OneShot {
-    fn to_node(&self, asset_loader: &dyn AssetLoader) -> Result<GraphNode, Error> {
-        let bytes = asset_loader.load_asset_data(&self.path)?;
-        let source = util::one_shot_from_bytes(&bytes, self.balance, self.node_id)?;
+    fn to_node(&self, asset_loader: &mut dyn AssetLoader) -> Result<GraphNode, Error> {
+        let (metadata, sample_buffer) = match asset_loader.load_asset_data(&self.path)? {
+            AssetLoadPayload::RawAssetData(raw_data) => {
+                let cursor = Cursor::new(raw_data);
+                let wav = WavReader::new(cursor)?;
+                let spec = wav.spec();
+                let metadata = OneShotFileMetadata::from_spec(spec)?;
+                let data: Vec<f32> = wav.into_samples().map(|s| s.unwrap()).collect();
+                let sample_buffer = Arc::new(data);
+                let raw_metadata = Arc::new(serde_json::to_vec(&metadata)?);
+                asset_loader.store_prepared_data(
+                    &self.path,
+                    raw_metadata.clone(),
+                    sample_buffer.clone(),
+                );
+                (metadata, sample_buffer)
+            }
+            AssetLoadPayload::PreparedData((raw_metadata, sample_buffer)) => {
+                let metadata: OneShotFileMetadata = serde_json::from_slice(&raw_metadata)?;
+                (metadata, sample_buffer)
+            }
+        };
+        let source =
+            OneShotNode::new_from_data(self.node_id, self.balance, metadata, sample_buffer)?;
         let source: GraphNode = Box::new(source);
         Ok(source)
     }
@@ -43,66 +78,37 @@ pub struct OneShotNode {
     balance: Balance,
     volume: f32,
     data_position: usize,
-    source_data: Vec<f32>,
+    sample_buffer: SampleBuffer,
 }
 
 impl OneShotNode {
-    pub fn new_from_raw_sf2_data(
-        header: &SampleHeader,
-        balance: Balance,
-        data: Vec<f32>,
-    ) -> Result<Self, Error> {
-        Self::validate_header(header)?;
-        let source_channel_count = match header.sample_type {
-            SampleLink::MonoSample => 1,
-            _ => {
-                return Err(Error::User(format!(
-                    "Unsupported sample type for SF2 files: {:?}",
-                    header.sample_type
-                )));
-            }
-        };
-        Ok(Self::new(None, source_channel_count, balance, data))
-    }
-
-    /// Make a new OneShotSource holding the given sample data.
-    /// Data in the spec will be checked for compatibility.
-    /// The note is a MIDI key, where A440 is 69.
     pub fn new_from_data(
-        spec: WavSpec,
-        balance: Balance,
-        data: Vec<f32>,
         node_id: Option<u64>,
+        balance: Balance,
+        file_metadata: OneShotFileMetadata,
+        sample_buffer: SampleBuffer,
     ) -> Result<Self, Error> {
-        Self::validate_spec(&spec)?;
-        Ok(Self::new(node_id, spec.channels as usize, balance, data))
+        Ok(Self::new(
+            node_id,
+            file_metadata.channels as usize,
+            balance,
+            sample_buffer,
+        ))
     }
 
-    fn new(node_id: Option<u64>, channels: usize, balance: Balance, data: Vec<f32>) -> Self {
+    fn new(
+        node_id: Option<u64>,
+        channels: usize,
+        balance: Balance,
+        sample_buffer: SampleBuffer,
+    ) -> Self {
         Self {
             node_id: node_id.unwrap_or_else(<Self as Node>::new_node_id),
             source_channel_count: channels,
             balance,
             volume: 1.0,
-            data_position: data.len(),
-            source_data: data,
-        }
-    }
-
-    fn validate_header(header: &SampleHeader) -> Result<(), Error> {
-        if header.sample_rate as usize != consts::PLAYBACK_SAMPLE_RATE {
-            println!(
-                "WARNING: SF2: Sample rate {} should match playback rate of {}",
-                header.sample_rate,
-                consts::PLAYBACK_SAMPLE_RATE
-            );
-        }
-        match header.sample_type {
-            SampleLink::MonoSample => Ok(()),
-            _ => Err(Error::User(format!(
-                "Unsupported sample type for SF2 files: {:?}",
-                header.sample_type
-            ))),
+            data_position: sample_buffer.len(),
+            sample_buffer,
         }
     }
 
@@ -150,7 +156,7 @@ impl Node for OneShotNode {
             Some(self.node_id),
             self.source_channel_count,
             self.balance,
-            self.source_data.clone(),
+            self.sample_buffer.clone(),
         );
         Ok(Box::new(source))
     }
@@ -161,7 +167,7 @@ impl Node for OneShotNode {
                 self.data_position = 0;
             }
             Event::NoteOff { .. } => {
-                self.data_position = self.source_data.len();
+                self.data_position = self.sample_buffer.len();
             }
             Event::SourceBalance(balance) => {
                 self.balance = balance;
@@ -181,14 +187,14 @@ impl Node for OneShotNode {
             return;
         }
 
-        if self.data_position >= self.source_data.len() {
+        if self.data_position >= self.sample_buffer.len() {
             return;
         }
 
         #[cfg(debug_assertions)]
         assert_eq!(buffer.len() % consts::CHANNEL_COUNT, 0);
 
-        let src = &self.source_data[self.data_position..];
+        let src = &self.sample_buffer[self.data_position..];
         let (left_amplitude, right_amplitude) = match self.balance {
             Balance::Both => (1.0, 1.0),
             Balance::Left => (1.0, 0.0),

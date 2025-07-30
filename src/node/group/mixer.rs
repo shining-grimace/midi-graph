@@ -25,7 +25,7 @@ impl Mixer {
 }
 
 impl NodeConfig for Mixer {
-    fn to_node(&self, asset_loader: &dyn AssetLoader) -> Result<GraphNode, Error> {
+    fn to_node(&self, asset_loader: &mut dyn AssetLoader) -> Result<GraphNode, Error> {
         let consumer_0 = self.sources[0].0.to_node(asset_loader)?;
         let consumer_1 = self.sources[1].0.to_node(asset_loader)?;
         Ok(Box::new(MixerNode::new(

@@ -26,7 +26,7 @@ impl TriangleWave {
 }
 
 impl NodeConfig for TriangleWave {
-    fn to_node(&self, _asset_loader: &dyn AssetLoader) -> Result<GraphNode, Error> {
+    fn to_node(&self, _asset_loader: &mut dyn AssetLoader) -> Result<GraphNode, Error> {
         Ok(Box::new(TriangleWaveNode::new(
             self.node_id,
             self.balance,

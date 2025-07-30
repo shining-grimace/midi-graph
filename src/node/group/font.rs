@@ -1,9 +1,18 @@
+use super::util as font_util;
 use crate::{
-    AssetLoader, Error, Event, GraphNode, Message, Node, NoteRange,
+    AssetLoadPayload, AssetLoader, Balance, DebugLogging, Error, Event, GraphNode, LoopRange,
+    Message, Node, NoteRange, SampleBuffer,
     abstraction::{NodeConfig, NodeConfigData, defaults},
-    util,
+    generator::SampleLoopNode,
+    group::PolyphonyNode,
 };
-use serde::Deserialize;
+use byteorder::{LittleEndian, ReadBytesExt};
+use serde::{Deserialize, Serialize};
+use soundfont::{SoundFont2, data::SampleLink};
+use std::{
+    io::{Cursor, Seek, SeekFrom},
+    sync::Arc,
+};
 
 #[derive(Deserialize, Clone)]
 pub struct RangeSource {
@@ -21,6 +30,77 @@ pub enum FontSource {
         #[serde(default = "defaults::soundfont_polyphony_voices")]
         polyphony_voices: usize,
     },
+}
+
+#[derive(Deserialize, Serialize, Clone)]
+pub struct FontFileMetadata {
+    pub instruments: Vec<InstrumentMetadata>,
+}
+
+impl FontFileMetadata {
+    fn from_spec(sf2: &SoundFont2) -> Result<Self, Error> {
+        let mut instruments: Vec<InstrumentMetadata> = vec![];
+        for instrument in sf2.instruments.iter() {
+            let mut ranges: Vec<InstrumentRangeMetadata> = vec![];
+            for zone in instrument.zones.iter() {
+                let Some(sample_index) = zone.sample() else {
+                    println!("WARNING: SF2: Sample index not found for instrument zone");
+                    continue;
+                };
+                let Some(sample_header) = sf2.sample_headers.get(*sample_index as usize) else {
+                    println!(
+                        "WARNING: SF2: Sample index {} not found matching instrument zone",
+                        sample_index
+                    );
+                    continue;
+                };
+                let channel_count = match sample_header.sample_type {
+                    SampleLink::MonoSample => 1,
+                    _ => {
+                        return Err(Error::User(format!(
+                            "Unsupported sample type for SF2 files: {:?}",
+                            sample_header.sample_type
+                        )));
+                    }
+                };
+
+                let data_offset = sample_header.start as usize;
+                let sample_count = sample_header.end as usize - data_offset;
+                let note_range = font_util::note_range_for_zone(zone)?;
+                let loop_range = LoopRange::new_frame_range(
+                    (sample_header.loop_start as usize - data_offset) / channel_count,
+                    (sample_header.loop_end as usize - data_offset) / channel_count,
+                );
+                ranges.push(InstrumentRangeMetadata {
+                    note_range,
+                    channel_count,
+                    sample_rate: sample_header.sample_rate,
+                    base_note: sample_header.origpitch,
+                    loop_range,
+                    buffer_index: data_offset,
+                    buffer_length: sample_count,
+                });
+            }
+            instruments.push(InstrumentMetadata { ranges });
+        }
+        Ok(Self { instruments })
+    }
+}
+
+#[derive(Deserialize, Serialize, Clone)]
+pub struct InstrumentMetadata {
+    pub ranges: Vec<InstrumentRangeMetadata>,
+}
+
+#[derive(Deserialize, Serialize, Clone)]
+pub struct InstrumentRangeMetadata {
+    pub note_range: NoteRange,
+    pub channel_count: usize,
+    pub sample_rate: u32,
+    pub base_note: u8,
+    pub loop_range: LoopRange,
+    pub buffer_index: usize,
+    pub buffer_length: usize,
 }
 
 #[derive(Deserialize, Clone)]
@@ -44,7 +124,7 @@ impl Font {
 }
 
 impl NodeConfig for Font {
-    fn to_node(&self, asset_loader: &dyn AssetLoader) -> Result<GraphNode, Error> {
+    fn to_node(&self, asset_loader: &mut dyn AssetLoader) -> Result<GraphNode, Error> {
         let node: GraphNode = match &self.config {
             FontSource::Ranges(range_configs) => {
                 let mut builder = FontNodeBuilder::new(self.node_id);
@@ -60,13 +140,82 @@ impl NodeConfig for Font {
                 instrument_index,
                 polyphony_voices,
             } => {
-                let bytes = asset_loader.load_asset_data(path)?;
-                let source = util::soundfont_from_bytes(
-                    self.node_id,
-                    &bytes,
-                    *instrument_index,
-                    *polyphony_voices,
-                )?;
+                let (metadata, sample_buffer) = match asset_loader.load_asset_data(path)? {
+                    AssetLoadPayload::RawAssetData(raw_data) => {
+                        let mut cursor = Cursor::new(raw_data.as_slice());
+                        let sf2 = SoundFont2::load(&mut cursor)?;
+                        font_util::validate_sf2_file(&sf2)?;
+
+                        if DebugLogging::get_log_on_init() {
+                            font_util::log_opened_sf2(&sf2);
+                        }
+
+                        let sample_chunk_metadata = &sf2.sample_data.smpl.ok_or_else(|| {
+                            Error::User("There was no sample header in the SF2 file".to_owned())
+                        })?;
+
+                        let data_point_size = std::mem::size_of::<i16>();
+                        cursor.seek(SeekFrom::Start(sample_chunk_metadata.offset as u64))?;
+                        let mut sample_data =
+                            vec![0i16; sample_chunk_metadata.len as usize / data_point_size];
+                        cursor.read_i16_into::<LittleEndian>(&mut sample_data)?;
+
+                        let float_buffer = sample_data
+                            .into_iter()
+                            .map(|s| s as f32 / 32768.0)
+                            .collect();
+                        let sample_buffer: SampleBuffer = Arc::new(float_buffer);
+
+                        let metadata = FontFileMetadata::from_spec(&sf2)?;
+                        let raw_metadata = Arc::new(serde_json::to_vec(&metadata)?);
+                        asset_loader.store_prepared_data(
+                            path,
+                            raw_metadata.clone(),
+                            sample_buffer.clone(),
+                        );
+                        (metadata, sample_buffer)
+                    }
+                    AssetLoadPayload::PreparedData((raw_metadata, sample_buffer)) => {
+                        let metadata: FontFileMetadata = serde_json::from_slice(&raw_metadata)?;
+                        (metadata, sample_buffer)
+                    }
+                };
+
+                let Some(instrument) = metadata.instruments.get(*instrument_index) else {
+                    return Err(Error::User(format!(
+                        "Index {} is out of bounds ({} instruments in the SF2 file)",
+                        instrument_index,
+                        metadata.instruments.len()
+                    )));
+                };
+
+                let mut soundfont_builder = FontNodeBuilder::new(self.node_id);
+                for range in instrument.ranges.iter() {
+                    let source = SampleLoopNode::new(
+                        None,
+                        range.sample_rate,
+                        range.channel_count,
+                        range.base_note,
+                        Some(range.loop_range.clone()),
+                        Balance::Both,
+                        sample_buffer.clone(),
+                        range.buffer_index as usize,
+                        range.buffer_length as usize,
+                    )?;
+                    let polyphony: GraphNode = match polyphony_voices {
+                        0 | 1 => {
+                            let polyphony =
+                                PolyphonyNode::new(None, *polyphony_voices, Box::new(source))?;
+                            Box::new(polyphony)
+                        }
+                        _ => Box::new(source),
+                    };
+
+                    soundfont_builder =
+                        soundfont_builder.add_range(range.note_range.clone(), polyphony)?;
+                }
+
+                let source = soundfont_builder.build();
                 let source: GraphNode = Box::new(source);
                 source
             }

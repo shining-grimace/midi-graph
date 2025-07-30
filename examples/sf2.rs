@@ -1,12 +1,13 @@
 extern crate midi_graph;
 
 use midi_graph::{
-    Balance, BaseMixer, NoteRange,
-    generator::LfsrNoiseNode,
-    group::FontNodeBuilder,
-    util::{midi_builder_from_file, soundfont_from_file},
+    Balance, BaseMixer, FileAssetLoader,
+    abstraction::NodeConfigData,
+    generator::LfsrNoise,
+    group::{Font, FontSource, RangeSource},
+    midi::{Midi, MidiDataSource},
 };
-use std::time::Duration;
+use std::{collections::HashMap, time::Duration};
 
 const MIDI_FILE: &'static str = "resources/sample-in-c.mid";
 const SF2_FILE: &'static str = "resources/demo-font.sf2";
@@ -16,26 +17,54 @@ const SOUNDFONT_1_CHANNEL: usize = 1;
 const NOISE_CHANNEL: usize = 2;
 
 fn main() {
-    let font_0 = soundfont_from_file(None, SF2_FILE, 0, 4).unwrap();
-    let font_1 = soundfont_from_file(None, SF2_FILE, 0, 4).unwrap();
-    let noise_font = FontNodeBuilder::new(None)
-        .add_range(
-            NoteRange::new_full_range(),
-            Box::new(LfsrNoiseNode::new(None, Balance::Both, 0.25, false, 50)),
-        )
-        .unwrap()
-        .build();
-    let midi = midi_builder_from_file(None, MIDI_FILE, 0)
-        .unwrap()
-        .add_channel_source(SOUNDFONT_0_CHANNEL, Box::new(font_0))
-        .add_channel_source(SOUNDFONT_1_CHANNEL, Box::new(font_1))
-        .add_channel_source(NOISE_CHANNEL, Box::new(noise_font))
-        .build()
-        .unwrap();
+    let mut asset_loader = FileAssetLoader::default();
+    let font_0 = Font {
+        node_id: None,
+        config: FontSource::Sf2FilePath {
+            path: SF2_FILE.to_owned(),
+            instrument_index: 0,
+            polyphony_voices: 4,
+        },
+    };
+    let font_1 = Font {
+        node_id: None,
+        config: FontSource::Sf2FilePath {
+            path: SF2_FILE.to_owned(),
+            instrument_index: 0,
+            polyphony_voices: 4,
+        },
+    };
+    let noise_font = Font {
+        node_id: None,
+        config: FontSource::Ranges(vec![RangeSource {
+            source: NodeConfigData(Box::new(LfsrNoise {
+                node_id: None,
+                balance: Balance::Both,
+                amplitude: 0.25,
+                inside_feedback: false,
+                note_for_16_shifts: 50,
+            })),
+            lower: 0,
+            upper: 127,
+        }]),
+    };
+    let midi = Midi {
+        node_id: None,
+        source: MidiDataSource::FilePath {
+            path: MIDI_FILE.to_owned(),
+            track_index: 0,
+        },
+        channels: HashMap::from([
+            (SOUNDFONT_0_CHANNEL, NodeConfigData(Box::new(font_0))),
+            (SOUNDFONT_1_CHANNEL, NodeConfigData(Box::new(font_1))),
+            (NOISE_CHANNEL, NodeConfigData(Box::new(noise_font))),
+        ]),
+    };
 
     let _mixer = BaseMixer::builder_with_default_registry()
         .unwrap()
-        .set_initial_program(1, Box::new(midi))
+        .set_initial_program_from_config(1, NodeConfigData(Box::new(midi)), &mut asset_loader)
+        .unwrap()
         .start(Some(1))
         .unwrap();
     std::thread::sleep(Duration::from_secs(16));

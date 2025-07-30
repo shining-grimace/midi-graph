@@ -17,7 +17,7 @@ pub struct Filter {
 }
 
 impl NodeConfig for Filter {
-    fn to_node(&self, asset_loader: &dyn AssetLoader) -> Result<GraphNode, Error> {
+    fn to_node(&self, asset_loader: &mut dyn AssetLoader) -> Result<GraphNode, Error> {
         let source = self.source.0.to_node(asset_loader)?;
         Ok(Box::new(FilterNode::new(
             self.node_id,

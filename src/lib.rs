@@ -75,8 +75,8 @@ pub type GraphNode = Box<dyn Node + Send + 'static>;
 
 pub use error::Error;
 pub use event::{Balance, Event, EventTarget, IirFilter, Message};
-pub use file::loader::FileAssetLoader;
-pub use loader::AssetLoader;
+pub use file::FileAssetLoader;
+pub use loader::{AssetLoadPayload, AssetLoader, SampleBuffer, SerializedFileMetadata};
 pub use log::DebugLogging;
 pub use mix::base::BaseMixer;
 pub use node::{LoopRange, Node, NoteRange};
@@ -106,7 +106,7 @@ pub mod generator {
     pub use crate::node::generator::{
         noise::{LfsrNoise, LfsrNoiseNode},
         null::{Null, NullNode},
-        one_shot::{OneShot, OneShotNode},
+        one_shot::{OneShot, OneShotFileMetadata, OneShotNode},
         sawtooth::{SawtoothWave, SawtoothWaveNode},
         square::{SquareWave, SquareWaveNode},
         triangle::{TriangleWave, TriangleWaveNode},
@@ -134,9 +134,6 @@ pub mod midi {
 
 /// Utilities for opening files and doing frequency calculations
 pub mod util {
-    pub use crate::file::font::*;
-    pub use crate::file::midi::*;
-    pub use crate::file::wav::*;
     pub use crate::node::midi::util::*;
     pub use crate::node::util::*;
 }

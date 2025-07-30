@@ -6,6 +6,7 @@ pub mod midi;
 pub mod util;
 
 use crate::{Error, EventTarget, GraphNode, Message, abstraction::Loop, group::RangeSource};
+use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 const START_GENERATED_NODE_IDS: u64 = 0x10000;
@@ -54,7 +55,7 @@ pub trait Node {
     }
 }
 
-#[derive(Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct NoteRange {
     pub lower_inclusive: u8,
     pub upper_inclusive: u8,
@@ -87,6 +88,7 @@ impl NoteRange {
     }
 }
 
+#[derive(Deserialize, Serialize, Clone)]
 pub struct LoopRange {
     pub start_frame: usize,
     pub end_frame: usize,

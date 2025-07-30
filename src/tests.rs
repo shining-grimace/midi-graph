@@ -1,47 +1,77 @@
 use crate::{
-    Balance, BaseMixer, NoteRange,
-    generator::SquareWaveNode,
-    group::FontNodeBuilder,
-    util::{midi_builder_from_file, wav_from_file},
+    Balance, BaseMixer, FileAssetLoader,
+    config::{NodeConfig, NodeConfigData},
+    generator::{SampleLoop, SquareWave},
+    group::{Font, FontSource, RangeSource},
+    midi::{Midi, MidiDataSource},
 };
-use std::time::Duration;
+use std::{collections::HashMap, time::Duration};
 
 const MIDI_FILE: &'static str = "resources/sample-in-c.mid";
 const WAV_FILE: &'static str = "resources/guitar-a2-48k-stereo.wav";
 
+fn wav_config_from_file() -> NodeConfigData {
+    NodeConfigData(Box::new(SampleLoop {
+        node_id: None,
+        balance: Balance::Both,
+        path: WAV_FILE.to_owned(),
+        base_note: 69,
+        looping: None,
+    }))
+}
+
 #[test]
 fn can_decode_midi_file() {
-    let midi_builder = midi_builder_from_file(None, MIDI_FILE);
-    assert!(midi_builder.is_ok());
+    let mut asset_loader = FileAssetLoader::default();
+    let midi = Midi {
+        node_id: None,
+        source: MidiDataSource::FilePath {
+            path: MIDI_FILE.to_owned(),
+            track_index: 0,
+        },
+        channels: HashMap::new(),
+    };
+    let midi_node_result = midi.to_node(&mut asset_loader);
+    assert!(midi_node_result.is_ok());
 }
 
 #[test]
 fn can_decode_wav_file() {
-    let wav = wav_from_file(WAV_FILE, 69, None, Balance::Both, None);
-    assert!(wav.is_ok());
+    let mut asset_loader = FileAssetLoader::default();
+    let node_result = wav_config_from_file().0.to_node(&mut asset_loader);
+    assert!(node_result.is_ok());
 }
 
 #[test]
 fn can_play_square_stream() {
-    let midi = midi_builder_from_file(None, MIDI_FILE)
-        .unwrap()
-        .add_channel_source(
+    let mut asset_loader = FileAssetLoader::default();
+    let midi = Midi {
+        node_id: None,
+        source: MidiDataSource::FilePath {
+            path: MIDI_FILE.to_owned(),
+            track_index: 0,
+        },
+        channels: HashMap::from([(
             0,
-            Box::new(
-                FontNodeBuilder::new(None)
-                    .add_range(
-                        NoteRange::new_full_range(),
-                        Box::new(SquareWaveNode::new(None, Balance::Both, 0.25, 0.125)),
-                    )
-                    .unwrap()
-                    .build(),
-            ),
-        )
-        .build()
-        .unwrap();
+            NodeConfigData(Box::new(Font {
+                node_id: None,
+                config: FontSource::Ranges(vec![RangeSource {
+                    source: NodeConfigData(Box::new(SquareWave {
+                        node_id: None,
+                        balance: Balance::Both,
+                        amplitude: 0.25,
+                        duty_cycle: 0.125,
+                    })),
+                    lower: 0,
+                    upper: 127,
+                }]),
+            })),
+        )]),
+    };
+    let midi_node = midi.to_node(&mut asset_loader).unwrap();
     let mixer = BaseMixer::builder_with_default_registry()
         .unwrap()
-        .set_initial_program(1, Box::new(midi))
+        .set_initial_program(1, midi_node)
         .start(Some(1));
     assert!(mixer.is_ok());
 
@@ -50,24 +80,28 @@ fn can_play_square_stream() {
 
 #[test]
 fn can_play_wav_stream() {
-    let midi = midi_builder_from_file(None, MIDI_FILE)
-        .unwrap()
-        .add_channel_source(
+    let mut asset_loader = FileAssetLoader::default();
+    let midi = Midi {
+        node_id: None,
+        source: MidiDataSource::FilePath {
+            path: MIDI_FILE.to_owned(),
+            track_index: 0,
+        },
+        channels: HashMap::from([(
             0,
-            Box::new(
-                FontNodeBuilder::new(None)
-                    .add_range(
-                        NoteRange::new_full_range(),
-                        Box::new(wav_from_file(WAV_FILE, 69, None, Balance::Both, None).unwrap()),
-                    )
-                    .unwrap()
-                    .build(),
-            ),
-        )
-        .build()
-        .unwrap();
+            NodeConfigData(Box::new(Font {
+                node_id: None,
+                config: FontSource::Ranges(vec![RangeSource {
+                    source: wav_config_from_file(),
+                    lower: 0,
+                    upper: 127,
+                }]),
+            })),
+        )]),
+    };
+    let midi_node = midi.to_node(&mut asset_loader).unwrap();
     let mixer = BaseMixer::builder_with_existing_registry()
-        .set_initial_program(1, Box::new(midi))
+        .set_initial_program(1, midi_node)
         .start(Some(1));
     assert!(mixer.is_ok());
 

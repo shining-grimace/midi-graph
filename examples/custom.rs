@@ -37,11 +37,12 @@ fn main() {
             ),
         ]),
     }));
+    let mut asset_loader = FileAssetLoader::default();
     let _mixer = BaseMixer::builder_with_custom_registry(|registry| {
         registry.register_node_type::<SineWave>("SineWave");
     })
     .unwrap()
-    .set_initial_program_from_config(1, config, &FileAssetLoader)
+    .set_initial_program_from_config(1, config, &mut asset_loader)
     .unwrap()
     .start(Some(1))
     .unwrap();
@@ -57,7 +58,7 @@ pub struct SineWave {
 }
 
 impl NodeConfig for SineWave {
-    fn to_node(&self, _asset_loader: &dyn AssetLoader) -> Result<GraphNode, Error> {
+    fn to_node(&self, _asset_loader: &mut dyn AssetLoader) -> Result<GraphNode, Error> {
         Ok(Box::new(SineWaveNode::new(self.node_id, self.amplitude)))
     }
 
