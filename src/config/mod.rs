@@ -27,17 +27,13 @@ pub struct Loop {
 pub struct NodeConfigData(pub Box<dyn NodeConfig + Send + Sync + 'static>);
 
 impl NodeConfigData {
-    pub fn traverse_config_tree(
-        config: &Self,
-        touch_node: &mut dyn FnMut(&Self),
-    ) -> Result<(), Error> {
+    pub fn traverse_config_tree(config: &Self, touch_node: &mut dyn FnMut(&Self)) {
         touch_node(config);
         if let Some(children) = config.0.clone_child_configs() {
             for child in children.iter() {
                 touch_node(child);
             }
         }
-        Ok(())
     }
 }
 
