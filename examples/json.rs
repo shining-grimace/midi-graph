@@ -1,6 +1,6 @@
 extern crate midi_graph;
 
-use midi_graph::{BaseMixer, FileAssetLoader, abstraction::NodeConfigData, group::Subtree};
+use midi_graph::{BaseMixer, FileAssetLoader, abstraction::ChildConfig, group::Subtree};
 use std::time::Duration;
 
 const JSON_FILE: &'static str = "resources/json-example.json";
@@ -10,7 +10,7 @@ fn main() {
     let mut asset_loader = FileAssetLoader::default();
     let _mixer = BaseMixer::builder_with_default_registry()
         .unwrap()
-        .set_initial_program_from_config(1, NodeConfigData(Box::new(subtree)), &mut asset_loader)
+        .set_initial_program_from_config(1, ChildConfig(Box::new(subtree)), &mut asset_loader)
         .unwrap()
         .start(Some(1))
         .unwrap();

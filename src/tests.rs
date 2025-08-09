@@ -1,6 +1,6 @@
 use crate::{
     Balance, BaseMixer, FileAssetLoader,
-    config::{NodeConfig, NodeConfigData},
+    config::{ChildConfig, NodeConfig},
     generator::{SampleLoop, SquareWave},
     group::{Font, FontSource, RangeSource},
     midi::{Midi, MidiDataSource},
@@ -10,8 +10,8 @@ use std::{collections::HashMap, time::Duration};
 const MIDI_FILE: &'static str = "resources/sample-in-c.mid";
 const WAV_FILE: &'static str = "resources/guitar-a2-48k-stereo.wav";
 
-fn wav_config_from_file() -> NodeConfigData {
-    NodeConfigData(Box::new(SampleLoop {
+fn wav_config_from_file() -> ChildConfig {
+    ChildConfig(Box::new(SampleLoop {
         node_id: None,
         balance: Balance::Both,
         path: WAV_FILE.to_owned(),
@@ -53,10 +53,10 @@ fn can_play_square_stream() {
         },
         channels: HashMap::from([(
             0,
-            NodeConfigData(Box::new(Font {
+            ChildConfig(Box::new(Font {
                 node_id: None,
                 config: FontSource::Ranges(vec![RangeSource {
-                    source: NodeConfigData(Box::new(SquareWave {
+                    source: ChildConfig(Box::new(SquareWave {
                         node_id: None,
                         balance: Balance::Both,
                         amplitude: 0.25,
@@ -89,7 +89,7 @@ fn can_play_wav_stream() {
         },
         channels: HashMap::from([(
             0,
-            NodeConfigData(Box::new(Font {
+            ChildConfig(Box::new(Font {
                 node_id: None,
                 config: FontSource::Ranges(vec![RangeSource {
                     source: wav_config_from_file(),

@@ -2,7 +2,7 @@ extern crate midi_graph;
 
 use midi_graph::{
     Balance, BaseMixer, Event, EventTarget, FileAssetLoader, Message, MessageSender,
-    abstraction::NodeConfigData,
+    abstraction::ChildConfig,
     effect::Fader,
     generator::{LfsrNoise, SawtoothWave},
     group::{Font, FontSource, RangeSource},
@@ -19,7 +19,7 @@ const MIDI_NODE_ID: u64 = 100;
 const FADER_NODE_ID: u64 = 101;
 
 fn main() {
-    let config = NodeConfigData(Box::new(Midi {
+    let config = ChildConfig(Box::new(Midi {
         node_id: Some(MIDI_NODE_ID),
         source: MidiDataSource::FilePath {
             path: MIDI_FILE.to_owned(),
@@ -28,13 +28,13 @@ fn main() {
         channels: HashMap::from([
             (
                 NOISE_CHANNEL,
-                NodeConfigData(Box::new(Font {
+                ChildConfig(Box::new(Font {
                     node_id: None,
                     config: FontSource::Ranges(vec![RangeSource {
-                        source: NodeConfigData(Box::new(Fader {
+                        source: ChildConfig(Box::new(Fader {
                             node_id: Some(FADER_NODE_ID),
                             initial_volume: 0.0,
-                            source: NodeConfigData(Box::new(LfsrNoise {
+                            source: ChildConfig(Box::new(LfsrNoise {
                                 node_id: None,
                                 balance: Balance::Left,
                                 amplitude: 0.5,
@@ -49,10 +49,10 @@ fn main() {
             ),
             (
                 LEAD_CHANNEL,
-                NodeConfigData(Box::new(Font {
+                ChildConfig(Box::new(Font {
                     node_id: None,
                     config: FontSource::Ranges(vec![RangeSource {
-                        source: NodeConfigData(Box::new(SawtoothWave {
+                        source: ChildConfig(Box::new(SawtoothWave {
                             node_id: None,
                             balance: Balance::Right,
                             amplitude: 0.5,

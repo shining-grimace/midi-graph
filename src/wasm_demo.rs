@@ -1,6 +1,6 @@
 use crate::{
     AssetLoadPayload, AssetLoader, Balance, BaseMixer, Error, SampleBuffer, SerializedFileMetadata,
-    abstraction::{NodeConfig, NodeConfigData},
+    abstraction::{ChildConfig, NodeConfig},
     generator::SquareWave,
     midi::{Midi, MidiDataSource},
 };
@@ -40,7 +40,7 @@ pub fn play_stream() {
         },
         channels: HashMap::from([(
             0,
-            NodeConfigData(Box::new(SquareWave {
+            ChildConfig(Box::new(SquareWave {
                 node_id: None,
                 balance: Balance::Both,
                 amplitude: 0.25,

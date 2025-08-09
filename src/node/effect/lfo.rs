@@ -1,6 +1,6 @@
 use crate::{
     AssetLoader, Balance, Error, Event, EventTarget, GraphNode, Message, Node,
-    abstraction::{NodeConfig, NodeConfigData, defaults},
+    abstraction::{ChildConfig, NodeConfig, defaults},
     consts,
     effect::ModulationProperty,
 };
@@ -10,7 +10,7 @@ use serde::Deserialize;
 pub struct Lfo {
     #[serde(default = "defaults::none_id")]
     pub node_id: Option<u64>,
-    pub source: NodeConfigData,
+    pub source: ChildConfig,
 }
 
 impl NodeConfig for Lfo {
@@ -19,7 +19,7 @@ impl NodeConfig for Lfo {
         Ok(Box::new(LfoNode::new(self.node_id, source)?))
     }
 
-    fn clone_child_configs(&self) -> Option<Vec<NodeConfigData>> {
+    fn clone_child_configs(&self) -> Option<Vec<ChildConfig>> {
         Some(vec![self.source.clone()])
     }
 

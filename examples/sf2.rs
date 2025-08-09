@@ -2,7 +2,7 @@ extern crate midi_graph;
 
 use midi_graph::{
     Balance, BaseMixer, FileAssetLoader,
-    abstraction::NodeConfigData,
+    abstraction::ChildConfig,
     generator::LfsrNoise,
     group::{Font, FontSource, RangeSource},
     midi::{Midi, MidiDataSource},
@@ -37,7 +37,7 @@ fn main() {
     let noise_font = Font {
         node_id: None,
         config: FontSource::Ranges(vec![RangeSource {
-            source: NodeConfigData(Box::new(LfsrNoise {
+            source: ChildConfig(Box::new(LfsrNoise {
                 node_id: None,
                 balance: Balance::Both,
                 amplitude: 0.25,
@@ -55,15 +55,15 @@ fn main() {
             track_index: 0,
         },
         channels: HashMap::from([
-            (SOUNDFONT_0_CHANNEL, NodeConfigData(Box::new(font_0))),
-            (SOUNDFONT_1_CHANNEL, NodeConfigData(Box::new(font_1))),
-            (NOISE_CHANNEL, NodeConfigData(Box::new(noise_font))),
+            (SOUNDFONT_0_CHANNEL, ChildConfig(Box::new(font_0))),
+            (SOUNDFONT_1_CHANNEL, ChildConfig(Box::new(font_1))),
+            (NOISE_CHANNEL, ChildConfig(Box::new(noise_font))),
         ]),
     };
 
     let _mixer = BaseMixer::builder_with_default_registry()
         .unwrap()
-        .set_initial_program_from_config(1, NodeConfigData(Box::new(midi)), &mut asset_loader)
+        .set_initial_program_from_config(1, ChildConfig(Box::new(midi)), &mut asset_loader)
         .unwrap()
         .start(Some(1))
         .unwrap();

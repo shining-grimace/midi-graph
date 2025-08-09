@@ -2,7 +2,7 @@ extern crate midi_graph;
 
 use midi_graph::{
     Balance, BaseMixer, FileAssetLoader,
-    abstraction::NodeConfigData,
+    abstraction::ChildConfig,
     generator::{LfsrNoise, SawtoothWave, SquareWave, TriangleWave},
     group::{Font, FontSource, Mixer, Polyphony, RangeSource},
     midi::{Midi, MidiDataSource},
@@ -19,16 +19,16 @@ fn main() {
     let triangle_unison = Polyphony {
         node_id: None,
         max_voices: 4,
-        source: NodeConfigData(Box::new(Mixer {
+        source: ChildConfig(Box::new(Mixer {
             node_id: None,
             balance: 0.5,
             sources: [
-                NodeConfigData(Box::new(TriangleWave {
+                ChildConfig(Box::new(TriangleWave {
                     node_id: None,
                     balance: Balance::Left,
                     amplitude: 1.0,
                 })),
-                NodeConfigData(Box::new(SawtoothWave {
+                ChildConfig(Box::new(SawtoothWave {
                     node_id: None,
                     balance: Balance::Right,
                     amplitude: 0.25,
@@ -39,7 +39,7 @@ fn main() {
     let triangle_instrument = Font {
         node_id: None,
         config: FontSource::Ranges(vec![RangeSource {
-            source: NodeConfigData(Box::new(triangle_unison)),
+            source: ChildConfig(Box::new(triangle_unison)),
             lower: 0,
             upper: 127,
         }]),
@@ -48,7 +48,7 @@ fn main() {
         node_id: None,
         config: FontSource::Ranges(vec![
             RangeSource {
-                source: NodeConfigData(Box::new(SquareWave {
+                source: ChildConfig(Box::new(SquareWave {
                     node_id: None,
                     balance: Balance::Both,
                     amplitude: 0.125,
@@ -58,7 +58,7 @@ fn main() {
                 upper: 127,
             },
             RangeSource {
-                source: NodeConfigData(Box::new(SquareWave {
+                source: ChildConfig(Box::new(SquareWave {
                     node_id: None,
                     balance: Balance::Both,
                     amplitude: 0.125,
@@ -72,7 +72,7 @@ fn main() {
     let noise_instrument = Font {
         node_id: None,
         config: FontSource::Ranges(vec![RangeSource {
-            source: NodeConfigData(Box::new(LfsrNoise {
+            source: ChildConfig(Box::new(LfsrNoise {
                 node_id: None,
                 balance: Balance::Both,
                 amplitude: 0.25,
@@ -91,17 +91,14 @@ fn main() {
             track_index: 0,
         },
         channels: HashMap::from([
-            (
-                TRIANGLE_CHANNEL,
-                NodeConfigData(Box::new(triangle_instrument)),
-            ),
-            (SQUARE_CHANNEL, NodeConfigData(Box::new(square_instrument))),
-            (NOISE_CHANNEL, NodeConfigData(Box::new(noise_instrument))),
+            (TRIANGLE_CHANNEL, ChildConfig(Box::new(triangle_instrument))),
+            (SQUARE_CHANNEL, ChildConfig(Box::new(square_instrument))),
+            (NOISE_CHANNEL, ChildConfig(Box::new(noise_instrument))),
         ]),
     };
     let _mixer = BaseMixer::builder_with_default_registry()
         .unwrap()
-        .set_initial_program_from_config(1, NodeConfigData(Box::new(midi)), &mut asset_loader)
+        .set_initial_program_from_config(1, ChildConfig(Box::new(midi)), &mut asset_loader)
         .unwrap()
         .start(Some(1))
         .unwrap();

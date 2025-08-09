@@ -1,6 +1,6 @@
 use crate::{
     AssetLoader, Error, Event, GraphNode, Message, Node,
-    abstraction::{NodeConfig, NodeConfigData, defaults},
+    abstraction::{ChildConfig, NodeConfig, defaults},
     consts,
 };
 use serde::Deserialize;
@@ -19,12 +19,12 @@ pub struct AdsrEnvelope {
     pub sustain_multiplier: f32,
     #[serde(default = "defaults::release")]
     pub release_time: f32,
-    pub source: Box<NodeConfigData>,
+    pub source: Box<ChildConfig>,
 }
 
 impl AdsrEnvelope {
-    pub fn stock(inner: NodeConfigData) -> NodeConfigData {
-        NodeConfigData(Box::new(Self {
+    pub fn stock(inner: ChildConfig) -> ChildConfig {
+        ChildConfig(Box::new(Self {
             node_id: defaults::none_id(),
             attack_time: defaults::attack(),
             decay_time: defaults::decay(),
@@ -48,7 +48,7 @@ impl NodeConfig for AdsrEnvelope {
         )))
     }
 
-    fn clone_child_configs(&self) -> Option<Vec<NodeConfigData>> {
+    fn clone_child_configs(&self) -> Option<Vec<ChildConfig>> {
         Some(vec![*self.source.clone()])
     }
 

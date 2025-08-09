@@ -1,13 +1,13 @@
 use crate::{
     AssetLoadPayload, AssetLoader, Error, GraphNode,
-    abstraction::{NodeConfig, NodeConfigData},
+    abstraction::{ChildConfig, NodeConfig},
 };
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Clone)]
 pub enum SubtreeData {
     FilePath(String),
-    Config(NodeConfigData),
+    Config(ChildConfig),
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -22,7 +22,7 @@ impl Subtree {
         }
     }
 
-    pub fn as_config(config: NodeConfigData) -> Self {
+    pub fn as_config(config: ChildConfig) -> Self {
         Self {
             source: SubtreeData::Config(config),
         }
@@ -34,7 +34,7 @@ impl NodeConfig for Subtree {
         match &self.source {
             SubtreeData::FilePath(file_path) => match asset_loader.load_asset_data(file_path)? {
                 AssetLoadPayload::RawAssetData(raw_data) => {
-                    let config: NodeConfigData = serde_json::from_slice(&raw_data)?;
+                    let config: ChildConfig = serde_json::from_slice(&raw_data)?;
                     config.0.to_node(asset_loader)
                 }
                 AssetLoadPayload::PreparedData(_) => Err(Error::User(
@@ -45,7 +45,7 @@ impl NodeConfig for Subtree {
         }
     }
 
-    fn clone_child_configs(&self) -> Option<Vec<NodeConfigData>> {
+    fn clone_child_configs(&self) -> Option<Vec<ChildConfig>> {
         None
     }
 

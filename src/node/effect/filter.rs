@@ -1,6 +1,6 @@
 use crate::{
     AssetLoader, Error, Event, GraphNode, IirFilter, Message, Node,
-    abstraction::{NodeConfig, NodeConfigData, defaults},
+    abstraction::{ChildConfig, NodeConfig, defaults},
     consts,
 };
 use biquad::{Biquad, Coefficients, DirectForm1, Type, frequency::*};
@@ -13,7 +13,7 @@ pub struct Filter {
     #[serde(default = "defaults::none_id")]
     pub node_id: Option<u64>,
     pub filter: Option<(IirFilter, f32)>,
-    pub source: NodeConfigData,
+    pub source: ChildConfig,
 }
 
 impl NodeConfig for Filter {
@@ -26,7 +26,7 @@ impl NodeConfig for Filter {
         )?))
     }
 
-    fn clone_child_configs(&self) -> Option<Vec<NodeConfigData>> {
+    fn clone_child_configs(&self) -> Option<Vec<ChildConfig>> {
         Some(vec![self.source.clone()])
     }
 

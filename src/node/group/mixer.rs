@@ -1,6 +1,6 @@
 use crate::{
     AssetLoader, Error, Event, GraphNode, Message, Node,
-    abstraction::{NodeConfig, NodeConfigData, defaults},
+    abstraction::{ChildConfig, NodeConfig, defaults},
     consts,
 };
 use serde::Deserialize;
@@ -11,12 +11,12 @@ pub struct Mixer {
     pub node_id: Option<u64>,
     #[serde(default = "defaults::mixer_balance")]
     pub balance: f32,
-    pub sources: [NodeConfigData; 2],
+    pub sources: [ChildConfig; 2],
 }
 
 impl Mixer {
-    pub fn stock(inner_0: NodeConfigData, inner_1: NodeConfigData) -> NodeConfigData {
-        NodeConfigData(Box::new(Self {
+    pub fn stock(inner_0: ChildConfig, inner_1: ChildConfig) -> ChildConfig {
+        ChildConfig(Box::new(Self {
             node_id: defaults::none_id(),
             balance: defaults::mixer_balance(),
             sources: [inner_0, inner_1],
@@ -36,7 +36,7 @@ impl NodeConfig for Mixer {
         )))
     }
 
-    fn clone_child_configs(&self) -> Option<Vec<NodeConfigData>> {
+    fn clone_child_configs(&self) -> Option<Vec<ChildConfig>> {
         Some(vec![self.sources[0].clone(), self.sources[1].clone()])
     }
 

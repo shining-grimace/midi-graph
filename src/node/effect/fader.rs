@@ -1,6 +1,6 @@
 use crate::{
     AssetLoader, Error, Event, GraphNode, Message, Node,
-    abstraction::{NodeConfig, NodeConfigData, defaults},
+    abstraction::{ChildConfig, NodeConfig, defaults},
     consts,
 };
 use serde::Deserialize;
@@ -10,12 +10,12 @@ pub struct Fader {
     #[serde(default = "defaults::none_id")]
     pub node_id: Option<u64>,
     pub initial_volume: f32,
-    pub source: NodeConfigData,
+    pub source: ChildConfig,
 }
 
 impl Fader {
-    pub fn stock(inner: NodeConfigData) -> NodeConfigData {
-        NodeConfigData(Box::new(Self {
+    pub fn stock(inner: ChildConfig) -> ChildConfig {
+        ChildConfig(Box::new(Self {
             node_id: defaults::none_id(),
             initial_volume: 1.0,
             source: inner,
@@ -33,7 +33,7 @@ impl NodeConfig for Fader {
         )))
     }
 
-    fn clone_child_configs(&self) -> Option<Vec<NodeConfigData>> {
+    fn clone_child_configs(&self) -> Option<Vec<ChildConfig>> {
         Some(vec![self.source.clone()])
     }
 

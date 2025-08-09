@@ -1,6 +1,6 @@
 use crate::{
     AssetLoader, Balance, Error, Event, EventTarget, GraphNode, Message, Node,
-    abstraction::{NodeConfig, NodeConfigData, defaults},
+    abstraction::{ChildConfig, NodeConfig, defaults},
     consts, util,
 };
 use serde::Deserialize;
@@ -16,8 +16,8 @@ pub struct SawtoothWave {
 }
 
 impl SawtoothWave {
-    pub fn stock() -> NodeConfigData {
-        NodeConfigData(Box::new(Self {
+    pub fn stock() -> ChildConfig {
+        ChildConfig(Box::new(Self {
             node_id: defaults::none_id(),
             balance: Balance::Both,
             amplitude: defaults::amplitude(),
@@ -34,7 +34,7 @@ impl NodeConfig for SawtoothWave {
         )))
     }
 
-    fn clone_child_configs(&self) -> Option<Vec<crate::abstraction::NodeConfigData>> {
+    fn clone_child_configs(&self) -> Option<Vec<crate::abstraction::ChildConfig>> {
         None
     }
 

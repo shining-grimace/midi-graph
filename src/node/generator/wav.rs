@@ -71,7 +71,7 @@ impl NodeConfig for SampleLoop {
         Ok(source)
     }
 
-    fn clone_child_configs(&self) -> Option<Vec<crate::abstraction::NodeConfigData>> {
+    fn clone_child_configs(&self) -> Option<Vec<crate::abstraction::ChildConfig>> {
         None
     }
 

@@ -5,7 +5,7 @@ pub mod util;
 use crate::{
     AssetLoadPayload, AssetLoader, DebugLogging, Error, Event, EventTarget, GraphNode, Message,
     Node,
-    abstraction::{NodeConfig, NodeConfigData, defaults},
+    abstraction::{ChildConfig, NodeConfig, defaults},
     consts,
     midi::{CueData, MidiEvent},
     node::log,
@@ -24,7 +24,7 @@ pub struct Midi {
     #[serde(default = "defaults::none_id")]
     pub node_id: Option<u64>,
     pub source: MidiDataSource,
-    pub channels: HashMap<usize, NodeConfigData>,
+    pub channels: HashMap<usize, ChildConfig>,
 }
 
 impl NodeConfig for Midi {
@@ -52,7 +52,7 @@ impl NodeConfig for Midi {
         Ok(source)
     }
 
-    fn clone_child_configs(&self) -> Option<Vec<NodeConfigData>> {
+    fn clone_child_configs(&self) -> Option<Vec<ChildConfig>> {
         Some(
             self.channels
                 .iter()

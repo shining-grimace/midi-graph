@@ -1,6 +1,6 @@
 use crate::{
     AssetLoader, Error, GraphNode, Message, Node,
-    abstraction::{NodeConfig, NodeConfigData, defaults},
+    abstraction::{ChildConfig, NodeConfig, defaults},
     consts,
 };
 use serde::Deserialize;
@@ -9,7 +9,7 @@ use serde::Deserialize;
 pub struct Combiner {
     #[serde(default = "defaults::none_id")]
     pub node_id: Option<u64>,
-    pub sources: Vec<NodeConfigData>,
+    pub sources: Vec<ChildConfig>,
 }
 
 impl NodeConfig for Combiner {
@@ -22,7 +22,7 @@ impl NodeConfig for Combiner {
         Ok(Box::new(CombinerNode::new(self.node_id, children_nodes)))
     }
 
-    fn clone_child_configs(&self) -> Option<Vec<NodeConfigData>> {
+    fn clone_child_configs(&self) -> Option<Vec<ChildConfig>> {
         Some(self.sources.clone())
     }
 

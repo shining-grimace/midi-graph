@@ -2,7 +2,7 @@ extern crate midi_graph;
 
 use midi_graph::{
     Balance, BaseMixer, FileAssetLoader,
-    abstraction::{NodeConfig, NodeConfigData},
+    abstraction::{ChildConfig, NodeConfig},
     generator::{SquareWave, TriangleWave},
     group::CombinerNode,
     midi::{Midi, MidiDataSource},
@@ -35,7 +35,7 @@ fn main() {
             path: MIDI_FILE.to_owned(),
             track_index: TRACK_NO_BASS,
         },
-        channels: HashMap::from([(CHANNEL_NO, NodeConfigData(Box::new(bass_track_instrument)))]),
+        channels: HashMap::from([(CHANNEL_NO, ChildConfig(Box::new(bass_track_instrument)))]),
     };
     let bass_track_midi_node = bass_track_midi.to_node(&mut asset_loader).unwrap();
     let lead_track_instrument = SquareWave {
@@ -50,7 +50,7 @@ fn main() {
             path: MIDI_FILE.to_owned(),
             track_index: TRACK_NO_LEAD,
         },
-        channels: HashMap::from([(CHANNEL_NO, NodeConfigData(Box::new(lead_track_instrument)))]),
+        channels: HashMap::from([(CHANNEL_NO, ChildConfig(Box::new(lead_track_instrument)))]),
     };
     let lead_track_midi_node = lead_track_midi.to_node(&mut asset_loader).unwrap();
     let combiner_node = CombinerNode::new(None, vec![bass_track_midi_node, lead_track_midi_node]);

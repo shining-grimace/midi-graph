@@ -2,7 +2,7 @@ use super::util as font_util;
 use crate::{
     AssetLoadPayload, AssetLoader, Balance, DebugLogging, Error, Event, GraphNode, LoopRange,
     Message, Node, NoteRange, SampleBuffer,
-    abstraction::{NodeConfig, NodeConfigData, defaults},
+    abstraction::{ChildConfig, NodeConfig, defaults},
     generator::SampleLoopNode,
     group::PolyphonyNode,
 };
@@ -16,7 +16,7 @@ use std::{
 
 #[derive(Deserialize, Clone)]
 pub struct RangeSource {
-    pub source: NodeConfigData,
+    pub source: ChildConfig,
     pub lower: u8,
     pub upper: u8,
 }
@@ -111,8 +111,8 @@ pub struct Font {
 }
 
 impl Font {
-    pub fn stock_full_range(source: NodeConfigData) -> NodeConfigData {
-        NodeConfigData(Box::new(Self {
+    pub fn stock_full_range(source: ChildConfig) -> ChildConfig {
+        ChildConfig(Box::new(Self {
             node_id: defaults::none_id(),
             config: FontSource::Ranges(vec![RangeSource {
                 source,
@@ -223,7 +223,7 @@ impl NodeConfig for Font {
         Ok(node)
     }
 
-    fn clone_child_configs(&self) -> Option<Vec<NodeConfigData>> {
+    fn clone_child_configs(&self) -> Option<Vec<ChildConfig>> {
         match &self.config {
             FontSource::Ranges(range_sources) => {
                 let sources = range_sources

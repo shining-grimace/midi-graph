@@ -2,7 +2,7 @@ extern crate midi_graph;
 
 use midi_graph::{
     Balance, BaseMixer, FileAssetLoader,
-    abstraction::{NodeConfig, NodeConfigData},
+    abstraction::{ChildConfig, NodeConfig},
     generator::{LfsrNoise, SquareWave, TriangleWave},
     group::{Font, FontSource, RangeSource},
     midi::{Midi, MidiDataSource},
@@ -20,7 +20,7 @@ fn main() {
         Box::new(Font {
             node_id: None,
             config: FontSource::Ranges(vec![RangeSource {
-                source: NodeConfigData(Box::new(SquareWave {
+                source: ChildConfig(Box::new(SquareWave {
                     node_id: None,
                     balance: Balance::Right,
                     amplitude: 0.125,
@@ -36,7 +36,7 @@ fn main() {
         Box::new(Font {
             node_id: None,
             config: FontSource::Ranges(vec![RangeSource {
-                source: NodeConfigData(Box::new(TriangleWave {
+                source: ChildConfig(Box::new(TriangleWave {
                     node_id: None,
                     balance: Balance::Both,
                     amplitude: 1.0,
@@ -51,7 +51,7 @@ fn main() {
         Box::new(Font {
             node_id: None,
             config: FontSource::Ranges(vec![RangeSource {
-                source: NodeConfigData(Box::new(LfsrNoise {
+                source: ChildConfig(Box::new(LfsrNoise {
                     node_id: None,
                     balance: Balance::Left,
                     amplitude: 0.25,
@@ -72,9 +72,9 @@ fn main() {
             track_index: 0,
         },
         channels: HashMap::from([
-            (0, NodeConfigData(triangle_font())),
-            (1, NodeConfigData(square_font())),
-            (2, NodeConfigData(noise_font())),
+            (0, ChildConfig(triangle_font())),
+            (1, ChildConfig(square_font())),
+            (2, ChildConfig(noise_font())),
         ]),
     }
     .to_node(&mut asset_loader)
@@ -86,8 +86,8 @@ fn main() {
             track_index: 0,
         },
         channels: HashMap::from([
-            (0, NodeConfigData(noise_font())),
-            (1, NodeConfigData(square_font())),
+            (0, ChildConfig(noise_font())),
+            (1, ChildConfig(square_font())),
         ]),
     }
     .to_node(&mut asset_loader)

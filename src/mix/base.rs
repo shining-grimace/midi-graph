@@ -1,7 +1,7 @@
 use crate::{
     AssetLoader, Error, GraphNode, Message, MessageSender,
     abstraction::NodeRegistry,
-    config::{NodeConfigData, builtin::register_builtin_types, registry::init_node_registry},
+    config::{ChildConfig, builtin::register_builtin_types, registry::init_node_registry},
     consts,
     generator::NullNode,
 };
@@ -56,7 +56,7 @@ impl BaseMixerBuilder {
     pub fn store_program_from_config(
         mut self,
         program_no: usize,
-        config: NodeConfigData,
+        config: ChildConfig,
         asset_loader: &mut dyn AssetLoader,
     ) -> Result<Self, Error> {
         let node = config.0.to_node(asset_loader)?;
@@ -67,7 +67,7 @@ impl BaseMixerBuilder {
     pub fn set_initial_program_from_config(
         mut self,
         program_no: usize,
-        config: NodeConfigData,
+        config: ChildConfig,
         asset_loader: &mut dyn AssetLoader,
     ) -> Result<Self, Error> {
         self.initial_program = Some(program_no);

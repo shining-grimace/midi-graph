@@ -1,6 +1,6 @@
 use crate::{
     AssetLoader, Error, Event, EventTarget, GraphNode, Message, Node,
-    abstraction::{NodeConfig, NodeConfigData, defaults},
+    abstraction::{ChildConfig, NodeConfig, defaults},
 };
 use serde::Deserialize;
 
@@ -10,12 +10,12 @@ pub struct Polyphony {
     pub node_id: Option<u64>,
     #[serde(default = "defaults::max_voices")]
     pub max_voices: usize,
-    pub source: NodeConfigData,
+    pub source: ChildConfig,
 }
 
 impl Polyphony {
-    pub fn stock(inner: NodeConfigData) -> NodeConfigData {
-        NodeConfigData(Box::new(Self {
+    pub fn stock(inner: ChildConfig) -> ChildConfig {
+        ChildConfig(Box::new(Self {
             node_id: defaults::none_id(),
             max_voices: defaults::max_voices(),
             source: inner,
@@ -33,7 +33,7 @@ impl NodeConfig for Polyphony {
         )?))
     }
 
-    fn clone_child_configs(&self) -> Option<Vec<NodeConfigData>> {
+    fn clone_child_configs(&self) -> Option<Vec<ChildConfig>> {
         Some(vec![self.source.clone()])
     }
 

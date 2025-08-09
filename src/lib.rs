@@ -86,7 +86,7 @@ pub mod abstraction {
     pub mod defaults {
         pub use crate::config::defaults::*;
     }
-    pub use super::config::{Loop, NodeConfig, NodeConfigData, registry::NodeRegistry};
+    pub use super::config::{ChildConfig, Loop, NodeConfig, registry::NodeRegistry};
 }
 
 /// Nodes that wrap other nodes and apply effects to them.

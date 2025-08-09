@@ -2,7 +2,7 @@ extern crate midi_graph;
 
 use midi_graph::{
     AssetLoader, BaseMixer, Error, Event, EventTarget, FileAssetLoader, GraphNode, Message, Node,
-    abstraction::{NodeConfig, NodeConfigData, defaults},
+    abstraction::{ChildConfig, NodeConfig, defaults},
     consts,
     group::Subtree,
     midi::{Midi, MidiDataSource},
@@ -20,17 +20,17 @@ const JSON_SUBTREE_FILE: &'static str = "resources/custom-example-subtree.json";
 
 fn main() {
     let subtree_config = Subtree::as_path(JSON_SUBTREE_FILE);
-    let config = NodeConfigData(Box::new(Midi {
+    let config = ChildConfig(Box::new(Midi {
         node_id: None,
         source: MidiDataSource::FilePath {
             path: MIDI_FILE.to_owned(),
             track_index: 0,
         },
         channels: HashMap::from([
-            (CHANNEL_0, NodeConfigData(Box::new(subtree_config))),
+            (CHANNEL_0, ChildConfig(Box::new(subtree_config))),
             (
                 CHANNEL_1,
-                NodeConfigData(Box::new(SineWave {
+                ChildConfig(Box::new(SineWave {
                     node_id: None,
                     amplitude: 0.5,
                 })),
@@ -62,7 +62,7 @@ impl NodeConfig for SineWave {
         Ok(Box::new(SineWaveNode::new(self.node_id, self.amplitude)))
     }
 
-    fn clone_child_configs(&self) -> Option<Vec<NodeConfigData>> {
+    fn clone_child_configs(&self) -> Option<Vec<ChildConfig>> {
         None
     }
 

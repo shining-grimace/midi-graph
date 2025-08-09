@@ -1,6 +1,6 @@
 use crate::{
     AssetLoader, Balance, Error, Event, EventTarget, GraphNode, Message, Node,
-    abstraction::{NodeConfig, NodeConfigData, defaults},
+    abstraction::{ChildConfig, NodeConfig, defaults},
     consts, util,
 };
 use serde::Deserialize;
@@ -19,8 +19,8 @@ pub struct LfsrNoise {
 }
 
 impl LfsrNoise {
-    pub fn stock(inside_feedback_mode: bool) -> NodeConfigData {
-        NodeConfigData(Box::new(Self {
+    pub fn stock(inside_feedback_mode: bool) -> ChildConfig {
+        ChildConfig(Box::new(Self {
             node_id: defaults::none_id(),
             balance: Balance::Both,
             amplitude: defaults::amplitude(),
@@ -41,7 +41,7 @@ impl NodeConfig for LfsrNoise {
         )))
     }
 
-    fn clone_child_configs(&self) -> Option<Vec<crate::abstraction::NodeConfigData>> {
+    fn clone_child_configs(&self) -> Option<Vec<crate::abstraction::ChildConfig>> {
         None
     }
 

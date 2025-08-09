@@ -2,7 +2,7 @@ extern crate midi_graph;
 
 use midi_graph::{
     Balance, BaseMixer, Event, EventTarget, FileAssetLoader, Message, MessageSender,
-    abstraction::NodeConfigData,
+    abstraction::ChildConfig,
     effect::{Fader, Lfo, ModulationProperty, Transition},
     generator::{SawtoothWave, SquareWave, TriangleWave},
     group::{Font, FontSource, Mixer, RangeSource},
@@ -16,16 +16,16 @@ const TRANSITION_NODE_ID: u64 = 102;
 fn main() {
     let triangle_unison = Lfo {
         node_id: Some(LFO_NODE_ID),
-        source: NodeConfigData(Box::new(Mixer {
+        source: ChildConfig(Box::new(Mixer {
             node_id: None,
             balance: 0.375,
             sources: [
-                NodeConfigData(Box::new(TriangleWave {
+                ChildConfig(Box::new(TriangleWave {
                     node_id: None,
                     balance: Balance::Both,
                     amplitude: 0.75,
                 })),
-                NodeConfigData(Box::new(SawtoothWave {
+                ChildConfig(Box::new(SawtoothWave {
                     node_id: None,
                     balance: Balance::Both,
                     amplitude: 0.1625,
@@ -42,12 +42,12 @@ fn main() {
     };
     let transition = Transition {
         node_id: Some(TRANSITION_NODE_ID),
-        source: NodeConfigData(Box::new(square_source)),
+        source: ChildConfig(Box::new(square_source)),
     };
     let fader = Fader {
         node_id: Some(FADER_NODE_ID),
         initial_volume: 0.0,
-        source: NodeConfigData(Box::new(transition)),
+        source: ChildConfig(Box::new(transition)),
     };
     let soundfont = Font {
         node_id: None,
@@ -55,19 +55,19 @@ fn main() {
             RangeSource {
                 lower: 0,
                 upper: 70,
-                source: NodeConfigData(Box::new(triangle_unison)),
+                source: ChildConfig(Box::new(triangle_unison)),
             },
             RangeSource {
                 lower: 71,
                 upper: 255,
-                source: NodeConfigData(Box::new(fader)),
+                source: ChildConfig(Box::new(fader)),
             },
         ]),
     };
     let mut asset_loader = FileAssetLoader::default();
     let mixer = BaseMixer::builder_with_default_registry()
         .unwrap()
-        .set_initial_program_from_config(1, NodeConfigData(Box::new(soundfont)), &mut asset_loader)
+        .set_initial_program_from_config(1, ChildConfig(Box::new(soundfont)), &mut asset_loader)
         .unwrap()
         .start(Some(1))
         .expect("Could not open stream");
