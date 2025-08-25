@@ -1,15 +1,111 @@
 
 # MIDI Graph
 
-A standalone audio engine written in Rust.
+A standalone audio engine written in Rust, based on a node graph.
 
 Features include:
 - Cross-platform, including Web, thanks to the `cpal` crate
 - Play MIDI events either from `.mid` files or manually send them through an async channel
-- Shape sound using a node graph, assembled from included tools such as chiptune generators
-  and sample file loaders (`.wav` and `.sf2` files are supported)
-- Load node configurations from `.ron` files or write them in Rust code
-- Some basic effects included, such as volume (ADSR) envelope
+- A custom syntax for writing playback events inside of MIDI files, for manipulating playback position in various ways
+- Shape sound using a node graph, assembled from included tools such as chiptune generators and sample file loaders (`.wav` and `.sf2` files are supported)
+- A `.json` format for loading abstract node graph representations from files
+- Some basic effects included, such as ADSR volume envelope and frequency filtering
+- An event system for injecting mutations into the node graph
+- An [integration with the Bevy engine](https://github.com/shining-grimace/bevy-midi-graph)
+
+## Platform Compatibility Notes
+
+Support is confirmed for Linux (ALSA backend) and WebAssembly. Any other platform supported by the CPAL crate should also work.
+
+NOTE: This crate currently requires `std` support.
+
+## Built-in Nodes
+
+### Generators
+
+- LfsrNoise: a pseudo-random noise generator based on hardware of the Nintendo Gameboy
+- OneShot: playback of a sample from a file, without looping or adjusting pitch to MIDI notes
+- SampleLoop: playback of a sample from a file, supporting both looping and adjusting pitch to MIDI notes
+- SquareWave: a square wave with adjustable duty cycle
+- SawtoothWave: a sawtooth wave with basic customisations
+- TriangleWave: a triangle wave with basic customisations
+
+### Effects
+
+- AdsrEnvelope: applies an attack-decay-sustain-release envelope
+- Fader: applies a volume transition over time
+- Filter: applies a frequency filter, such as high-pass or notch
+- Lfo: applies an oscillating modulation of volume, pan, pitch, mix balance, MIDI playback time dilation, or frequency filter cutoff
+- Transition: applies a modulation over a set duration of volume, pan, pitch, mix baance, MIDI playback time dilation, or filter frequency cutoff
+
+### Grouping
+
+- CombinerNode: group together any number of child nodes which add together
+- MixerNode: group exacty two children and customise the mix balance
+- PolyphonyNode: group a number of clones of a single node, activating them only when a new note is played to achieve
+
+## Events
+
+A subset of standard MIDI events are currently supported. Events from a `mid` file will be coerced into a crate-specific format, and hese events can be generated in code as well.
+
+These tables are non-exhaustive lists of MIDI event types, indicating which are used by MIDI
+Graph and which are planned for an implementation.
+
+### Crate Events
+
+| Message | Related MIDI Event | Notes |
+| --- | --- | --- |
+| CueData | None | Custom feature; see description below |
+| LoopCue | None | Custom feature; see description below |
+| NoteOn | NoteOn |  |
+| NoteOff | NoteOff | Velocity is unused |
+| MixerBalance | None | No mapping yet; adjusts MixerNode balance between two child nodes |
+| SourceBalance | None | No mapping yet; adjusts left-right balance of various generator nodes |
+| Volume | None | No mapping yet; adjusts volume of various generator nodes |
+| PitchMultiplier | None | No mapping yet; pitch bend for various generator nodes |
+| TimeDilation | None | Modulates playback rate of a MIDI sequence |
+| FilterFrequencyShift | None | No mapping yet; adjusts the changeover frequency of frequency filters |
+| Fade | None | Begins a volume transition over time |
+| Transition | None | Begins a transition over time of volume, pan, or more |
+| Lfo | None | Begins an oscillating effect of volume, pan, or more |
+| Filter | None | Sets the filter type and frequency type for a FilterNode |
+| EndModulation | None | Stops an effect transition |
+
+### MIDI Messages
+
+| Message | Status | Notes |
+| --- | --- | --- |
+| NoteOff | Implemented | Velocity is unused |
+| NoteOn | Implemented |  |
+| Aftertouch | Planned |  |
+| Controller | Not planned |  |
+| ProgramChange | Planned |  |
+| ChannelAftertouch | Not planned |  |
+| PitchBend | Planned |  |
+
+### MIDI Meta Messages
+
+| Meta Message | Status | Description |
+| --- | --- | --- |
+| TrackNumber | Not planned |  |
+| Text | Not planned |  |
+| Copyright | Not planned |  |
+| TrackName | Not planned |  |
+| InstrumentName | Not planned |  |
+| Lyric | Not planned |  |
+| Marker | Not planned |  |
+| CuePoint | Implemented | Used for custom cue signals |
+| ProgramName | Not planned |  |
+| DeviceName | Not planned |  |
+| MidiChannel | Not planned |  |
+| MidiPort | Not planned |  |
+| EndOfTrack | Not planned |  |
+| Tempo | Implemented |  |
+| SmpteOffset | Implemented |  |
+| TimeSignature | Not planned |  |
+| KeySignature | Not planned |  |
+| SequencerSpecific | Not planned |  |
+| Unknown | Not planned |  |
 
 ## Custom Cue Components
 
@@ -34,47 +130,6 @@ The supported signals, encoded as strings, are:
   immediately seek again to anchor point 3
 - Requesting (or clearing) the anchor to seek to at the next point marked with a "?" cue can be
   done by sending a custom event into the graph
-
-## MIDI Event Compatibility
-
-These tables are non-exhaustive lists of MIDI event types, indicating which are used by MIDI
-Graph and which are planned for an implementation.
-
-### Messages
-
-| Message | Status | Notes |
-| --- | --- | --- |
-| NoteOff | Implemented | Velocity is unused |
-| NoteOn | Implemented |  |
-| Aftertouch | Planned |  |
-| Controller | Not planned |  |
-| ProgramChange | Planned |  |
-| ChannelAftertouch | Not planned |  |
-| PitchBend | Planned |  |
-
-### Meta Messages
-
-| Meta Message | Status | Description |
-| --- | --- | --- |
-| TrackNumber | Not planned |  |
-| Text | Not planned |  |
-| Copyright | Not planned |  |
-| TrackName | Not planned |  |
-| InstrumentName | Not planned |  |
-| Lyric | Not planned |  |
-| Marker | Not planned |  |
-| CuePoint | Implemented | Used for custom cue signals |
-| ProgramName | Not planned |  |
-| DeviceName | Not planned |  |
-| MidiChannel | Not planned |  |
-| MidiPort | Not planned |  |
-| EndOfTrack | Not planned |  |
-| Tempo | Implemented |  |
-| SmpteOffset | Implemented |  |
-| TimeSignature | Not planned |  |
-| KeySignature | Not planned |  |
-| SequencerSpecific | Not planned |  |
-| Unknown | Not planned |  |
 
 ## DAW Workflow
 
