@@ -5,12 +5,14 @@ A standalone audio engine written in Rust, based on a node graph.
 
 Features include:
 - Cross-platform, including Web, thanks to the `cpal` crate
-- Play MIDI events either from `.mid` files or manually send them through an async channel
-- A custom syntax for writing playback events inside of MIDI files, for manipulating playback position in various ways
-- Shape sound using a node graph, assembled from included tools such as chiptune generators and sample file loaders (`.wav` and `.sf2` files are supported)
+- Shape sound using a node graph built from sound generators and effects in a tree hierarchy
+- Built-in generators for chiptune sounds, loading audio files (samples from `.wav` files or instruments from `.sf2` files)
+- Syntax for registering your own custom node types
+- An event system for injecting mutations into the node graph
+- Play events either from MIDI data loaded from `.mid` files or manually send them where you want through an async channel
+- A custom syntax for writing playback events (jumps, loops, and so on) inside of MIDI files
 - A `.json` format for loading abstract node graph representations from files
 - Some basic effects included, such as ADSR volume envelope and frequency filtering
-- An event system for injecting mutations into the node graph
 - An [integration with the Bevy engine](https://github.com/shining-grimace/bevy-midi-graph)
 
 ## Platform Compatibility Notes
@@ -20,6 +22,8 @@ Support is confirmed for Linux (ALSA backend) and WebAssembly. Any other platfor
 NOTE: This crate currently requires `std` support.
 
 ## Built-in Nodes
+
+The types below are built in, but you can write your own custom nodes by implementing the `NodeConfig` and `Node` traits. Custom nodes need to be registered before use.
 
 ### Generators
 
@@ -34,22 +38,21 @@ NOTE: This crate currently requires `std` support.
 
 - AdsrEnvelope: applies an attack-decay-sustain-release envelope
 - Fader: applies a volume transition over time
-- Filter: applies a frequency filter, such as high-pass or notch
+- Filter: applies a frequency filter (an IIR filter based on biquads), such as high-pass or notch
 - Lfo: applies an oscillating modulation of volume, pan, pitch, mix balance, MIDI playback time dilation, or frequency filter cutoff
 - Transition: applies a modulation over a set duration of volume, pan, pitch, mix baance, MIDI playback time dilation, or filter frequency cutoff
 
 ### Grouping
 
-- CombinerNode: group together any number of child nodes which add together
+- CombinerNode: group together any number of child nodes which mix together equally
 - MixerNode: group exacty two children and customise the mix balance
-- PolyphonyNode: group a number of clones of a single node, activating them only when a new note is played to achieve
+- PolyphonyNode: manage clones of a child node, activating them when notes turn on to achieve polyphony with as many voices as needed
 
 ## Events
 
-A subset of standard MIDI events are currently supported. Events from a `mid` file will be coerced into a crate-specific format, and hese events can be generated in code as well.
+A subset of standard MIDI events are currently supported. Events from a `.mid` file will be coerced into a crate-specific format, and these events can be generated in code as well. Using a `MidiNode`, events from a file can be played, though events can be injected into any node at any time as needed.
 
-These tables are non-exhaustive lists of MIDI event types, indicating which are used by MIDI
-Graph and which are planned for an implementation.
+These tables are non-exhaustive lists of MIDI event types, indicating which are used by MIDI Graph and which are planned for an implementation.
 
 ### Crate Events
 
@@ -186,10 +189,15 @@ When exporting ("File" > "Export Project MIDI..."):
 
 Various examples are included, testing various features:
 - `async` to test manually-generated MIDI events without loading a `.mid` file
+- `automation` to test various MIDI automation effects found in a `.mid` file
 - `chip` to test some of the basic audio generators and effects on a melody from a `.mid` file
+- `custom` to test registering and using a custom node (a sine wave)
+- `filter` to test modulating the cutoff frequency of a `FilterNode`
+- `json` to test loading and using a node graph from a JSON file (which includes a `.mid` file, a subtree stored in another file, and various built-in node types)
+- `lfo` to test various moduation effects using a low-frequency oscillator
 - `looping` to test a `.mid` file containing cue points, as well as controlling using manual async events
+- `polyphony` to test the `PolyphonyNode` with three voices playing simultaneously
 - `programs` to test storing multiple programs in the `BaseMixer`'s and changing during playback
-- `ron` to test loading and using a node graph from a RON file (which also specifies a `.mid` file to play)
 - `sf2` to test loading a soundfont from a `.sf2` file and applying it to a melody from a `.mid` file
 
 ## Testing
