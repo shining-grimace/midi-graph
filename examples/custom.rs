@@ -169,4 +169,8 @@ impl Node for SineWaveNode {
             )),
         }
     }
+
+    fn get_state_snapshot(&self, _for_node_id: u64) -> Option<Result<serde_json::Value, Error>> {
+        None
+    }
 }

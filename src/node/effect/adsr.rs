@@ -4,6 +4,7 @@ use crate::{
     consts,
 };
 use serde::Deserialize;
+use serde_json::Value;
 
 const PEAK_AMPLITUDE: f32 = 1.0;
 
@@ -268,5 +269,9 @@ impl Node for AdsrEnvelopeNode {
         }
         self.consumer = children[0].duplicate()?;
         Ok(())
+    }
+
+    fn get_state_snapshot(&self, for_node_id: u64) -> Option<Result<Value, Error>> {
+        self.consumer.get_state_snapshot(for_node_id)
     }
 }

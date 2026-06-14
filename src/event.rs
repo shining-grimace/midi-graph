@@ -1,5 +1,6 @@
 use crate::{effect::ModulationProperty, midi::CueData};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 #[derive(Clone, Debug)]
 pub struct Message {
@@ -38,6 +39,7 @@ impl EventTarget {
 
 #[derive(Clone, Debug)]
 pub enum Event {
+    StateSnapshot(Value),
     CueData(CueData),
     LoopCue {
         is_ideal_point: bool,

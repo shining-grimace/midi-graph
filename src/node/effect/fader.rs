@@ -4,6 +4,7 @@ use crate::{
     consts,
 };
 use serde::Deserialize;
+use serde_json::Value;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Fader {
@@ -152,5 +153,9 @@ impl Node for FaderNode {
         }
         self.consumer = children[0].duplicate()?;
         Ok(())
+    }
+
+    fn get_state_snapshot(&self, for_node_id: u64) -> Option<Result<Value, Error>> {
+        self.consumer.get_state_snapshot(for_node_id)
     }
 }

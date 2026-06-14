@@ -4,6 +4,7 @@ use crate::{
     consts,
 };
 use serde::Deserialize;
+use serde_json::Value;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Combiner {
@@ -98,5 +99,11 @@ impl Node for CombinerNode {
             .map(|child| child.duplicate())
             .collect::<Result<Vec<GraphNode>, Error>>()?;
         Ok(())
+    }
+
+    fn get_state_snapshot(&self, for_node_id: u64) -> Option<Result<Value, Error>> {
+        self.consumers
+            .iter()
+            .find_map(|consumer| consumer.get_state_snapshot(for_node_id))
     }
 }

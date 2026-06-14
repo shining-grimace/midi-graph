@@ -47,4 +47,3 @@ pub const fn mixer_balance() -> f32 {
 pub const fn max_voices() -> usize {
     4
 }
-

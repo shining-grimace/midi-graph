@@ -5,6 +5,7 @@ use crate::{
     effect::ModulationProperty,
 };
 use serde::Deserialize;
+use serde_json::Value;
 
 #[derive(Deserialize, Clone)]
 pub struct Lfo {
@@ -209,5 +210,9 @@ impl Node for LfoNode {
         }
         self.consumer = children[0].duplicate()?;
         Ok(())
+    }
+
+    fn get_state_snapshot(&self, for_node_id: u64) -> Option<Result<Value, Error>> {
+        self.consumer.get_state_snapshot(for_node_id)
     }
 }

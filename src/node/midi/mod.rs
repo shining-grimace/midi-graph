@@ -11,12 +11,21 @@ use crate::{
     node::log,
 };
 use midly::Smf;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::collections::HashMap;
 
 #[derive(Deserialize, Clone)]
 pub enum MidiDataSource {
     FilePath { path: String, track_index: usize },
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+struct MidiPlaybackPosition {
+    pub has_finished: bool,
+    pub cumulative_samples: u64,
+    pub next_event_index: usize,
+    pub event_samples_progress: isize,
 }
 
 #[derive(Deserialize, Clone)]
@@ -331,6 +340,27 @@ impl Node for MidiNode {
 
     fn try_consume_event(&mut self, event: &Message) -> bool {
         match &event.data {
+            Event::StateSnapshot(json_value) => {
+                let try_state = serde_json::from_value::<MidiPlaybackPosition>(json_value.clone());
+                match try_state {
+                    Ok(state) => {
+                        if state.next_event_index >= self.midi_events.len() {
+                            println!(
+                                "ERROR: MIDI: Cannot restore snapshot: would be out of bounds"
+                            );
+                            return false;
+                        }
+                        self.has_finished = state.has_finished;
+                        self.cumulative_samples = state.cumulative_samples;
+                        self.next_event_index = state.next_event_index;
+                        self.event_samples_progress = state.event_samples_progress;
+                    }
+                    Err(e) => {
+                        println!("JSON error restoring MIDI state: {:?}", e);
+                    }
+                }
+                true
+            }
             Event::CueData(cue) => {
                 self.process_cue_event(cue);
                 true
@@ -374,5 +404,23 @@ impl Node for MidiNode {
             .map(|(index, source)| source.duplicate().map(|copy| (index + 1, copy)))
             .collect::<Result<HashMap<usize, GraphNode>, Error>>()?;
         Ok(())
+    }
+
+    fn get_state_snapshot(&self, for_node_id: u64) -> Option<Result<Value, Error>> {
+        match for_node_id == self.node_id {
+            true => {
+                let result = serde_json::to_value(MidiPlaybackPosition {
+                    has_finished: self.has_finished,
+                    cumulative_samples: self.cumulative_samples,
+                    next_event_index: self.next_event_index,
+                    event_samples_progress: self.event_samples_progress,
+                })
+                .map_err(|e| Error::Json(e));
+                Some(result)
+            }
+            false => Some(Err(Error::User(
+                "MidiSource cannot propagate to children".to_owned(),
+            ))),
+        }
     }
 }

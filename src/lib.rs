@@ -65,9 +65,6 @@ mod log;
 mod mix;
 mod node;
 
-// Re-exports as new types
-pub type MessageSender = crossbeam_channel::Sender<Message>;
-
 // Helper types
 pub type GraphNode = Box<dyn Node + Send + 'static>;
 
@@ -78,7 +75,7 @@ pub use event::{Balance, Event, EventTarget, IirFilter, Message};
 pub use file::FileAssetLoader;
 pub use loader::{AssetLoadPayload, AssetLoader, SampleBuffer, SerializedFileMetadata};
 pub use log::DebugLogging;
-pub use mix::base::BaseMixer;
+pub use mix::base::{BaseMixer, MessageSender};
 pub use node::{LoopRange, Node, NoteRange};
 
 /// Abstract, serialisable/deserialisable representation of a graph

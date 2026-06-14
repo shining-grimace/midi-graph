@@ -4,6 +4,7 @@ use crate::{
     consts, util,
 };
 use serde::Deserialize;
+use serde_json::Value;
 
 #[derive(Deserialize, Clone)]
 pub struct LfsrNoise {
@@ -226,5 +227,9 @@ impl Node for LfsrNoiseNode {
                 "LfsrNoiseSource cannot have children".to_owned(),
             )),
         }
+    }
+
+    fn get_state_snapshot(&self, _for_node_id: u64) -> Option<Result<Value, Error>> {
+        None
     }
 }

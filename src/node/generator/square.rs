@@ -4,6 +4,7 @@ use crate::{
     consts, util,
 };
 use serde::Deserialize;
+use serde_json::Value;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct SquareWave {
@@ -179,5 +180,9 @@ impl Node for SquareWaveNode {
                 "SquareWaveSource cannot have children".to_owned(),
             )),
         }
+    }
+
+    fn get_state_snapshot(&self, _for_node_id: u64) -> Option<Result<Value, Error>> {
+        None
     }
 }

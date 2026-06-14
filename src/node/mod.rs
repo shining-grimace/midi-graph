@@ -7,6 +7,7 @@ pub mod util;
 
 use crate::{Error, EventTarget, GraphNode, Message, abstraction::Loop, group::RangeSource};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 const START_GENERATED_NODE_IDS: u64 = 0x10000;
@@ -20,6 +21,7 @@ pub trait Node {
     fn propagate(&mut self, event: &Message);
     fn fill_buffer(&mut self, buffer: &mut [f32]);
     fn replace_children(&mut self, children: &[GraphNode]) -> Result<(), Error>;
+    fn get_state_snapshot(&self, for_node_id: u64) -> Option<Result<Value, Error>>;
 
     fn on_event(&mut self, event: &Message) {
         let node_id = self.get_node_id();

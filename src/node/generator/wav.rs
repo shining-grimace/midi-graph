@@ -6,6 +6,7 @@ use crate::{
 };
 use hound::{SampleFormat, WavReader, WavSpec};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::{io::Cursor, sync::Arc};
 
 #[derive(Deserialize, Serialize, Clone)]
@@ -388,5 +389,9 @@ impl Node for SampleLoopNode {
             true => Ok(()),
             false => Err(Error::User("WavSource cannot have children".to_owned())),
         }
+    }
+
+    fn get_state_snapshot(&self, _for_node_id: u64) -> Option<Result<Value, Error>> {
+        None
     }
 }

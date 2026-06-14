@@ -4,6 +4,7 @@ use crate::{
     consts,
 };
 use serde::Deserialize;
+use serde_json::Value;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Mixer {
@@ -136,5 +137,12 @@ impl Node for MixerNode {
         self.consumer_0 = children[0].duplicate()?;
         self.consumer_1 = children[1].duplicate()?;
         Ok(())
+    }
+
+    fn get_state_snapshot(&self, for_node_id: u64) -> Option<Result<Value, Error>> {
+        match self.consumer_0.get_state_snapshot(for_node_id) {
+            Some(snapshot) => Some(snapshot),
+            None => self.consumer_1.get_state_snapshot(for_node_id),
+        }
     }
 }

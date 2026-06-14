@@ -343,4 +343,10 @@ impl Node for FontNode {
             "SoundFont does not support replacing its children".to_owned(),
         ))
     }
+
+    fn get_state_snapshot(&self, _for_node_id: u64) -> Option<Result<serde_json::Value, Error>> {
+        Some(Err(Error::User(
+            "SoundFont does not support propagating requests to its children".to_owned(),
+        )))
+    }
 }

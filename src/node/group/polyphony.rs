@@ -3,6 +3,7 @@ use crate::{
     abstraction::{ChildConfig, NodeConfig, defaults},
 };
 use serde::Deserialize;
+use serde_json::Value;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Polyphony {
@@ -185,5 +186,11 @@ impl Node for PolyphonyNode {
             .collect::<Result<Vec<Voice>, Error>>()?;
         self.next_on_index = 0;
         Ok(())
+    }
+
+    fn get_state_snapshot(&self, for_node_id: u64) -> Option<Result<Value, Error>> {
+        self.voices
+            .iter()
+            .find_map(|voice| voice.source.get_state_snapshot(for_node_id))
     }
 }
