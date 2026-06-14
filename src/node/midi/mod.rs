@@ -4,7 +4,7 @@ pub mod util;
 
 use crate::{
     AssetLoadPayload, AssetLoader, DebugLogging, Error, Event, EventTarget, GraphNode, Message,
-    Node,
+    MidiPlaybackState, Node,
     abstraction::{ChildConfig, NodeConfig, defaults},
     consts,
     midi::{CueData, MidiEvent},
@@ -22,6 +22,7 @@ pub enum MidiDataSource {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 struct MidiPlaybackPosition {
+    pub playback_state: MidiPlaybackState,
     pub has_finished: bool,
     pub cumulative_samples: u64,
     pub next_event_index: usize,
@@ -157,6 +158,7 @@ pub struct MidiNode {
     node_id: u64,
     queued_ideal_seek: Option<u32>,
     channel_sources: HashMap<usize, GraphNode>,
+    is_playing: bool,
     has_finished: bool,
     samples_per_tick: f64,
     next_event_index: usize,
@@ -187,6 +189,7 @@ impl MidiNode {
             node_id: node_id.unwrap_or_else(<Self as Node>::new_node_id),
             queued_ideal_seek: None,
             channel_sources: sources,
+            is_playing: true,
             has_finished: false,
             samples_per_tick,
             next_event_index: 0,
@@ -350,6 +353,10 @@ impl Node for MidiNode {
                             );
                             return false;
                         }
+                        self.is_playing = match state.playback_state {
+                            MidiPlaybackState::Playing => true,
+                            MidiPlaybackState::Paused => false,
+                        };
                         self.has_finished = state.has_finished;
                         self.cumulative_samples = state.cumulative_samples;
                         self.next_event_index = state.next_event_index;
@@ -363,6 +370,13 @@ impl Node for MidiNode {
             }
             Event::CueData(cue) => {
                 self.process_cue_event(cue);
+                true
+            }
+            Event::MidiPlayback(playback) => {
+                self.is_playing = match playback {
+                    MidiPlaybackState::Playing => true,
+                    MidiPlaybackState::Paused => false,
+                };
                 true
             }
             Event::TimeDilation(value) => {
@@ -380,7 +394,7 @@ impl Node for MidiNode {
     }
 
     fn fill_buffer(&mut self, buffer: &mut [f32]) {
-        if self.has_finished {
+        if !self.is_playing || self.has_finished {
             return;
         }
         self.fill_all_channels(buffer);
@@ -410,6 +424,10 @@ impl Node for MidiNode {
         match for_node_id == self.node_id {
             true => {
                 let result = serde_json::to_value(MidiPlaybackPosition {
+                    playback_state: match self.is_playing {
+                        true => MidiPlaybackState::Playing,
+                        false => MidiPlaybackState::Paused,
+                    },
                     has_finished: self.has_finished,
                     cumulative_samples: self.cumulative_samples,
                     next_event_index: self.next_event_index,

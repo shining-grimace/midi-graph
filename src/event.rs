@@ -45,6 +45,7 @@ pub enum Event {
         is_ideal_point: bool,
         seek_anchor: Option<u32>,
     },
+    MidiPlayback(MidiPlaybackState),
     NoteOn {
         note: u8,
         vel: f32,
@@ -84,6 +85,12 @@ pub enum Event {
     },
     EndModulation,
     Unknown,
+}
+
+#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
+pub enum MidiPlaybackState {
+    Playing,
+    Paused,
 }
 
 #[derive(Copy, Clone, Debug, Deserialize, Serialize)]
