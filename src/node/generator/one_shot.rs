@@ -170,6 +170,9 @@ impl Node for OneShotNode {
             Event::NoteOff { .. } => {
                 self.data_position = self.sample_buffer.len();
             }
+            Event::AllNotesOff => {
+                self.data_position = self.sample_buffer.len();
+            }
             Event::SourceBalance(balance) => {
                 self.balance = balance;
             }

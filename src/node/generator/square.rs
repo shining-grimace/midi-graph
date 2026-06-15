@@ -116,6 +116,9 @@ impl Node for SquareWaveNode {
                 self.current_frequency = util::frequency_of(note);
                 self.note_velocity = vel;
             }
+            Event::AllNotesOff => {
+                self.is_on = false;
+            }
             Event::PitchMultiplier(multiplier) => {
                 self.current_frequency = multiplier * util::frequency_of(self.current_note);
             }

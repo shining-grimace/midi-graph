@@ -165,6 +165,9 @@ impl Node for AdsrEnvelopeNode {
             Event::NoteOff { .. } => {
                 self.release();
             }
+            Event::AllNotesOff => {
+                self.release();
+            }
             _ => {}
         }
         // AdsrEnvelope does not consume any events, but listens to notes

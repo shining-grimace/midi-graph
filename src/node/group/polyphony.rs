@@ -153,6 +153,19 @@ impl Node for PolyphonyNode {
                 }
                 true
             }
+            Event::AllNotesOff => {
+                let broadcast_event = Message {
+                    target: EventTarget::Broadcast,
+                    data: event.data.clone(),
+                };
+                for voice in self.voices.iter_mut() {
+                    if voice.current_note.is_some() {
+                        voice.source.on_event(&broadcast_event);
+                        voice.current_note = None;
+                    }
+                }
+                true
+            }
             _ => false,
         }
     }

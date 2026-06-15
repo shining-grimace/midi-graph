@@ -335,6 +335,9 @@ impl Node for SampleLoopNode {
                     self.is_on = false;
                 }
             }
+            Event::AllNotesOff => {
+                self.is_on = false;
+            }
             Event::PitchMultiplier(multiplier) => {
                 self.pitch_multiplier = *multiplier;
             }

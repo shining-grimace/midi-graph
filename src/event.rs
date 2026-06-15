@@ -54,6 +54,7 @@ pub enum Event {
         note: u8,
         vel: f32,
     },
+    AllNotesOff,
     MixerBalance(f32),
     SourceBalance(Balance),
     Volume(f32),

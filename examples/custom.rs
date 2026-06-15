@@ -129,6 +129,9 @@ impl Node for SineWaveNode {
                 self.note_velocity = vel;
                 self.cycle_progress_samples = 0.0;
             }
+            Event::AllNotesOff => {
+                self.is_on = false;
+            }
             _ => {}
         }
         true
