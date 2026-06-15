@@ -10,12 +10,12 @@ use serde_json::Value;
 use std::{io::Cursor, sync::Arc};
 
 #[derive(Deserialize, Serialize, Clone)]
-pub struct SampleLoopFileMetadata {
+pub struct SampleLoopSourceMetadata {
     sample_rate: u32,
     channels: usize,
 }
 
-impl SampleLoopFileMetadata {
+impl SampleLoopSourceMetadata {
     pub fn from_spec(spec: WavSpec) -> Self {
         Self {
             sample_rate: spec.sample_rate,
@@ -24,39 +24,57 @@ impl SampleLoopFileMetadata {
     }
 }
 
+#[derive(Deserialize, Serialize, Clone)]
+pub enum SampleBufferSource {
+    FilePath(String),
+    WavetableWithSampleRate((u32, [f32; 16])),
+}
+
 #[derive(Deserialize, Clone)]
 pub struct SampleLoop {
     #[serde(default = "defaults::none_id")]
     pub node_id: Option<u64>,
     #[serde(default = "defaults::source_balance")]
     pub balance: Balance,
-    pub path: String,
+    pub source: SampleBufferSource,
     pub base_note: u8,
     pub looping: Option<Loop>,
 }
 
 impl NodeConfig for SampleLoop {
     fn to_node(&self, asset_loader: &mut dyn AssetLoader) -> Result<GraphNode, Error> {
-        let (metadata, sample_buffer) = match asset_loader.load_asset_data(&self.path)? {
-            AssetLoadPayload::RawAssetData(raw_data) => {
-                let cursor = Cursor::new(raw_data);
-                let wav = WavReader::new(cursor)?;
-                let spec = wav.spec();
-                SampleLoopNode::validate_spec(&spec)?;
-                let metadata = SampleLoopFileMetadata::from_spec(spec);
-                let data: Vec<f32> = wav.into_samples().map(|s| s.unwrap()).collect();
-                let sample_buffer = Arc::new(data);
-                let raw_metadata = Arc::new(serde_json::to_vec(&metadata)?);
-                asset_loader.store_prepared_data(
-                    &self.path,
-                    raw_metadata.clone(),
-                    sample_buffer.clone(),
-                );
-                (metadata, sample_buffer)
-            }
-            AssetLoadPayload::PreparedData((raw_metadata, sample_buffer)) => {
-                let metadata: SampleLoopFileMetadata = serde_json::from_slice(&raw_metadata)?;
-                (metadata, sample_buffer)
+        let (metadata, sample_buffer) = match &self.source {
+            SampleBufferSource::FilePath(path) => match asset_loader.load_asset_data(&path)? {
+                AssetLoadPayload::RawAssetData(raw_data) => {
+                    let cursor = Cursor::new(raw_data);
+                    let wav = WavReader::new(cursor)?;
+                    let spec = wav.spec();
+                    SampleLoopNode::validate_spec(&spec)?;
+                    let metadata = SampleLoopSourceMetadata::from_spec(spec);
+                    let data: Vec<f32> = wav.into_samples().map(|s| s.unwrap()).collect();
+                    let sample_buffer = Arc::new(data);
+                    let raw_metadata = Arc::new(serde_json::to_vec(&metadata)?);
+                    asset_loader.store_prepared_data(
+                        &path,
+                        raw_metadata.clone(),
+                        sample_buffer.clone(),
+                    );
+                    (metadata, sample_buffer)
+                }
+                AssetLoadPayload::PreparedData((raw_metadata, sample_buffer)) => {
+                    let metadata: SampleLoopSourceMetadata = serde_json::from_slice(&raw_metadata)?;
+                    (metadata, sample_buffer)
+                }
+            },
+            SampleBufferSource::WavetableWithSampleRate((sample_rate, samples)) => {
+                let buffer = Vec::from(samples);
+                (
+                    SampleLoopSourceMetadata {
+                        sample_rate: *sample_rate,
+                        channels: 1,
+                    },
+                    Arc::new(buffer),
+                )
             }
         };
         let loop_range = self.looping.as_ref().map(LoopRange::from_config);
@@ -77,7 +95,10 @@ impl NodeConfig for SampleLoop {
     }
 
     fn asset_source(&self) -> Option<&str> {
-        Some(&self.path)
+        match &self.source {
+            SampleBufferSource::FilePath(path) => Some(path),
+            SampleBufferSource::WavetableWithSampleRate(_) => None,
+        }
     }
 
     fn duplicate(&self) -> Box<dyn NodeConfig + Send + Sync + 'static> {
@@ -112,7 +133,7 @@ impl SampleLoopNode {
         balance: Balance,
         source_note: u8,
         loop_range: Option<LoopRange>,
-        metadata: SampleLoopFileMetadata,
+        metadata: SampleLoopSourceMetadata,
         sample_buffer: SampleBuffer,
     ) -> Result<Self, Error> {
         if let Some(range) = &loop_range {
@@ -302,26 +323,41 @@ impl Node for SampleLoopNode {
     }
 
     fn try_consume_event(&mut self, event: &Message) -> bool {
-        match event.data {
+        match &event.data {
             Event::NoteOn { note, vel: _ } => {
                 self.is_on = true;
                 self.data_position = self.buffer_start_index;
-                self.current_note = note;
+                self.current_note = *note;
                 self.pitch_multiplier = 1.0;
             }
             Event::NoteOff { note, vel: _ } => {
-                if self.current_note == note && self.is_on {
+                if self.current_note == *note && self.is_on {
                     self.is_on = false;
                 }
             }
             Event::PitchMultiplier(multiplier) => {
-                self.pitch_multiplier = multiplier;
+                self.pitch_multiplier = *multiplier;
             }
             Event::SourceBalance(balance) => {
-                self.balance = balance;
+                self.balance = *balance;
             }
             Event::Volume(volume) => {
-                self.volume = volume;
+                self.volume = *volume;
+            }
+            Event::Wavetable(data) => {
+                if self.source_channel_count != 1 {
+                    println!(
+                        "ERROR: Only a mono SampleLoopNode can be updated with wavetable data"
+                    );
+                    return true;
+                }
+                if self.loop_start_buffer_index != 0 || self.loop_end_buffer_index != 16 {
+                    println!(
+                        "ERROR: SamplerLoopNode cannot be updated with wavetable data unless it was initialised with one"
+                    );
+                    return true;
+                }
+                self.sample_buffer = Arc::new(data.clone());
             }
             _ => {}
         }

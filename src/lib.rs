@@ -107,7 +107,7 @@ pub mod generator {
         sawtooth::{SawtoothWave, SawtoothWaveNode},
         square::{SquareWave, SquareWaveNode},
         triangle::{TriangleWave, TriangleWaveNode},
-        wav::{SampleLoop, SampleLoopNode},
+        wav::{SampleBufferSource, SampleLoop, SampleLoopNode},
     };
 }
 

@@ -84,6 +84,7 @@ pub enum Event {
         cutoff_frequency: f32,
     },
     EndModulation,
+    Wavetable(Vec<f32>),
     Unknown,
 }
 

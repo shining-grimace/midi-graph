@@ -2,80 +2,57 @@ extern crate midi_graph;
 
 use midi_graph::{
     Balance, BaseMixer, Event, EventTarget, FileAssetLoader, Message, MidiPlaybackState,
-    abstraction::{ChildConfig, NodeConfig},
-    generator::{LfsrNoise, SquareWave, TriangleWave},
-    group::{Font, FontSource, RangeSource},
+    abstraction::{ChildConfig, Loop, NodeConfig},
+    generator::{SampleBufferSource, SampleLoop},
     midi::{Midi, MidiDataSource},
 };
 use std::{collections::HashMap, time::Duration};
 
 const MIDI_0_FILE: &'static str = "resources/sample-in-c.mid";
 
-const NODE_ID: u64 = 100;
+const MIDI_NODE_ID: u64 = 100;
+const SAMPLER_NODE_ID: u64 = 101;
 
 const PROGRAM_0: usize = 0;
 
 fn main() {
-    fn square_font() -> Box<dyn NodeConfig + Send + Sync + 'static> {
-        Box::new(Font {
-            node_id: None,
-            config: FontSource::Ranges(vec![RangeSource {
-                source: ChildConfig(Box::new(SquareWave {
-                    node_id: None,
-                    balance: Balance::Right,
-                    amplitude: 0.125,
-                    duty_cycle: 0.0625,
-                })),
-                lower: 0,
-                upper: 127,
-            }]),
-        })
+    fn wavetable_source_0() -> [f32; 16] {
+        [
+            0.0, 0.25, 1.0, -0.5, -0.125, -0.5, 0.0, 0.125, 0.125, 0.25, 0.875, 1.0, 0.25, -0.25,
+            -0.5, -0.25,
+        ]
     }
 
-    fn triangle_font() -> Box<dyn NodeConfig + Send + Sync + 'static> {
-        Box::new(Font {
-            node_id: None,
-            config: FontSource::Ranges(vec![RangeSource {
-                source: ChildConfig(Box::new(TriangleWave {
-                    node_id: None,
-                    balance: Balance::Both,
-                    amplitude: 1.0,
-                })),
-                lower: 0,
-                upper: 127,
-            }]),
-        })
+    fn wavetable_source_1() -> [f32; 16] {
+        [
+            0.0, 0.125, 0.25, 0.125, -0.75, -0.125, -0.25, -0.75, 0.0, 0.125, 0.25, 0.125, -0.75,
+            -0.125, -0.25, -0.75,
+        ]
     }
 
-    fn noise_font() -> Box<dyn NodeConfig + Send + Sync + 'static> {
-        Box::new(Font {
-            node_id: None,
-            config: FontSource::Ranges(vec![RangeSource {
-                source: ChildConfig(Box::new(LfsrNoise {
-                    node_id: None,
-                    balance: Balance::Left,
-                    amplitude: 0.25,
-                    inside_feedback: false,
-                    note_for_16_shifts: 50,
-                })),
-                lower: 0,
-                upper: 127,
-            }]),
+    fn wavetable() -> Box<dyn NodeConfig + Send + Sync + 'static> {
+        let source_wavetable = wavetable_source_0();
+        let source_size = source_wavetable.len();
+        Box::new(SampleLoop {
+            node_id: Some(SAMPLER_NODE_ID),
+            balance: Balance::Both,
+            source: SampleBufferSource::WavetableWithSampleRate((4096, source_wavetable)),
+            base_note: 127,
+            looping: Some(Loop {
+                start: 0,
+                end: source_size,
+            }),
         })
     }
 
     let mut asset_loader = FileAssetLoader::default();
     let program_0 = Midi {
-        node_id: Some(NODE_ID),
+        node_id: Some(MIDI_NODE_ID),
         source: MidiDataSource::FilePath {
             path: MIDI_0_FILE.to_owned(),
             track_index: 0,
         },
-        channels: HashMap::from([
-            (0, ChildConfig(triangle_font())),
-            (1, ChildConfig(square_font())),
-            (2, ChildConfig(noise_font())),
-        ]),
+        channels: HashMap::from([(0, ChildConfig(wavetable()))]),
     }
     .to_node(&mut asset_loader)
     .unwrap();
@@ -89,15 +66,22 @@ fn main() {
     std::thread::sleep(Duration::from_secs(2));
     sender
         .send(Message {
-            target: EventTarget::SpecificNode(NODE_ID),
+            target: EventTarget::SpecificNode(MIDI_NODE_ID),
             data: Event::MidiPlayback(MidiPlaybackState::Paused),
         })
         .unwrap();
     std::thread::sleep(Duration::from_secs(2));
     sender
         .send(Message {
-            target: EventTarget::SpecificNode(NODE_ID),
+            target: EventTarget::SpecificNode(MIDI_NODE_ID),
             data: Event::MidiPlayback(MidiPlaybackState::Playing),
+        })
+        .unwrap();
+    std::thread::sleep(Duration::from_secs(2));
+    sender
+        .send(Message {
+            target: EventTarget::SpecificNode(SAMPLER_NODE_ID),
+            data: Event::Wavetable(Vec::from(wavetable_source_1())),
         })
         .unwrap();
     std::thread::sleep(Duration::from_secs(2));
