@@ -1,21 +1,50 @@
 use crate::{
-    AssetLoader, Error, GraphNode, Message,
+    AssetLoader, Error, Event, EventTarget, GraphNode, Message,
     abstraction::NodeRegistry,
     config::{ChildConfig, builtin::register_builtin_types, registry::init_node_registry},
     consts,
+    event::EventTiming,
     generator::NullNode,
 };
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{Stream, StreamConfig};
 use crossbeam_channel::{Receiver, SendError, Sender, bounded, unbounded};
 use serde_json::Value;
-use std::collections::HashMap;
+use std::collections::{BinaryHeap, HashMap};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
 type SnapshotResponse = Option<Result<Value, Error>>;
 
+struct AudioClock {
+    current_rendering_absolute_frame: AtomicU64,
+}
+
+impl AudioClock {
+    fn new() -> Self {
+        Self {
+            current_rendering_absolute_frame: AtomicU64::new(0),
+        }
+    }
+
+    fn reset(&self) {
+        self.current_rendering_absolute_frame
+            .store(0, Ordering::Relaxed);
+    }
+
+    fn get_current_absolute_frame(&self) -> u64 {
+        self.current_rendering_absolute_frame
+            .load(Ordering::Relaxed)
+    }
+
+    fn set_current_absolute_frame(&self, frame: u64) {
+        self.current_rendering_absolute_frame
+            .store(frame, Ordering::Relaxed);
+    }
+}
+
 enum AudioCommand {
-    Event(Message),
+    GraphMessage(Message),
     SwapConsumer {
         consumer: GraphNode,
         response_sender: Sender<GraphNode>,
@@ -34,17 +63,30 @@ enum SwapConsumerError {
 #[derive(Clone)]
 pub struct MessageSender {
     command_sender: Sender<AudioCommand>,
+    clock: Arc<AudioClock>,
 }
 
 impl MessageSender {
-    fn new(command_sender: Sender<AudioCommand>) -> Self {
-        Self { command_sender }
+    fn new(command_sender: Sender<AudioCommand>, clock: Arc<AudioClock>) -> Self {
+        Self {
+            command_sender,
+            clock,
+        }
+    }
+
+    pub fn current_rendering_absolute_frame(&self) -> u64 {
+        self.clock
+            .current_rendering_absolute_frame
+            .load(std::sync::atomic::Ordering::Relaxed)
     }
 
     pub fn send(&self, message: Message) -> Result<(), SendError<Message>> {
-        match self.command_sender.send(AudioCommand::Event(message)) {
+        match self
+            .command_sender
+            .send(AudioCommand::GraphMessage(message))
+        {
             Ok(()) => Ok(()),
-            Err(SendError(AudioCommand::Event(message))) => Err(SendError(message)),
+            Err(SendError(AudioCommand::GraphMessage(message))) => Err(SendError(message)),
             Err(SendError(_)) => unreachable!("MessageSender only sends event commands"),
         }
     }
@@ -53,6 +95,34 @@ impl MessageSender {
 enum ConsumerCell {
     Source(GraphNode),
     Placeholder,
+}
+
+struct ScheduledMessageEvent {
+    target: EventTarget,
+    data: Event,
+    absolute_frame: u64,
+}
+
+impl PartialEq for ScheduledMessageEvent {
+    fn eq(&self, other: &Self) -> bool {
+        self.absolute_frame == other.absolute_frame
+    }
+}
+
+impl Eq for ScheduledMessageEvent {}
+
+impl PartialOrd for ScheduledMessageEvent {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.absolute_frame
+            .partial_cmp(&other.absolute_frame)
+            .map(|ord| ord.reverse())
+    }
+}
+
+impl Ord for ScheduledMessageEvent {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.absolute_frame.cmp(&other.absolute_frame).reverse()
+    }
 }
 
 pub struct BaseMixerBuilder {
@@ -150,17 +220,18 @@ impl BaseMixer {
         initial_program_no: Option<usize>,
     ) -> Result<Self, Error> {
         let null_node = Box::new(NullNode::new(None));
+        let clock = Arc::new(AudioClock::new());
         let program_sources = programs
             .into_iter()
             .map(|(program, node)| (program, ConsumerCell::Source(node)))
             .collect::<HashMap<usize, ConsumerCell>>();
         let (command_sender, command_receiver) = unbounded();
-        let stream = Self::open_stream(null_node, command_receiver)?;
+        let stream = Self::open_stream(null_node, command_receiver, clock.clone())?;
         stream.play()?;
         let mut mixer = Self {
             stream: Mutex::new(stream),
             program_sources,
-            event_sender: Arc::new(MessageSender::new(command_sender.clone())),
+            event_sender: Arc::new(MessageSender::new(command_sender.clone(), clock)),
             command_sender,
         };
         if let Some(program) = initial_program_no {
@@ -301,6 +372,7 @@ impl BaseMixer {
     fn open_stream(
         mut consumer: GraphNode,
         command_receiver: Receiver<AudioCommand>,
+        clock: Arc<AudioClock>,
     ) -> Result<Stream, Error> {
         let host = cpal::default_host();
         let device = host.default_output_device().ok_or(Error::NoDevice)?;
@@ -309,15 +381,33 @@ impl BaseMixer {
             channels: consts::CHANNEL_COUNT as u16,
             sample_rate: cpal::SampleRate(consts::PLAYBACK_SAMPLE_RATE as u32),
         };
+
+        let mut pending_messages: BinaryHeap<ScheduledMessageEvent> = BinaryHeap::new();
+
+        clock.reset();
         let stream = device.build_output_stream(
             &required_config,
             move |data: &mut [f32], _: &cpal::OutputCallbackInfo| {
                 data.fill(0.0);
+
+                let buffer_frames = data.len() / consts::CHANNEL_COUNT;
+                let buffer_start_frame = clock.get_current_absolute_frame();
+                let buffer_end_frame = buffer_start_frame + buffer_frames as u64;
+
                 for command in command_receiver.try_iter() {
                     match command {
-                        AudioCommand::Event(event) => {
-                            consumer.on_event(&event);
-                        }
+                        AudioCommand::GraphMessage(message) => match message.timing {
+                            EventTiming::Imprecise => {
+                                consumer.on_event(&message);
+                            }
+                            EventTiming::AtAbsoluteFrame(absolute_frame) => {
+                                pending_messages.push(ScheduledMessageEvent {
+                                    target: message.target,
+                                    data: message.data,
+                                    absolute_frame: absolute_frame,
+                                });
+                            }
+                        },
                         AudioCommand::SwapConsumer {
                             consumer: new_consumer,
                             response_sender,
@@ -333,7 +423,42 @@ impl BaseMixer {
                         }
                     }
                 }
-                consumer.fill_buffer(data);
+
+                let mut cursor_offset_frame: usize = 0;
+                while let Some(next_message) = pending_messages.peek() {
+                    let message_frame = next_message.absolute_frame.max(buffer_start_frame);
+                    if message_frame >= buffer_end_frame {
+                        break;
+                    }
+                    if next_message.absolute_frame < buffer_start_frame {
+                        println!(
+                            "WARNING: Message processed late ({} < {})",
+                            next_message.absolute_frame, buffer_start_frame
+                        );
+                    }
+                    let buffer_offset_frame = (message_frame - buffer_start_frame) as usize;
+                    let samples_start = cursor_offset_frame * consts::CHANNEL_COUNT;
+                    let samples_end = buffer_offset_frame * consts::CHANNEL_COUNT;
+                    consumer.fill_buffer(&mut data[samples_start..samples_end]);
+                    cursor_offset_frame = buffer_offset_frame;
+
+                    while pending_messages
+                        .peek()
+                        .is_some_and(|message| message.absolute_frame <= message_frame)
+                    {
+                        let message = pending_messages.pop().unwrap();
+                        consumer.on_event(&Message {
+                            target: message.target,
+                            data: message.data,
+                            timing: EventTiming::AtAbsoluteFrame(
+                                buffer_start_frame + cursor_offset_frame as u64,
+                            ),
+                        });
+                    }
+                }
+
+                consumer.fill_buffer(&mut data[(cursor_offset_frame * consts::CHANNEL_COUNT)..]);
+                clock.set_current_absolute_frame(buffer_end_frame);
             },
             move |err| {
                 println!("ERROR: Stream: {:?}", err);

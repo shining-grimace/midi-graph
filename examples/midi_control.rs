@@ -1,7 +1,8 @@
 extern crate midi_graph;
 
 use midi_graph::{
-    Balance, BaseMixer, Event, EventTarget, FileAssetLoader, Message, MidiPlaybackState,
+    Balance, BaseMixer, Event, EventTarget, EventTiming, FileAssetLoader, Message,
+    MidiPlaybackState,
     abstraction::{ChildConfig, Loop, NodeConfig},
     generator::{SampleBufferSource, SampleLoop},
     midi::{Midi, MidiDataSource},
@@ -63,26 +64,27 @@ fn main() {
         .start(Some(PROGRAM_0))
         .unwrap();
     let sender = mixer.get_event_sender();
-    std::thread::sleep(Duration::from_secs(2));
+    let absolute_frame = sender.current_rendering_absolute_frame();
     sender
         .send(Message {
             target: EventTarget::SpecificNode(MIDI_NODE_ID),
             data: Event::MidiPlayback(MidiPlaybackState::Paused),
+            timing: EventTiming::after_seconds(absolute_frame, 2.0),
         })
         .unwrap();
-    std::thread::sleep(Duration::from_secs(2));
     sender
         .send(Message {
             target: EventTarget::SpecificNode(MIDI_NODE_ID),
             data: Event::MidiPlayback(MidiPlaybackState::Playing),
+            timing: EventTiming::after_seconds(absolute_frame, 4.0),
         })
         .unwrap();
-    std::thread::sleep(Duration::from_secs(2));
     sender
         .send(Message {
             target: EventTarget::SpecificNode(SAMPLER_NODE_ID),
             data: Event::Wavetable(Vec::from(wavetable_source_1())),
+            timing: EventTiming::after_seconds(absolute_frame, 6.0),
         })
         .unwrap();
-    std::thread::sleep(Duration::from_secs(2));
+    std::thread::sleep(Duration::from_secs(8));
 }

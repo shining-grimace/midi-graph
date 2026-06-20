@@ -1,7 +1,7 @@
 extern crate midi_graph;
 
 use midi_graph::{
-    Balance, BaseMixer, Event, EventTarget, FileAssetLoader, Message, MessageSender,
+    Balance, BaseMixer, Event, EventTarget, EventTiming, FileAssetLoader, Message, MessageSender,
     abstraction::ChildConfig,
     effect::{Fader, Lfo, ModulationProperty, Transition},
     generator::{SawtoothWave, SquareWave, TriangleWave},
@@ -198,6 +198,7 @@ fn send_or_log(sender: &mut Arc<MessageSender>, target: EventTarget, event: Even
     let message = Message {
         target,
         data: event,
+        timing: EventTiming::Imprecise,
     };
     if let Err(error) = sender.send(message) {
         println!("Send error: {:?}", error);

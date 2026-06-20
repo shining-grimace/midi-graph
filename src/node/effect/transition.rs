@@ -1,5 +1,5 @@
 use crate::{
-    AssetLoader, Balance, Error, Event, EventTarget, GraphNode, Message, Node,
+    AssetLoader, Balance, Error, Event, GraphNode, Message, Node,
     abstraction::{ChildConfig, NodeConfig, defaults},
     consts,
     effect::ModulationProperty,
@@ -74,10 +74,7 @@ impl TransitionNode {
                 return;
             }
         };
-        self.consumer.on_event(&Message {
-            target: EventTarget::Broadcast,
-            data: event,
-        });
+        self.consumer.on_event(&Message::broadcast(event));
     }
 }
 

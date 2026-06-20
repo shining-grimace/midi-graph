@@ -1,5 +1,5 @@
 use crate::{
-    AssetLoader, Error, Event, EventTarget, GraphNode, Message, Node,
+    AssetLoader, Error, Event, GraphNode, Message, Node,
     abstraction::{ChildConfig, NodeConfig, defaults},
 };
 use serde::Deserialize;
@@ -126,10 +126,7 @@ impl Node for PolyphonyNode {
                     .iter()
                     .position(|voice| voice.current_note.is_none())
                 {
-                    let broadcast_event = Message {
-                        target: EventTarget::Broadcast,
-                        data: event.data.clone(),
-                    };
+                    let broadcast_event = Message::broadcast(event.data.clone());
                     self.voices[index].current_note = Some(note);
                     self.voices[index].source.on_event(&broadcast_event);
                 }
@@ -144,20 +141,14 @@ impl Node for PolyphonyNode {
                         None => false,
                     })
                 {
-                    let broadcast_event = Message {
-                        target: EventTarget::Broadcast,
-                        data: event.data.clone(),
-                    };
+                    let broadcast_event = Message::broadcast(event.data.clone());
                     self.voices[index].source.on_event(&broadcast_event);
                     self.voices[index].current_note = None;
                 }
                 true
             }
             Event::AllNotesOff => {
-                let broadcast_event = Message {
-                    target: EventTarget::Broadcast,
-                    data: event.data.clone(),
-                };
+                let broadcast_event = Message::broadcast(event.data.clone());
                 for voice in self.voices.iter_mut() {
                     if voice.current_note.is_some() {
                         voice.source.on_event(&broadcast_event);

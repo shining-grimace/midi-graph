@@ -1,7 +1,7 @@
 extern crate midi_graph;
 
 use midi_graph::{
-    Balance, BaseMixer, Event, EventTarget, FileAssetLoader, Message,
+    Balance, BaseMixer, Event, EventTarget, EventTiming, FileAssetLoader, Message,
     abstraction::{ChildConfig, NodeConfig},
     generator::{LfsrNoise, SquareWave, TriangleWave},
     group::{Font, FontSource, RangeSource},
@@ -113,6 +113,7 @@ fn main() {
         .send(Message {
             target: EventTarget::SpecificNode(MIDI_NODE_ID),
             data: Event::StateSnapshot(snapshot),
+            timing: EventTiming::Imprecise,
         })
         .unwrap();
     std::thread::sleep(Duration::from_secs(6));

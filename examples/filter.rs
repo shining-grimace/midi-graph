@@ -1,7 +1,7 @@
 extern crate midi_graph;
 
 use midi_graph::{
-    Balance, BaseMixer, Event, EventTarget, FileAssetLoader, IirFilter, Message,
+    Balance, BaseMixer, Event, EventTarget, EventTiming, FileAssetLoader, IirFilter, Message,
     abstraction::ChildConfig,
     effect::Filter,
     generator::{LfsrNoise, SawtoothWave, SquareWave, TriangleWave},
@@ -95,7 +95,7 @@ fn main() {
         .start(Some(1))
         .unwrap();
     let sender = mixer.get_event_sender();
-    std::thread::sleep(Duration::from_secs(8));
+    let absolute_frame = sender.current_rendering_absolute_frame();
     sender
         .send(Message {
             target: EventTarget::SpecificNode(FILTER_NODE_ID),
@@ -103,14 +103,15 @@ fn main() {
                 filter: IirFilter::HighPass,
                 cutoff_frequency: 4000.0,
             },
+            timing: EventTiming::after_seconds(absolute_frame, 8.0),
         })
         .unwrap();
-    std::thread::sleep(Duration::from_secs(4));
     sender
         .send(Message {
             target: EventTarget::SpecificNode(FILTER_NODE_ID),
             data: Event::FilterFrequencyShift(-3000.0),
+            timing: EventTiming::after_seconds(absolute_frame, 12.0),
         })
         .unwrap();
-    std::thread::sleep(Duration::from_secs(4));
+    std::thread::sleep(Duration::from_secs(16));
 }

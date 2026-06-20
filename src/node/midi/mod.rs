@@ -3,7 +3,7 @@ pub mod event;
 pub mod util;
 
 use crate::{
-    AssetLoadPayload, AssetLoader, DebugLogging, Error, Event, EventTarget, GraphNode, Message,
+    AssetLoadPayload, AssetLoader, DebugLogging, Error, Event, GraphNode, Message,
     MidiPlaybackState, Node,
     abstraction::{ChildConfig, NodeConfig, defaults},
     consts,
@@ -217,10 +217,7 @@ impl MidiNode {
         }) {
             self.event_samples_progress = 0;
             self.next_event_index = index + 1;
-            let broadcast_cutoff = Message {
-                target: EventTarget::Broadcast,
-                data: Event::NoteOff { note: 0, vel: 1.0 },
-            };
+            let broadcast_cutoff = Message::broadcast(Event::NoteOff { note: 0, vel: 1.0 });
             for (_, source) in self.channel_sources.iter_mut() {
                 source.on_event(&broadcast_cutoff);
             }

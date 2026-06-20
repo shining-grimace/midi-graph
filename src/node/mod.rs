@@ -23,23 +23,24 @@ pub trait Node {
     fn replace_children(&mut self, children: &[GraphNode]) -> Result<(), Error>;
     fn get_state_snapshot(&self, for_node_id: u64) -> Option<Result<Value, Error>>;
 
-    fn on_event(&mut self, event: &Message) {
+    fn on_event(&mut self, message: &Message) {
         let node_id = self.get_node_id();
-        let was_consumed = if event.target.influences(node_id) {
-            self.try_consume_event(event)
+        let was_consumed = if message.target.influences(node_id) {
+            self.try_consume_event(message)
         } else {
             false
         };
-        let broadcast_propagate = match event.target {
+        let broadcast_propagate = match message.target {
             EventTarget::SpecificNode(node_id) => node_id == self.get_node_id(),
             _ => false,
         };
         let propagation_event = match broadcast_propagate {
             true => &Message {
                 target: EventTarget::Broadcast,
-                data: event.data.clone(),
+                data: message.data.clone(),
+                timing: message.timing,
             },
-            false => event,
+            false => message,
         };
         if propagation_event
             .target

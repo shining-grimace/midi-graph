@@ -71,7 +71,7 @@ pub type GraphNode = Box<dyn Node + Send + 'static>;
 // General exports below
 
 pub use error::Error;
-pub use event::{Balance, Event, EventTarget, IirFilter, Message, MidiPlaybackState};
+pub use event::{Balance, Event, EventTarget, EventTiming, IirFilter, Message, MidiPlaybackState};
 pub use file::FileAssetLoader;
 pub use loader::{AssetLoadPayload, AssetLoader, SampleBuffer, SerializedFileMetadata};
 pub use log::DebugLogging;

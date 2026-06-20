@@ -1,7 +1,7 @@
 use crate::{
     Balance, BaseMixer, FileAssetLoader,
     config::{ChildConfig, NodeConfig},
-    generator::{SampleLoop, SquareWave},
+    generator::{SampleBufferSource, SampleLoop, SquareWave},
     group::{Font, FontSource, RangeSource},
     midi::{Midi, MidiDataSource},
 };
@@ -14,7 +14,7 @@ fn wav_config_from_file() -> ChildConfig {
     ChildConfig(Box::new(SampleLoop {
         node_id: None,
         balance: Balance::Both,
-        path: WAV_FILE.to_owned(),
+        source: SampleBufferSource::FilePath(WAV_FILE.to_owned()),
         base_note: 69,
         looping: None,
     }))

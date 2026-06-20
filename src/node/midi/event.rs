@@ -1,4 +1,4 @@
-use crate::{Error, Event, EventTarget, Message, midi::CueData};
+use crate::{Error, Event, EventTarget, EventTiming, Message, midi::CueData};
 use midly::{MetaMessage, MidiMessage, Smf, TrackEventKind};
 
 pub fn midi_events_from_midi(smf: Smf, track_index: usize) -> Result<Vec<MidiEvent>, Error> {
@@ -53,6 +53,7 @@ impl MidiEvent {
                         note: u8::from(*key),
                         vel: u8::from(*vel) as f32 / 127.0,
                     },
+                    timing: EventTiming::Imprecise,
                 },
             }),
             TrackEventKind::Midi {
@@ -67,6 +68,7 @@ impl MidiEvent {
                         note: u8::from(*key),
                         vel: u8::from(*vel) as f32 / 127.0,
                     },
+                    timing: EventTiming::Imprecise,
                 },
             }),
             _ => None,
@@ -83,6 +85,7 @@ impl MidiEvent {
                 message: Message {
                     target: EventTarget::Broadcast,
                     data: Event::CueData(cue),
+                    timing: EventTiming::Imprecise,
                 },
             });
             event_delta = 0;

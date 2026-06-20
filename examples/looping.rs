@@ -1,7 +1,7 @@
 extern crate midi_graph;
 
 use midi_graph::{
-    Balance, BaseMixer, Event, EventTarget, FileAssetLoader, Message, MessageSender,
+    Balance, BaseMixer, Event, EventTarget, EventTiming, FileAssetLoader, Message, MessageSender,
     abstraction::ChildConfig,
     effect::Fader,
     generator::{LfsrNoise, SawtoothWave},
@@ -72,31 +72,39 @@ fn main() {
         .start(Some(1))
         .unwrap();
     let mut sender = mixer.get_event_sender();
-    std::thread::spawn(move || {
-        sleep(Duration::from_millis(500));
-        send_or_log(
-            &mut sender,
-            EventTarget::SpecificNode(FADER_NODE_ID),
-            Event::Fade {
-                from: 0.0,
-                to: 1.0,
-                seconds: 1.0,
-            },
-        );
-        sleep(Duration::from_secs(12));
-        send_or_log(
-            &mut sender,
-            EventTarget::SpecificNode(MIDI_NODE_ID),
-            Event::CueData(CueData::SeekWhenIdeal(1)),
-        );
-    });
+    let absolute_frame = sender.current_rendering_absolute_frame();
+    send_after(
+        &mut sender,
+        EventTarget::SpecificNode(FADER_NODE_ID),
+        Event::Fade {
+            from: 0.0,
+            to: 1.0,
+            seconds: 1.0,
+        },
+        absolute_frame,
+        0.5,
+    );
+    send_after(
+        &mut sender,
+        EventTarget::SpecificNode(MIDI_NODE_ID),
+        Event::CueData(CueData::SeekWhenIdeal(1)),
+        absolute_frame,
+        12.5,
+    );
     sleep(Duration::from_secs(30));
 }
 
-fn send_or_log(sender: &mut Arc<MessageSender>, target: EventTarget, event: Event) {
+fn send_after(
+    sender: &mut Arc<MessageSender>,
+    target: EventTarget,
+    event: Event,
+    absolute_frame: u64,
+    seconds: f32,
+) {
     let message = Message {
         target,
         data: event,
+        timing: EventTiming::after_seconds(absolute_frame, seconds),
     };
     if let Err(error) = sender.send(message) {
         println!("Send error: {:?}", error);

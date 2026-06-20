@@ -1,4 +1,4 @@
-use crate::{effect::ModulationProperty, midi::CueData};
+use crate::{consts, effect::ModulationProperty, midi::CueData};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -6,6 +6,26 @@ use serde_json::Value;
 pub struct Message {
     pub target: EventTarget,
     pub data: Event,
+    pub timing: EventTiming,
+}
+
+impl Default for Message {
+    fn default() -> Self {
+        Self {
+            target: EventTarget::Broadcast,
+            data: Event::Unknown,
+            timing: EventTiming::Imprecise,
+        }
+    }
+}
+
+impl Message {
+    pub fn broadcast(event: Event) -> Self {
+        Self {
+            data: event,
+            ..Self::default()
+        }
+    }
 }
 
 #[derive(PartialEq, Copy, Clone, Debug)]
@@ -34,6 +54,24 @@ impl EventTarget {
             EventTarget::Broadcast => !was_consumed,
             EventTarget::SpecificNode(id) => *id != node_id,
         }
+    }
+}
+
+#[derive(PartialEq, Copy, Clone, Debug)]
+pub enum EventTiming {
+    /// The event should be handled at the next possible time, which will be
+    /// on the next loop in the audio thread
+    Imprecise,
+    /// The event should be handled at a precise future time (or as soon as
+    /// possible if the specified time is already passed)
+    AtAbsoluteFrame(u64),
+}
+
+impl EventTiming {
+    pub fn after_seconds(absolute_frame: u64, seconds: f32) -> Self {
+        Self::AtAbsoluteFrame(
+            absolute_frame + (seconds * consts::PLAYBACK_SAMPLE_RATE as f32) as u64,
+        )
     }
 }
 
