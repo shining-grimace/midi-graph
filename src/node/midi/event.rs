@@ -11,7 +11,15 @@ pub fn midi_events_from_midi(smf: Smf, track_index: usize) -> Result<Vec<MidiEve
     for event in track {
         event_delta += u32::from(event.delta) as isize;
         match event.kind {
-            // Special case for cue labels since they encode multiple events
+            // Special cases for markers and cue labels since they encode multiple events
+            TrackEventKind::Meta(MetaMessage::Marker(label)) => {
+                let cue_data = CueData::from_label(label)?;
+                let events = MidiEvent::from_cue_data(event_delta, cue_data);
+                for cue_event in events.into_iter() {
+                    midi_events.push(cue_event);
+                }
+                event_delta = 0;
+            }
             TrackEventKind::Meta(MetaMessage::CuePoint(label)) => {
                 let cue_data = CueData::from_label(label)?;
                 let events = MidiEvent::from_cue_data(event_delta, cue_data);

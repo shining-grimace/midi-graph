@@ -139,6 +139,10 @@ The supported signals, encoded as strings, are:
 Suggested workflows for composing music in a DAW and exporting MIDI files for best compatibility
 with MIDI Graph.
 
+For a smooth workflow, the DAW should be able to export its entire project as a single MIDI file,
+and include marker events in the exported file. Some DAWs will be tricky to work with because they
+aren't designed to work that way.
+
 ### REAPER 7
 
 #### MIDI Graph Cues
@@ -183,6 +187,33 @@ When exporting ("File" > "Export Project MIDI..."):
   file)" are supported, though in the multitrack case only tracks with note data should be
   loaded into a MIDI node in MIDI Graph, and only one track can be loaded be node
 
+### Qtractor 1.5
+
+#### MIDI Graph Cues
+
+Open the Markers window ("View" > "Tempo Map / Markers...", or double click the desired spot on
+the timeline above the MIDI Editor grid), and adjust the position to precisely where the marker
+should be. Write into the "Marker" field to specify MIDI Graph custom cue components, and don't
+modify the Tempo or Key signature. Then click Add.
+
+#### Managing Instruments Per Channel
+
+MIDI Graph loads a single MIDI file track into a MIDI node, with a separate child node assigned
+to each channel used.
+
+In Qtractor, compose on separate tracks, one for each desired MIDI track. Set the MIDI channel
+to use for each individual track from the Track Properties dialog (double click a track in the
+left column of the UI, or select a track and open "Track" > "Track Properties").
+
+#### Export Settings
+
+When exporting ("Track" > "Export Tracks" > "MIDI..."):
+- Set "File format" to "SMF Format 0" (which merges everything on a single MIDI track, meaning
+  a single MIDI Graph node can be used, and separate  nodes can be assigned to play each
+  channel in the exported track)
+- Configure the Range as needed, which can usually be left on "Session"
+- Click the Master output
+
 ## Examples
 
 `cargo run --example <example-name>`
@@ -215,4 +246,3 @@ For WebAssembly:
 
 `./wasm-prepare.sh` if never run before, then
 `./wasm-run.sh`
-
